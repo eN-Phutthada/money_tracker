@@ -1,69 +1,41 @@
 import 'package:flutter/material.dart';
-import 'core/constants/app_colors.dart';
-import 'screens/dashboard_screen.dart';
-import 'services/finance_service.dart';
+import 'package:get/get.dart';
+import 'app/data/services/security_service.dart';
+import 'app/modules/security/controllers/security_controller.dart';
+import 'app/modules/security/views/pin_lock_view.dart';
+import 'app/routes/app_pages.dart';
+import 'app/theme/app_theme.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await SecurityService().init();
   runApp(const MoneyTrackerApp());
 }
 
-class MoneyTrackerApp extends StatefulWidget {
+/// Root Application Widget ด้วย GetX 4.7.3 (Simplified Architecture)
+class MoneyTrackerApp extends StatelessWidget {
   const MoneyTrackerApp({super.key});
 
   @override
-  State<MoneyTrackerApp> createState() => _MoneyTrackerAppState();
-}
-
-class _MoneyTrackerAppState extends State<MoneyTrackerApp> {
-  late final FinanceService _financeService;
-
-  @override
-  void initState() {
-    super.initState();
-    _financeService = FinanceService();
-  }
-
-  @override
-  void dispose() {
-    _financeService.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Money Tracker - บันทึกการเงินส่วนบุคคล',
+    return GetMaterialApp(
+      title: 'Money Tracker - FinTech 2026',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        scaffoldBackgroundColor: AppColors.background,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: AppColors.primary,
-          surface: AppColors.surface,
-          brightness: Brightness.light,
-        ),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: AppColors.background,
-          elevation: 0,
-          scrolledUnderElevation: 0,
-          iconTheme: IconThemeData(color: AppColors.textPrimary),
-        ),
-        cardTheme: CardThemeData(
-          color: AppColors.surface,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: const BorderSide(color: AppColors.border, width: 1),
-          ),
-        ),
-        dividerTheme: const DividerThemeData(
-          color: AppColors.divider,
-          thickness: 1,
-          space: 1,
-        ),
-      ),
-      home: DashboardScreen(financeService: _financeService),
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.light,
+      initialRoute: AppPages.INITIAL,
+      getPages: AppPages.routes,
+      initialBinding: DashboardBinding(),
+      builder: (context, child) {
+        final security = Get.put<SecurityController>(SecurityController(), permanent: true);
+        return Obx(() {
+          if (security.isLocked.value) {
+            return const PinLockView();
+          }
+          return child ?? const SizedBox();
+        });
+      },
     );
   }
 }
