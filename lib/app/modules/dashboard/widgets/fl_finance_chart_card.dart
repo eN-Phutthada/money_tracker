@@ -62,14 +62,14 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
                     children: [
                       _buildTabItem(
                         index: 0,
-                        title: 'แนวโน้ม Spline',
+                        title: 'trend_spline'.tr,
                         icon: Icons.show_chart_rounded,
                         isDark: isDark,
                         expand: isNarrow,
                       ),
                       _buildTabItem(
                         index: 1,
-                        title: 'สัดส่วนเค้ก',
+                        title: 'donut_pie'.tr,
                         icon: Icons.pie_chart_outline_rounded,
                         isDark: isDark,
                         expand: isNarrow,
@@ -82,9 +82,9 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const Text(
-                        'การวิเคราะห์และแนวโน้ม',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                      Text(
+                        'analytics_and_trends'.tr,
+                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
                       ),
                       const SizedBox(height: 10),
                       toggleWidget,
@@ -95,10 +95,10 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
                 return Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        'การวิเคราะห์และแนวโน้ม',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                        'analytics_and_trends'.tr,
+                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -218,7 +218,7 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
           children: [
             Expanded(
               child: Text(
-                'กระแสเงินสุทธิ 6 เดือนล่าสุด',
+                'net_trailing_6_months'.tr,
                 style: TextStyle(
                   fontSize: 12,
                   color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
@@ -363,10 +363,10 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
     final categories = controller.categoryBreakdown;
 
     if (categories.isEmpty) {
-      return const SizedBox(
+      return SizedBox(
         height: 180,
         child: Center(
-          child: Text('ไม่มีรายการรายจ่ายในรอบนี้', style: TextStyle(color: AppColors.textSecondary)),
+          child: Text('no_expense_records'.tr, style: const TextStyle(color: AppColors.textSecondary)),
         ),
       );
     }
@@ -437,7 +437,7 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    item['name'] as String,
+                    (item['name'] as String).tr,
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,

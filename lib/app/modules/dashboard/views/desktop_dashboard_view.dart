@@ -11,23 +11,12 @@ import '../widgets/balance_card.dart';
 import '../widgets/daily_allowance_card.dart';
 import '../widgets/fl_finance_chart_card.dart';
 import '../widgets/recent_transactions_card.dart';
+import '../../../widgets/modern_app_bar.dart';
+import '../../../theme/app_popup_decorations.dart';
 
 /// Bento Grid Desktop Layout พร้อม Collapsible Sidebar สไตล์ FinTech 2026
 class DesktopDashboardView extends GetView<DashboardController> {
   const DesktopDashboardView({super.key});
-
-  String _getPeriodTitle(DashboardController controller) {
-    final date = controller.selectedDate.value;
-    switch (controller.currentPeriod.value) {
-      case TimeFilterPeriod.monthly:
-        const months = ['', 'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
-        return '${months[date.month]} ${date.year + 543}';
-      case TimeFilterPeriod.yearly:
-        return 'ปี พ.ศ. ${date.year + 543}';
-      case TimeFilterPeriod.allTime:
-        return 'ภาพรวมสะสมทั้งหมด';
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -117,30 +106,63 @@ class DesktopDashboardView extends GetView<DashboardController> {
         children: [
           // Current Period Title & Controls
           Obx(() {
+            final isCurrent = controller.isCurrentPeriod;
+            final period = controller.currentPeriod.value;
+
             return Row(
               children: [
                 Text(
-                  _getPeriodTitle(controller),
+                  controller.formattedPeriodTitle,
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
+                    letterSpacing: -0.3,
                     color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(width: 12),
-                if (controller.currentPeriod.value != TimeFilterPeriod.allTime) ...[
-                  IconButton(
-                    icon: const Icon(Icons.chevron_left_rounded),
-                    onPressed: controller.previousPeriod,
-                    tooltip: 'รอบก่อนหน้า',
-                    visualDensity: VisualDensity.compact,
+                if (period != TimeFilterPeriod.allTime) ...[
+                  ModernAppBar.squircleIconButton(
+                    onTap: controller.previousPeriod,
+                    icon: Icons.chevron_left_rounded,
+                    isDark: isDark,
+                    tooltip: 'prev_period'.tr,
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.chevron_right_rounded),
-                    onPressed: controller.nextPeriod,
-                    tooltip: 'รอบถัดไป',
-                    visualDensity: VisualDensity.compact,
+                  ModernAppBar.squircleIconButton(
+                    onTap: controller.nextPeriod,
+                    icon: Icons.chevron_right_rounded,
+                    isDark: isDark,
+                    tooltip: 'next_period'.tr,
                   ),
+                  if (!isCurrent) ...[
+                    const SizedBox(width: 8),
+                    Material(
+                      color: AppColors.primary.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                      child: InkWell(
+                        onTap: controller.resetToCurrentPeriod,
+                        borderRadius: BorderRadius.circular(10),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.restart_alt_rounded, size: 13, color: AppColors.primary),
+                              const SizedBox(width: 4),
+                              Text(
+                                period == TimeFilterPeriod.monthly ? 'current_month'.tr : 'current_year'.tr,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ],
             );
@@ -159,9 +181,9 @@ class DesktopDashboardView extends GetView<DashboardController> {
                   ),
                   child: Row(
                     children: [
-                      _buildFilterTab(TimeFilterPeriod.monthly, 'รายเดือน (1)', isDark),
-                      _buildFilterTab(TimeFilterPeriod.yearly, 'รายปี (2)', isDark),
-                      _buildFilterTab(TimeFilterPeriod.allTime, 'ทั้งหมด (3)', isDark),
+                      _buildFilterTab(TimeFilterPeriod.monthly, '${'monthly'.tr} (1)', isDark),
+                      _buildFilterTab(TimeFilterPeriod.yearly, '${'yearly'.tr} (2)', isDark),
+                      _buildFilterTab(TimeFilterPeriod.allTime, '${'all_time'.tr} (3)', isDark),
                     ],
                   ),
                 );
@@ -172,7 +194,7 @@ class DesktopDashboardView extends GetView<DashboardController> {
               ElevatedButton.icon(
                 onPressed: () => QuickAddBottomSheet.show(Get.context!),
                 icon: const Icon(Icons.add_rounded, size: 18),
-                label: const Text('บันทึก (N)', style: TextStyle(fontWeight: FontWeight.w700)),
+                label: Text('${'save'.tr} (N)', style: const TextStyle(fontWeight: FontWeight.w700)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
@@ -364,14 +386,22 @@ class DesktopDashboardView extends GetView<DashboardController> {
             // Navigation Items
             _buildSidebarItem(
               icon: Icons.dashboard_rounded,
-              label: 'ภาพรวมแดชบอร์ด',
+              label: 'dashboard_overview'.tr,
               isActive: true,
               collapsed: collapsed,
               onTap: () {},
             ),
             _buildSidebarItem(
+              icon: Icons.receipt_long_rounded,
+              label: 'all_transactions'.tr,
+              badgeShortcut: 'T',
+              isActive: false,
+              collapsed: collapsed,
+              onTap: () => Get.toNamed(Routes.TRANSACTIONS_LIST),
+            ),
+            _buildSidebarItem(
               icon: Icons.tune_rounded,
-              label: 'ตั้งค่างบประมาณ',
+              label: 'budget_settings'.tr,
               badgeShortcut: 'S',
               isActive: false,
               collapsed: collapsed,
@@ -379,7 +409,7 @@ class DesktopDashboardView extends GetView<DashboardController> {
             ),
             _buildSidebarItem(
               icon: Icons.storage_rounded,
-              label: 'จัดการข้อมูล (CSV)',
+              label: 'data_management_short'.tr,
               badgeShortcut: 'M',
               isActive: false,
               collapsed: collapsed,
@@ -387,7 +417,7 @@ class DesktopDashboardView extends GetView<DashboardController> {
             ),
             _buildSidebarItem(
               icon: Icons.security_rounded,
-              label: 'ความปลอดภัย (PIN)',
+              label: 'security_pin_short'.tr,
               badgeShortcut: 'P',
               isActive: false,
               collapsed: collapsed,
@@ -396,7 +426,7 @@ class DesktopDashboardView extends GetView<DashboardController> {
             if (Get.isRegistered<SecurityController>() && Get.find<SecurityController>().isPinEnabled.value)
               _buildSidebarItem(
                 icon: Icons.lock_outline_rounded,
-                label: 'ล็อกหน้าจอ',
+                label: 'lock_screen'.tr,
                 badgeShortcut: 'L',
                 isActive: false,
                 collapsed: collapsed,
@@ -410,14 +440,29 @@ class DesktopDashboardView extends GetView<DashboardController> {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
               child: Column(
                 children: [
-                  _buildSidebarItem(
-                    icon: isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-                    label: isDark ? 'โหมดสว่าง' : 'โหมดมืด',
-                    badgeShortcut: 'D',
-                    isActive: false,
-                    collapsed: collapsed,
-                    onTap: controller.toggleTheme,
-                  ),
+                  Obx(() {
+                    return _buildSidebarItem(
+                      icon: Icons.language_rounded,
+                      label: 'language_label'.trParams({'lang': controller.currentLanguageName}),
+                      isActive: false,
+                      collapsed: collapsed,
+                      onTap: () => showLanguagePickerDialog(context),
+                    );
+                  }),
+                  const SizedBox(height: 6),
+                  Obx(() {
+                    final mode = controller.themeMode.value;
+                    return _buildSidebarItem(
+                      icon: mode == ThemeMode.system
+                          ? Icons.brightness_auto_rounded
+                          : (isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded),
+                      label: 'theme_label'.trParams({'theme': controller.themeModeName}),
+                      badgeShortcut: 'D',
+                      isActive: false,
+                      collapsed: collapsed,
+                      onTap: () => showThemePickerDialog(context),
+                    );
+                  }),
                   const SizedBox(height: 6),
                   IconButton(
                     icon: Icon(
@@ -428,7 +473,7 @@ class DesktopDashboardView extends GetView<DashboardController> {
                       color: AppColors.textSecondary,
                     ),
                     onPressed: controller.toggleSidebar,
-                    tooltip: collapsed ? 'ขยาย Sidebar' : 'ย่อ Sidebar',
+                    tooltip: collapsed ? 'expand_sidebar'.tr : 'collapse_sidebar'.tr,
                   ),
                 ],
               ),

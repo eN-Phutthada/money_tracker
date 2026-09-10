@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
 import '../../../theme/app_colors.dart';
+import '../../../theme/app_popup_decorations.dart';
+import '../../../widgets/modern_app_bar.dart';
 import '../controllers/security_controller.dart';
 
 /// หน้าจอตั้งค่าความปลอดภัยและรหัส PIN ด้วย GetX
@@ -11,6 +15,7 @@ class PinSettingsView extends GetView<SecurityController> {
     String firstPin = '';
     String confirmPin = '';
     bool isConfirmStep = false;
+    bool isSuccess = false;
     String? dialogError;
 
     Get.dialog(
@@ -19,97 +24,143 @@ class PinSettingsView extends GetView<SecurityController> {
           final isDark = Theme.of(context).brightness == Brightness.dark;
           final currentPin = isConfirmStep ? confirmPin : firstPin;
 
-          return Dialog(
-            backgroundColor: isDark ? AppColors.darkSurface : AppColors.surface,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    isConfirmStep ? 'ยืนยันรหัส PIN 4 หลัก' : 'ตั้งรหัส PIN 4 หลักใหม่',
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    dialogError ?? (isConfirmStep ? 'กรอกรหัสเดิมอีกครั้งเพื่อยืนยัน' : 'กรอกตัวเลข 4 หลักเพื่อตั้งรหัสผ่าน'),
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: dialogError != null ? AppColors.deficitText : AppColors.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
+          return AppGlassDialog(
+            maxWidth: 380,
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AppPopupHeader(
+                  title: isSuccess
+                      ? 'ตั้งรหัส PIN สำเร็จ!'
+                      : (isConfirmStep ? 'ยืนยันรหัส PIN 4 หลัก' : 'ตั้งรหัส PIN 4 หลักใหม่'),
+                  subtitle: isSuccess
+                      ? 'บันทึกรหัส PIN ใหม่เรียบร้อยแล้ว'
+                      : (dialogError ?? (isConfirmStep ? 'กรอกรหัสเดิมอีกครั้งเพื่อยืนยัน' : 'กรอกตัวเลข 4 หลักเพื่อตั้งรหัสผ่าน')),
+                  icon: isSuccess
+                      ? Icons.check_circle_rounded
+                      : (isConfirmStep ? Icons.verified_user_rounded : Icons.lock_rounded),
+                  iconColor: isSuccess
+                      ? const Color(0xFF10B981)
+                      : (dialogError != null ? AppColors.deficitText : AppColors.primary),
+                  onClose: () => Get.back(),
+                ),
+                const SizedBox(height: 24),
 
-                  // 4 Dots
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(4, (index) {
-                      final isFilled = index < currentPin.length;
-                      return Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 8),
-                        width: 14,
-                        height: 14,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: isFilled ? AppColors.primary : Colors.transparent,
-                          border: Border.all(
-                            color: isFilled ? AppColors.primary : (isDark ? AppColors.darkBorder : AppColors.border),
-                            width: 2,
-                          ),
+                // 4 Dots
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(4, (index) {
+                    final isFilled = index < currentPin.length;
+                    final dotColor = isSuccess
+                        ? const Color(0xFF10B981)
+                        : (dialogError != null ? AppColors.deficitText : AppColors.primary);
+
+                    Widget dot = Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 8),
+                      width: isSuccess ? 16 : 14,
+                      height: isSuccess ? 16 : 14,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isFilled ? dotColor : Colors.transparent,
+                        border: Border.all(
+                          color: isFilled ? dotColor : (isDark ? AppColors.darkBorder : AppColors.border),
+                          width: 2,
                         ),
-                      );
-                    }),
-                  ),
-                  const SizedBox(height: 24),
+                        boxShadow: isFilled
+                            ? [
+                                BoxShadow(
+                                  color: dotColor.withValues(alpha: isSuccess ? 0.6 : 0.35),
+                                  blurRadius: isSuccess ? 12 : 8,
+                                  spreadRadius: isSuccess ? 2.5 : 1.5,
+                                ),
+                              ]
+                            : null,
+                      ),
+                    );
 
-                  // Mini Numpad
-                  ..._buildMiniNumpad(
-                    isDark: isDark,
-                    onKey: (k) async {
-                      setDialogState(() {
-                        dialogError = null;
-                        if (k == '⌫') {
-                          if (isConfirmStep) {
-                            if (confirmPin.isNotEmpty) confirmPin = confirmPin.substring(0, confirmPin.length - 1);
-                          } else {
-                            if (firstPin.isNotEmpty) firstPin = firstPin.substring(0, firstPin.length - 1);
-                          }
-                          return;
-                        }
+                    if (isSuccess) {
+                      dot = dot
+                          .animate(delay: Duration(milliseconds: index * 60))
+                          .scale(
+                            begin: const Offset(0.8, 0.8),
+                            end: const Offset(1.2, 1.2),
+                            duration: const Duration(milliseconds: 200),
+                            curve: Curves.easeOutBack,
+                          )
+                          .then()
+                          .scale(
+                            begin: const Offset(1.2, 1.2),
+                            end: const Offset(1.0, 1.0),
+                            duration: const Duration(milliseconds: 150),
+                          );
+                    }
+                    return dot;
+                  }),
+                ),
+                const SizedBox(height: 24),
 
-                        if (!isConfirmStep) {
-                          if (firstPin.length < 4) firstPin += k;
-                          if (firstPin.length == 4) {
-                            isConfirmStep = true;
-                          }
+                // Mini Numpad
+                ..._buildMiniNumpad(
+                  isDark: isDark,
+                  onKey: (k) async {
+                    if (isSuccess) return;
+                    setDialogState(() {
+                      dialogError = null;
+                      if (k == '⌫') {
+                        if (isConfirmStep) {
+                          if (confirmPin.isNotEmpty) confirmPin = confirmPin.substring(0, confirmPin.length - 1);
                         } else {
-                          if (confirmPin.length < 4) confirmPin += k;
-                          if (confirmPin.length == 4) {
-                            if (confirmPin == firstPin) {
-                              controller.setPin(firstPin);
-                              Get.back();
+                          if (firstPin.isNotEmpty) firstPin = firstPin.substring(0, firstPin.length - 1);
+                        }
+                        return;
+                      }
+
+                      if (!isConfirmStep) {
+                        if (firstPin.length < 4) firstPin += k;
+                        if (firstPin.length == 4) {
+                          isConfirmStep = true;
+                        }
+                      } else {
+                        if (confirmPin.length < 4) confirmPin += k;
+                        if (confirmPin.length == 4) {
+                          if (confirmPin == firstPin) {
+                            isSuccess = true;
+                            HapticFeedback.mediumImpact();
+                            Future.delayed(const Duration(milliseconds: 400), () async {
+                              await controller.setPin(firstPin);
+                              if (Get.isDialogOpen ?? false) Get.back();
                               Get.snackbar(
                                 'สำเร็จ',
                                 'ตั้งค่ารหัส PIN เรียบร้อยแล้ว',
                                 snackPosition: SnackPosition.TOP,
                               );
-                            } else {
-                              dialogError = 'รหัสไม่ตรงกัน โปรดลองใหม่อีกครั้ง';
-                              confirmPin = '';
-                            }
+                            });
+                          } else {
+                            dialogError = 'รหัสไม่ตรงกัน โปรดลองใหม่อีกครั้ง';
+                            confirmPin = '';
                           }
                         }
-                      });
-                    },
+                      }
+                    });
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextButton(
+                  onPressed: () => Get.back(),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
-                  const SizedBox(height: 16),
-                  TextButton(
-                    onPressed: () => Get.back(),
-                    child: const Text('ยกเลิก'),
+                  child: Text(
+                    'ยกเลิก',
+                    style: TextStyle(
+                      color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           );
         },
@@ -161,9 +212,31 @@ class PinSettingsView extends GetView<SecurityController> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('ความปลอดภัยและรหัส PIN'),
-        elevation: 0,
+      appBar: ModernAppBar(
+        title: 'pin_security'.tr,
+        subtitle: 'pin_subtitle'.tr,
+        badgeWidget: Obx(() {
+          final isEnabled = controller.isPinEnabled.value;
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+            decoration: BoxDecoration(
+              color: (isEnabled ? AppColors.accent : AppColors.textSecondary).withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: (isEnabled ? AppColors.accent : AppColors.textSecondary).withValues(alpha: 0.28),
+                width: 0.8,
+              ),
+            ),
+            child: Text(
+              isEnabled ? 'pin_status_enabled'.tr : 'pin_status_disabled'.tr,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: isEnabled ? AppColors.accent : AppColors.textSecondary,
+              ),
+            ),
+          );
+        }),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -227,14 +300,15 @@ class PinSettingsView extends GetView<SecurityController> {
                 const SizedBox(height: 20),
 
                 // Settings Switch Card
-                Container(
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkSurface : AppColors.surface,
+                Material(
+                  color: isDark ? AppColors.darkSurface : AppColors.surface,
+                  shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.border),
+                    side: BorderSide(color: isDark ? AppColors.darkBorder : AppColors.border),
                   ),
-                  child: Column(
+                  child: Padding(
+                    padding: const EdgeInsets.all(18),
+                    child: Column(
                     children: [
                       Obx(() {
                         return SwitchListTile(
@@ -295,7 +369,8 @@ class PinSettingsView extends GetView<SecurityController> {
                     ],
                   ),
                 ),
-              ],
+              ),
+            ],
             ),
           ),
         ),

@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../data/models/budget_plan_model.dart';
 import '../../../data/models/transaction_model.dart';
 import '../../../data/services/storage_service.dart';
+import '../../../widgets/app_feedback.dart';
 
 /// GetX Reactive Controller สำหรับจัดการ State การเงินทั้งระบบ
 class DashboardController extends GetxController {
@@ -19,9 +20,14 @@ class DashboardController extends GetxController {
 
   final Rx<TimeFilterPeriod> currentPeriod = TimeFilterPeriod.monthly.obs;
   final Rx<DateTime> selectedDate = DateTime.now().obs;
+  final Rx<ThemeMode> themeMode = ThemeMode.system.obs;
   final RxBool isDarkMode = false.obs;
+  final RxString currentLanguage = 'th'.obs;
   final RxInt selectedChartIndex = 0.obs; // 0: Spline Area Chart, 1: Donut Chart
   final RxBool isSidebarCollapsed = false.obs;
+  final FocusNode keyboardFocusNode = FocusNode();
+
+  bool get isEnglish => currentLanguage.value == 'en';
 
   @override
   void onInit() {
@@ -29,20 +35,55 @@ class DashboardController extends GetxController {
     _loadData();
   }
 
+  @override
+  void onClose() {
+    keyboardFocusNode.dispose();
+    super.onClose();
+  }
+
   Future<void> _loadData() async {
     try {
+      final isInit = await _storageService.isInitialized();
       final savedPlan = await _storageService.loadBudgetPlan();
       if (savedPlan != null) {
         budgetPlan.value = savedPlan;
       }
 
       final savedTransactions = await _storageService.loadTransactions();
-      if (savedTransactions != null && savedTransactions.isNotEmpty) {
+      if (savedTransactions != null) {
         transactions.assignAll(savedTransactions);
       } else {
-        _seedInitialData();
+        transactions.clear();
+      }
+
+      final savedTheme = await _storageService.loadThemeMode();
+      if (savedTheme == 'dark') {
+        themeMode.value = ThemeMode.dark;
+        isDarkMode.value = true;
+        Get.changeThemeMode(ThemeMode.dark);
+      } else if (savedTheme == 'light') {
+        themeMode.value = ThemeMode.light;
+        isDarkMode.value = false;
+        Get.changeThemeMode(ThemeMode.light);
+      } else {
+        themeMode.value = ThemeMode.system;
+        isDarkMode.value = false;
+        Get.changeThemeMode(ThemeMode.system);
+      }
+
+      final savedLang = await _storageService.loadLanguage();
+      if (savedLang != null && (savedLang == 'en' || savedLang == 'th')) {
+        currentLanguage.value = savedLang;
+        _safeUpdateLocale(savedLang == 'en' ? const Locale('en', 'US') : const Locale('th', 'TH'));
+      } else {
+        currentLanguage.value = 'th';
+        _safeUpdateLocale(const Locale('th', 'TH'));
+      }
+
+      if (!isInit) {
         await _storageService.saveTransactions(transactions);
         await _storageService.saveBudgetPlan(budgetPlan.value);
+        await _storageService.setInitialized();
       }
     } catch (_) {}
   }
@@ -98,11 +139,34 @@ class DashboardController extends GetxController {
   double get expectedBalance {
     final date = selectedDate.value;
     final now = DateTime.now();
+    final plan = budgetPlan.value;
+
+    if (currentPeriod.value == TimeFilterPeriod.yearly) {
+      final isCurrentYear = date.year == now.year;
+      final monthsCount = isCurrentYear ? now.month : (date.isBefore(now) ? 12 : 1);
+      final daysCount = isCurrentYear
+          ? now.difference(DateTime(now.year, 1, 1)).inDays + 1
+          : (date.isBefore(now) ? (DateTime(date.year, 12, 31).difference(DateTime(date.year, 1, 1)).inDays + 1) : 1);
+
+      return (plan.plannedIncome * monthsCount) -
+          (plan.plannedFixedCosts * monthsCount) -
+          (daysCount * plan.targetDailyAllowance) -
+          (plan.targetMonthlySavings * monthsCount);
+    } else if (currentPeriod.value == TimeFilterPeriod.allTime) {
+      if (transactions.isEmpty) return 0.0;
+      final sorted = transactions.map((t) => t.date).toList()..sort();
+      final earliest = sorted.first;
+      final monthsDiff = ((now.year - earliest.year) * 12 + now.month - earliest.month + 1).clamp(1, 120);
+      return (plan.plannedIncome * monthsDiff) -
+          (plan.plannedFixedCosts * monthsDiff) -
+          (plan.targetDailyAllowance * 30 * monthsDiff) -
+          (plan.targetMonthlySavings * monthsDiff);
+    }
+
     int currentDay = (date.year == now.year && date.month == now.month)
         ? now.day
         : (date.isBefore(now) ? daysInCurrentMonth : 1);
 
-    final plan = budgetPlan.value;
     return plan.plannedIncome -
         plan.plannedFixedCosts -
         (currentDay * plan.targetDailyAllowance) -
@@ -113,20 +177,62 @@ class DashboardController extends GetxController {
 
   bool get isSurplus => surplusOrDeficit >= 0;
 
-  double get remainingDailyAllowance {
+  /// จำนวนวันที่เหลืออยู่ในเดือนปัจจุบันหลังจาก "วันนี้" (ไม่รวมวันนี้แล้ว)
+  int get remainingDaysInMonth {
     final date = selectedDate.value;
     final now = DateTime.now();
     final totalDays = daysInCurrentMonth;
     final isCurrentMonth = (date.year == now.year && date.month == now.month);
-    final currentDay = isCurrentMonth ? now.day : (date.isBefore(now) ? totalDays : 1);
-    final remainingDays = (totalDays - currentDay + 1).clamp(1, totalDays);
+    if (!isCurrentMonth) {
+      if (date.isBefore(DateTime(now.year, now.month, 1))) {
+        return 0; // เดือนในอดีต สิ้นสุดรอบแล้ว
+      } else {
+        return totalDays; // เดือนในอนาคต
+      }
+    }
+    // ไม่รวมวันนี้ (ลบวันนี้ไปแล้ว): เช่น เดือนมี 30 วัน วันนี้วันที่ 10 -> เหลืออีก 30 - 10 = 20 วัน
+    return (totalDays - now.day).clamp(0, totalDays);
+  }
 
+  /// ยอดค่าใช้จ่ายผันแปร (กินอยู่/ช้อปปิ้ง/รายวัน) เฉพาะของ "วันนี้"
+  double get todayVariableExpenses {
+    final now = DateTime.now();
+    return transactions.where((t) {
+      return t.isVariableCost &&
+          t.date.year == now.year &&
+          t.date.month == now.month &&
+          t.date.day == now.day;
+    }).fold(0.0, (sum, t) => sum + t.amount);
+  }
+
+  /// โควตาคงเหลือเฉพาะของ "วันนี้" (เป้าหมายต่อวัน - ยอดกินใช้วันนี้)
+  double get todayRemainingAllowance {
+    final target = budgetPlan.value.targetDailyAllowance;
+    return target - todayVariableExpenses;
+  }
+
+  /// สัดส่วนการใช้โควตาของวันนี้ (0.0 ถึง 1.0+)
+  double get todayUsageProgress {
+    final target = budgetPlan.value.targetDailyAllowance;
+    if (target <= 0) return 0.0;
+    return (todayVariableExpenses / target).clamp(0.0, 2.0);
+  }
+
+  /// โควตาเฉลี่ยต่อวันสำหรับวันที่เหลือของเดือน (หลังจากหักวันนี้ออกไปแล้ว)
+  double get remainingDailyAllowance {
+    final remainingDays = remainingDaysInMonth;
+    if (remainingDays <= 0) return 0.0;
+
+    final totalDays = daysInCurrentMonth;
     final plan = budgetPlan.value;
     final totalPlannedVariable = plan.plannedVariableBudget(totalDays);
-    final remainingBudget = totalPlannedVariable - totalVariableExpenses;
 
-    if (remainingBudget <= 0) return 0.0;
-    return (remainingBudget / remainingDays).clamp(0.0, 999999.0);
+    // หักค่าใช้จ่ายที่เกิดขึ้นแล้วทั้งหมด และกันโควตาคงเหลือของวันนี้ไว้ให้วันนี้ (ถ้าวันนี้ยังใช้ไม่หมด)
+    final reservedForToday = todayRemainingAllowance > 0 ? todayRemainingAllowance : 0.0;
+    final futureBudget = totalPlannedVariable - totalVariableExpenses - reservedForToday;
+
+    if (futureBudget <= 0) return 0.0;
+    return (futureBudget / remainingDays).clamp(0.0, 999999.0);
   }
 
   // ==========================================
@@ -194,23 +300,51 @@ class DashboardController extends GetxController {
   // ACTIONS
   // ==========================================
 
-  void addTransaction(TransactionItem item) {
+  void addTransaction(TransactionItem item, {bool notify = false}) {
     transactions.add(item);
     _storageService.saveTransactions(transactions);
 
-    Get.snackbar(
-      'บันทึกสำเร็จ',
-      'เพิ่ม "${item.title}" เรียบร้อยแล้ว',
-      snackPosition: SnackPosition.TOP,
-      duration: const Duration(seconds: 2),
-      margin: const EdgeInsets.all(16),
-      borderRadius: 16,
-    );
+    if (notify && Get.context != null) {
+      AppFeedback.showSuccess(
+        title: 'save_success_title'.tr,
+        message: 'save_success_msg'.trParams({'title': item.title}),
+        amount: item.amount,
+        transactionType: item.type,
+      );
+    }
+  }
+
+  void updateTransaction(TransactionItem item, {bool notify = false}) {
+    final index = transactions.indexWhere((t) => t.id == item.id);
+    if (index != -1) {
+      transactions[index] = item;
+      _storageService.saveTransactions(transactions);
+
+      if (notify && Get.context != null) {
+        AppFeedback.showSuccess(
+          title: 'update_success_title'.tr,
+          message: 'update_success_msg'.trParams({'title': item.title}),
+          amount: item.amount,
+          transactionType: item.type,
+        );
+      }
+    }
   }
 
   void deleteTransaction(String id) {
     transactions.removeWhere((item) => item.id == id);
     _storageService.saveTransactions(transactions);
+  }
+
+  Future<void> clearAllToEmpty() async {
+    transactions.clear();
+    await _storageService.clearAllData(keepInitialized: true);
+    if (Get.context != null) {
+      AppFeedback.showSuccess(
+        title: 'ล้างข้อมูลสำเร็จ',
+        message: 'ล้างรายการทั้งหมดเรียบร้อยแล้ว พร้อมสำหรับบันทึกรายการจริงของคุณ',
+      );
+    }
   }
 
   void updateBudgetPlan(BudgetPlan plan) {
@@ -242,10 +376,115 @@ class DashboardController extends GetxController {
     }
   }
 
-  void toggleTheme() {
-    isDarkMode.value = !isDarkMode.value;
-    Get.changeThemeMode(isDarkMode.value ? ThemeMode.dark : ThemeMode.light);
+  void resetToCurrentPeriod() {
+    selectedDate.value = DateTime.now();
   }
+
+  bool get isCurrentPeriod {
+    final now = DateTime.now();
+    if (currentPeriod.value == TimeFilterPeriod.monthly) {
+      return selectedDate.value.year == now.year && selectedDate.value.month == now.month;
+    } else if (currentPeriod.value == TimeFilterPeriod.yearly) {
+      return selectedDate.value.year == now.year;
+    }
+    return true;
+  }
+
+  void setThemeMode(ThemeMode mode) {
+    themeMode.value = mode;
+    isDarkMode.value = (mode == ThemeMode.dark);
+    Get.changeThemeMode(mode);
+    String modeStr = 'system';
+    if (mode == ThemeMode.dark) modeStr = 'dark';
+    if (mode == ThemeMode.light) modeStr = 'light';
+    _storageService.saveThemeMode(modeStr);
+  }
+
+  void toggleTheme() {
+    if (themeMode.value == ThemeMode.system) {
+      setThemeMode(ThemeMode.light);
+    } else if (themeMode.value == ThemeMode.light) {
+      setThemeMode(ThemeMode.dark);
+    } else {
+      setThemeMode(ThemeMode.system);
+    }
+  }
+
+  String get themeModeName {
+    switch (themeMode.value) {
+      case ThemeMode.system:
+        return 'theme_system'.tr;
+      case ThemeMode.light:
+        return 'theme_light'.tr;
+      case ThemeMode.dark:
+        return 'theme_dark'.tr;
+    }
+  }
+
+  static const List<String> thaiMonthNames = [
+    '', 'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+    'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม',
+  ];
+
+  static const List<String> englishMonthNames = [
+    '', 'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December',
+  ];
+
+  static const List<String> thaiMonthShortNames = [
+    '', 'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
+    'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.',
+  ];
+
+  static const List<String> englishMonthShortNames = [
+    '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ];
+
+  String get formattedPeriodTitle {
+    final date = selectedDate.value;
+    final period = currentPeriod.value;
+    final isEn = isEnglish;
+
+    switch (period) {
+      case TimeFilterPeriod.monthly:
+        if (isEn) {
+          return '${englishMonthNames[date.month]} ${date.year}';
+        } else {
+          return '${thaiMonthNames[date.month]} ${date.year + 543}';
+        }
+      case TimeFilterPeriod.yearly:
+        if (isEn) {
+          return 'Year ${date.year}';
+        } else {
+          return 'ปี พ.ศ. ${date.year + 543}';
+        }
+      case TimeFilterPeriod.allTime:
+        return isEn ? 'All Time Overview' : 'ภาพรวมสะสมทั้งหมด';
+    }
+  }
+
+  void _safeUpdateLocale(Locale locale) {
+    Get.locale = locale;
+    if (Get.key.currentState != null) {
+      try {
+        Get.updateLocale(locale);
+      } catch (_) {}
+    }
+  }
+
+  void setLanguage(String langCode) {
+    if (langCode != 'en' && langCode != 'th') return;
+    currentLanguage.value = langCode;
+    _safeUpdateLocale(langCode == 'en' ? const Locale('en', 'US') : const Locale('th', 'TH'));
+    _storageService.saveLanguage(langCode);
+  }
+
+  void toggleLanguage() {
+    setLanguage(currentLanguage.value == 'en' ? 'th' : 'en');
+  }
+
+  String get currentLanguageName => currentLanguage.value == 'en' ? 'English' : 'ภาษาไทย';
 
   void toggleSidebar() {
     isSidebarCollapsed.value = !isSidebarCollapsed.value;
@@ -269,7 +508,6 @@ class DashboardController extends GetxController {
 
   Future<void> resetToDefault() async {
     transactions.clear();
-    _seedInitialData();
     budgetPlan.value = const BudgetPlan(
       plannedIncome: 45000.0,
       targetDailyAllowance: 350.0,
@@ -278,113 +516,5 @@ class DashboardController extends GetxController {
     );
     await _storageService.saveTransactions(transactions);
     await _storageService.saveBudgetPlan(budgetPlan.value);
-  }
-
-  void _seedInitialData() {
-    final now = DateTime.now();
-    final year = now.year;
-    final month = now.month;
-
-    transactions.assignAll([
-      TransactionItem(
-        id: '1',
-        title: 'เงินเดือนประจำ (Software Engineer)',
-        amount: 45000.0,
-        type: TransactionType.income,
-        costNature: CostNature.notApplicable,
-        categoryName: 'เงินเดือน',
-        date: DateTime(year, month, 1),
-      ),
-      TransactionItem(
-        id: '2',
-        title: 'รับงานฟรีแลนซ์ Mobile UI',
-        amount: 8500.0,
-        type: TransactionType.income,
-        costNature: CostNature.notApplicable,
-        categoryName: 'ฟรีแลนซ์',
-        date: DateTime(year, month, 3),
-      ),
-      TransactionItem(
-        id: '3',
-        title: 'ค่าเช่าคอนโดมิเนียม',
-        amount: 9500.0,
-        type: TransactionType.expense,
-        costNature: CostNature.fixed,
-        categoryName: 'ที่อยู่อาศัย',
-        date: DateTime(year, month, 2),
-      ),
-      TransactionItem(
-        id: '4',
-        title: 'ค่าน้ำประปา & ค่าไฟฟ้าส่วนกลาง',
-        amount: 1200.0,
-        type: TransactionType.expense,
-        costNature: CostNature.fixed,
-        categoryName: 'สาธารณูปโภค',
-        date: DateTime(year, month, 3),
-      ),
-      TransactionItem(
-        id: '5',
-        title: 'ค่าแพ็กเกจอินเทอร์เน็ต Fiber & 5G',
-        amount: 799.0,
-        type: TransactionType.expense,
-        costNature: CostNature.fixed,
-        categoryName: 'การสื่อสาร',
-        date: DateTime(year, month, 4),
-      ),
-      TransactionItem(
-        id: '6',
-        title: 'เบี้ยประกันชีวิตและสุขภาพ',
-        amount: 1800.0,
-        type: TransactionType.expense,
-        costNature: CostNature.fixed,
-        categoryName: 'ประกันสุขภาพ',
-        date: DateTime(year, month, 5),
-      ),
-      TransactionItem(
-        id: '7',
-        title: 'ออมกองทุนดัชนี S&P500 (DCA)',
-        amount: 7000.0,
-        type: TransactionType.savingsInvestment,
-        costNature: CostNature.notApplicable,
-        categoryName: 'กองทุนรวม',
-        date: DateTime(year, month, 2),
-      ),
-      TransactionItem(
-        id: '8',
-        title: 'บัญชีเงินฝากดอกเบี้ยสูง e-Savings',
-        amount: 3000.0,
-        type: TransactionType.savingsInvestment,
-        costNature: CostNature.notApplicable,
-        categoryName: 'เงินสำรองฉุกเฉิน',
-        date: DateTime(year, month, 2),
-      ),
-      TransactionItem(
-        id: '9',
-        title: 'วัตถุดิบทำอาหาร & ตลาดสด',
-        amount: 680.0,
-        type: TransactionType.expense,
-        costNature: CostNature.variable,
-        categoryName: 'อาหาร/ของกิน',
-        date: DateTime(year, month, 6),
-      ),
-      TransactionItem(
-        id: '10',
-        title: 'ทานข้าวนอกบ้าน & กาแฟ Speciality',
-        amount: 290.0,
-        type: TransactionType.expense,
-        costNature: CostNature.variable,
-        categoryName: 'อาหาร/ของกิน',
-        date: DateTime(year, month, 7),
-      ),
-      TransactionItem(
-        id: '11',
-        title: 'ของใช้ในบ้าน / ซูเปอร์มาร์เก็ต',
-        amount: 450.0,
-        type: TransactionType.expense,
-        costNature: CostNature.variable,
-        categoryName: 'ของใช้ส่วนตัว',
-        date: DateTime(year, month, 8),
-      ),
-    ]);
   }
 }

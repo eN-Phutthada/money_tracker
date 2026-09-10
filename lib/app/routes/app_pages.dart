@@ -8,6 +8,7 @@ import '../modules/data_management/views/data_management_view.dart';
 import '../modules/security/controllers/security_controller.dart';
 import '../modules/security/views/pin_lock_view.dart';
 import '../modules/security/views/pin_settings_view.dart';
+import '../modules/transactions/views/transactions_list_view.dart';
 import 'app_routes.dart';
 
 /// การกำหนดค่า Route และ Dependency Bindings สำหรับ GetX 4.7.3
@@ -24,6 +25,10 @@ class AppPages {
       name: Routes.BUDGET_SETTINGS,
       page: () => const BudgetSettingsView(),
       binding: BudgetBinding(),
+    ),
+    GetPage(
+      name: Routes.TRANSACTIONS_LIST,
+      page: () => const TransactionsListView(),
     ),
     GetPage(
       name: Routes.DATA_MANAGEMENT,

@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -6,6 +7,8 @@ import '../../../data/models/transaction_model.dart';
 import '../../../data/services/csv_service.dart';
 import '../../../data/services/storage_service.dart';
 import '../../../theme/app_colors.dart';
+import '../../../theme/app_popup_decorations.dart';
+import '../../../widgets/modern_app_bar.dart';
 import '../../dashboard/controllers/dashboard_controller.dart';
 
 /// หน้าจอจัดการข้อมูล (Data Management) ด้วย GetX
@@ -67,101 +70,142 @@ class _DataManagementViewState extends State<DataManagementView> {
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Dialog(
-      backgroundColor: isDark ? AppColors.darkSurface : AppColors.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 550, maxHeight: 520),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close_rounded, size: 20),
-                    onPressed: () => Get.back(),
-                  ),
-                ],
+    return AppGlassDialog(
+      maxWidth: 560,
+      maxHeight: 540,
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AppPopupHeader(
+            title: title,
+            subtitle: '$description (รวม $itemCount รายการ)',
+            icon: Icons.file_download_outlined,
+            iconColor: AppColors.primary,
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkBackground : AppColors.surfaceSecondary,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.border),
               ),
-              const SizedBox(height: 6),
-              Text(
-                '$description (รวม $itemCount รายการ)',
-                style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkBackground : AppColors.surfaceSecondary,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.border),
-                  ),
-                  child: SingleChildScrollView(
-                    child: SelectableText(
-                      content,
-                      style: TextStyle(
-                        fontFamily: 'monospace',
-                        fontSize: 11,
-                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                      ),
-                    ),
+              child: SingleChildScrollView(
+                child: SelectableText(
+                  content,
+                  style: TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 11,
+                    color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                   ),
                 ),
               ),
-              const SizedBox(height: 18),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  OutlinedButton.icon(
-                    onPressed: () {
-                      Clipboard.setData(ClipboardData(text: content));
-                      Get.snackbar(
-                        'สำเร็จ',
-                        'คัดลอกข้อมูลลงคลิปบอร์ดแล้ว',
-                        snackPosition: SnackPosition.TOP,
-                      );
-                    },
-                    icon: const Icon(Icons.copy_rounded, size: 16),
-                    label: const Text('คัดลอกข้อความ'),
-                    style: OutlinedButton.styleFrom(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      Clipboard.setData(ClipboardData(text: content));
-                      Get.back();
-                      Get.snackbar(
-                        'สำเร็จ',
-                        'เตรียมไฟล์ $filename เรียบร้อย (คัดลอกลงคลิปบอร์ดแล้ว)',
-                        snackPosition: SnackPosition.TOP,
-                      );
-                    },
-                    icon: const Icon(Icons.download_done_rounded, size: 16),
-                    label: const Text('ตกลง'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                  ),
-                ],
+            ),
+          ),
+          const SizedBox(height: 18),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              OutlinedButton.icon(
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: content));
+                  Get.snackbar(
+                    'สำเร็จ',
+                    'คัดลอกเนื้อหาลงคลิปบอร์ดแล้ว',
+                    snackPosition: SnackPosition.TOP,
+                  );
+                },
+                icon: const Icon(Icons.copy_rounded, size: 16),
+                label: const Text('คัดลอกข้อความ'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+              const SizedBox(width: 10),
+              ElevatedButton.icon(
+                onPressed: () async {
+                  try {
+                    final savedPath = await StorageService().saveExportFile(filename, content);
+                    await Clipboard.setData(ClipboardData(text: savedPath));
+                    Get.back();
+                    Get.dialog(
+                      AppGlassDialog(
+                        maxWidth: 440,
+                        padding: const EdgeInsets.all(22),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            const AppPopupHeader(
+                              title: 'บันทึกไฟล์สำเร็จ!',
+                              icon: Icons.check_circle_rounded,
+                              iconColor: AppColors.surplusText,
+                            ),
+                            const SizedBox(height: 14),
+                            Text(
+                              'บันทึกไฟล์ $filename เรียบร้อยแล้วที่:',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: isDark ? AppColors.darkBackground : AppColors.surfaceSecondary,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.border),
+                              ),
+                              child: SelectableText(
+                                savedPath,
+                                style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            const Text(
+                              '(คัดลอกตำแหน่งไฟล์ลงคลิปบอร์ดแล้ว สามารถเปิดใน File Explorer หรือ Excel ได้ทันที)',
+                              style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                            ),
+                            const SizedBox(height: 20),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: ElevatedButton(
+                                onPressed: () => Get.back(),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primary,
+                                  foregroundColor: Colors.white,
+                                  elevation: 0,
+                                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                ),
+                                child: const Text('ตกลง', style: TextStyle(fontWeight: FontWeight.w700)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  } catch (e) {
+                    Get.snackbar('เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกไฟล์ได้: $e', snackPosition: SnackPosition.TOP);
+                  }
+                },
+                icon: const Icon(Icons.save_alt_rounded, size: 16),
+                label: const Text('บันทึกลงไฟล์จริง'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
               ),
             ],
           ),
-        ),
+        ],
       ),
     );
   }
@@ -171,214 +215,202 @@ class _DataManagementViewState extends State<DataManagementView> {
     setState(() => _parsedPreviewItems = null);
 
     Get.bottomSheet(
-      StatefulBuilder(
-        builder: (context, setModalState) {
-          final isDark = Theme.of(context).brightness == Brightness.dark;
-          final currencyFmt = NumberFormat.currency(locale: 'th_TH', symbol: '฿', decimalDigits: 2);
+      BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+        child: StatefulBuilder(
+          builder: (context, setModalState) {
+            final isDark = Theme.of(context).brightness == Brightness.dark;
+            final currencyFmt = NumberFormat.currency(locale: 'th_TH', symbol: '฿', decimalDigits: 2);
 
-          return Container(
-            padding: EdgeInsets.only(
-              left: 24,
-              right: 24,
-              top: 20,
-              bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-            ),
-            decoration: BoxDecoration(
-              color: isDark ? AppColors.darkSurface : AppColors.surface,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            ),
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.85,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'นำเข้าข้อมูลจาก CSV หรือ JSON',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close_rounded, size: 20),
-                      onPressed: () => Get.back(),
-                    ),
-                  ],
+            return Material(
+              color: isDark
+                  ? AppColors.darkSurface.withValues(alpha: 0.96)
+                  : AppColors.surface.withValues(alpha: 0.98),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.85,
                 ),
-                const SizedBox(height: 6),
-                const Text(
-                  'วางเนื้อหาไฟล์ CSV หรือ JSON จากการสำรองข้อมูลเพื่อตรวจสอบก่อนกู้คืน',
-                  style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                ),
-                const SizedBox(height: 14),
-                TextField(
-                  controller: _importTextController,
-                  maxLines: 4,
-                  style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
-                  decoration: InputDecoration(
-                    hintText: 'วางเนื้อหา CSV หรือ JSON ที่นี่...',
-                    hintStyle: const TextStyle(fontSize: 11),
-                    filled: true,
-                    fillColor: isDark ? AppColors.darkBackground : AppColors.surfaceSecondary,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide(color: isDark ? AppColors.darkBorder : AppColors.border),
-                    ),
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    left: 24,
+                    right: 24,
+                    top: 20,
+                    bottom: MediaQuery.of(context).viewInsets.bottom + 20,
                   ),
-                  onChanged: (text) {
-                    final items = text.trim().startsWith('{')
-                        ? <TransactionItem>[]
-                        : CsvService.importFromCsv(text);
-
-                    setModalState(() {
-                      _parsedPreviewItems = items;
-                    });
-                  },
-                ),
-                const SizedBox(height: 12),
-                if (_parsedPreviewItems != null && _parsedPreviewItems!.isNotEmpty) ...[
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: AppColors.surplusBg,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppColors.surplusBorder),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.check_circle_rounded, size: 16, color: AppColors.surplusText),
-                        const SizedBox(width: 8),
-                        Text(
-                          'ตรวจพบ ${_parsedPreviewItems!.length} รายการที่ถูกต้อง',
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.surplusText),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const AppPopupHeader(
+                        title: 'นำเข้าข้อมูลจาก CSV หรือ JSON',
+                        subtitle: 'วางเนื้อหาไฟล์ CSV หรือ JSON จากการสำรองข้อมูลเพื่อตรวจสอบก่อนกู้คืน',
+                        icon: Icons.cloud_download_rounded,
+                        iconColor: AppColors.primary,
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: _importTextController,
+                        maxLines: 4,
+                        style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
+                        decoration: InputDecoration(
+                          hintText: 'วางเนื้อหา CSV หรือ JSON ที่นี่...',
+                          hintStyle: const TextStyle(fontSize: 11),
+                          filled: true,
+                          fillColor: isDark ? AppColors.darkBackground : AppColors.surfaceSecondary,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: BorderSide(color: isDark ? AppColors.darkBorder : AppColors.border),
+                          ),
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Expanded(
-                    child: ListView.separated(
-                      itemCount: _parsedPreviewItems!.length,
-                      separatorBuilder: (_, _) => const Divider(height: 1),
-                      itemBuilder: (context, index) {
-                        final item = _parsedPreviewItems![index];
-                        return ListTile(
-                          dense: true,
-                          contentPadding: EdgeInsets.zero,
-                          title: Text(item.title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                          subtitle: Text('${item.categoryName} • ${item.date.day}/${item.date.month}/${item.date.year}', style: const TextStyle(fontSize: 11)),
-                          trailing: Text(
-                            currencyFmt.format(item.amount),
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: item.isIncome ? AppColors.primary : AppColors.deficitText,
+                        onChanged: (text) {
+                          final items = text.trim().startsWith('{')
+                              ? <TransactionItem>[]
+                              : CsvService.importFromCsv(text);
+
+                          setModalState(() {
+                            _parsedPreviewItems = items;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      if (_parsedPreviewItems != null && _parsedPreviewItems!.isNotEmpty) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: AppColors.surplusBg,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppColors.surplusBorder),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.check_circle_rounded, size: 18, color: AppColors.surplusText),
+                              const SizedBox(width: 8),
+                              Text(
+                                'ตรวจพบ ${_parsedPreviewItems!.length} รายการที่ถูกต้อง',
+                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.surplusText),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Expanded(
+                          child: ListView.separated(
+                            itemCount: _parsedPreviewItems!.length,
+                            separatorBuilder: (_, _) => const Divider(height: 1),
+                            itemBuilder: (context, index) {
+                              final item = _parsedPreviewItems![index];
+                              return ListTile(
+                                dense: true,
+                                contentPadding: EdgeInsets.zero,
+                                title: Text(item.title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                                subtitle: Text('${item.categoryName} • ${item.date.day}/${item.date.month}/${item.date.year}', style: const TextStyle(fontSize: 11)),
+                                trailing: Text(
+                                  currencyFmt.format(item.amount),
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    color: item.isIncome ? AppColors.primary : AppColors.deficitText,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ] else
+                        const Spacer(),
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () async {
+                                final data = await Clipboard.getData('text/plain');
+                                if (data != null && data.text != null) {
+                                  _importTextController.text = data.text!;
+                                  final items = data.text!.trim().startsWith('{')
+                                      ? <TransactionItem>[]
+                                      : CsvService.importFromCsv(data.text!);
+                                  setModalState(() {
+                                    _parsedPreviewItems = items;
+                                  });
+                                }
+                              },
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              child: const Text('วางจากคลิปบอร์ด'),
                             ),
                           ),
-                        );
-                      },
-                    ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: (_parsedPreviewItems != null && _parsedPreviewItems!.isNotEmpty) ||
+                                      _importTextController.text.trim().startsWith('{')
+                                  ? () async {
+                                      final text = _importTextController.text.trim();
+                                      if (text.startsWith('{')) {
+                                        final result = await StorageService().restoreBackupJson(text);
+                                        if (result != null) {
+                                          if (result['transactions'] != null) {
+                                            await controller.replaceAllTransactions(
+                                              result['transactions'] as List<TransactionItem>,
+                                            );
+                                          }
+                                          if (result['budgetPlan'] != null) {
+                                            controller.updateBudgetPlan(result['budgetPlan']);
+                                          }
+                                          Get.back();
+                                          Get.snackbar('สำเร็จ', 'กู้คืนข้อมูลสำรองเรียบร้อยแล้ว', snackPosition: SnackPosition.TOP);
+                                        }
+                                      } else if (_parsedPreviewItems != null && _parsedPreviewItems!.isNotEmpty) {
+                                        await controller.importTransactions(_parsedPreviewItems!);
+                                        Get.back();
+                                        Get.snackbar(
+                                          'สำเร็จ',
+                                          'นำเข้าข้อมูลสำเร็จ ${_parsedPreviewItems!.length} รายการ!',
+                                          snackPosition: SnackPosition.TOP,
+                                        );
+                                      }
+                                    }
+                                  : null,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              child: const Text('ยืนยันนำเข้าข้อมูล', style: TextStyle(fontWeight: FontWeight.w700)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                ] else
-                  const Spacer(),
-                const SizedBox(height: 14),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () async {
-                          final data = await Clipboard.getData('text/plain');
-                          if (data != null && data.text != null) {
-                            _importTextController.text = data.text!;
-                            final items = data.text!.trim().startsWith('{')
-                                ? <TransactionItem>[]
-                                : CsvService.importFromCsv(data.text!);
-                            setModalState(() {
-                              _parsedPreviewItems = items;
-                            });
-                          }
-                        },
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        child: const Text('วางจากคลิปบอร์ด'),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: (_parsedPreviewItems != null && _parsedPreviewItems!.isNotEmpty) ||
-                                _importTextController.text.trim().startsWith('{')
-                            ? () async {
-                                final text = _importTextController.text.trim();
-                                if (text.startsWith('{')) {
-                                  final result = await StorageService().restoreBackupJson(text);
-                                  if (result != null) {
-                                    if (result['transactions'] != null) {
-                                      await controller.replaceAllTransactions(
-                                        result['transactions'] as List<TransactionItem>,
-                                      );
-                                    }
-                                    if (result['budgetPlan'] != null) {
-                                      controller.updateBudgetPlan(result['budgetPlan']);
-                                    }
-                                    Get.back();
-                                    Get.snackbar('สำเร็จ', 'กู้คืนข้อมูลสำรองเรียบร้อยแล้ว', snackPosition: SnackPosition.TOP);
-                                  }
-                                } else if (_parsedPreviewItems != null && _parsedPreviewItems!.isNotEmpty) {
-                                  await controller.importTransactions(_parsedPreviewItems!);
-                                  Get.back();
-                                  Get.snackbar(
-                                    'สำเร็จ',
-                                    'นำเข้าข้อมูลสำเร็จ ${_parsedPreviewItems!.length} รายการ!',
-                                    snackPosition: SnackPosition.TOP,
-                                  );
-                                }
-                              }
-                            : null,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        child: const Text('ยืนยันนำเข้าข้อมูล'),
-                      ),
-                    ),
-                  ],
                 ),
-              ],
-            ),
-          );
-        },
+              ),
+            );
+          },
+        ),
       ),
       isScrollControlled: true,
     );
   }
 
-  void _confirmReset() {
+  void _confirmClearAll() {
     Get.dialog(
-      AlertDialog(
-        title: const Text('ยืนยันการรีเซ็ตข้อมูล?'),
-        content: const Text('การดำเนินการนี้จะลบรายการที่บันทึกไว้ทั้งหมด และรีเซ็ตกลับเป็นข้อมูลตัวอย่างเริ่มต้น'),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: const Text('ยกเลิก'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Get.back();
-              await controller.resetToDefault();
-              Get.snackbar('สำเร็จ', 'รีเซ็ตข้อมูลกลับสู่ค่าเริ่มต้นเรียบร้อยแล้ว', snackPosition: SnackPosition.TOP);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.deficitText, foregroundColor: Colors.white),
-            child: const Text('รีเซ็ตข้อมูล'),
-          ),
-        ],
+      AppConfirmDialog(
+        title: 'ยืนยันล้างข้อมูลธุรกรรมทั้งหมด?',
+        message: 'ระบบจะลบรายการธุรกรรมทั้งหมดออกจากเครื่องเพื่อเริ่มต้นใหม่ รายการที่ถูกลบจะไม่สามารถกู้คืนได้เว้นแต่คุณจะมีไฟล์สำรองข้อมูล',
+        icon: Icons.delete_sweep_rounded,
+        iconColor: AppColors.deficitText,
+        confirmButtonColor: AppColors.deficitText,
+        confirmText: 'ยืนยันล้างข้อมูลเป็น 0',
+        onConfirm: () async {
+          Get.back();
+          await controller.clearAllToEmpty();
+        },
       ),
     );
   }
@@ -388,9 +420,10 @@ class _DataManagementViewState extends State<DataManagementView> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('จัดการข้อมูล (Data Management)'),
-        elevation: 0,
+      appBar: ModernAppBar(
+        title: 'data_management'.tr,
+        badgeText: 'Backup & CSV',
+        subtitle: 'data_subtitle'.tr,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -492,8 +525,8 @@ class _DataManagementViewState extends State<DataManagementView> {
                 ),
                 const SizedBox(height: 20),
 
-                // Section 3: Reset
-                const Text('รีเซ็ตข้อมูล', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.deficitText)),
+                // Section 3: Manage Data State
+                const Text('จัดการสถานะข้อมูล (Data State)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 10),
                 Container(
                   padding: const EdgeInsets.all(18),
@@ -503,11 +536,11 @@ class _DataManagementViewState extends State<DataManagementView> {
                     border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.border),
                   ),
                   child: _buildTile(
-                    icon: Icons.restart_alt_rounded,
+                    icon: Icons.delete_sweep_rounded,
                     color: AppColors.deficitText,
-                    title: 'รีเซ็ตข้อมูลกลับสู่ค่าเริ่มต้น',
-                    subtitle: 'ลบรายการทั้งหมดและคืนค่าข้อมูลตัวอย่างตั้งต้น',
-                    onTap: _confirmReset,
+                    title: 'ล้างข้อมูลธุรกรรมทั้งหมด (Clear All)',
+                    subtitle: 'ลบรายการธุรกรรมทั้งหมดออกจากเครื่องเพื่อเริ่มต้นใหม่',
+                    onTap: _confirmClearAll,
                   ),
                 ),
               ],

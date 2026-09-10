@@ -60,7 +60,7 @@ class BalanceCard extends GetView<DashboardController> {
               children: [
                 Expanded(
                   child: Text(
-                    'กระแสเงินสดสุทธิ',
+                    'net_cashflow'.tr,
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -92,7 +92,7 @@ class BalanceCard extends GetView<DashboardController> {
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        isSurplus ? 'Safe Zone • เกินเป้า' : 'Caution • เกินงบ',
+                        isSurplus ? 'safe_zone_surplus'.tr : 'caution_deficit'.tr,
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
@@ -108,7 +108,7 @@ class BalanceCard extends GetView<DashboardController> {
 
             // Actual Balance
             Text(
-              'เงินคงเหลือจริง (Actual Balance)',
+              'actual_balance_title'.tr,
               style: TextStyle(
                 fontSize: 12,
                 color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
@@ -140,7 +140,7 @@ class BalanceCard extends GetView<DashboardController> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'ควรเหลือเงินตามแผน',
+                        'expected_balance_planned'.tr,
                         style: TextStyle(
                           fontSize: 11,
                           color: isDark ? AppColors.darkTextTertiary : AppColors.textSecondary,
@@ -168,7 +168,7 @@ class BalanceCard extends GetView<DashboardController> {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        isSurplus ? 'เงินคงเหลือเกินเป้า' : 'ขาดเงินไปจากแผน',
+                        isSurplus ? 'surplus_over_target'.tr : 'deficit_from_plan'.tr,
                         style: TextStyle(
                           fontSize: 11,
                           color: isDark ? AppColors.darkTextTertiary : AppColors.textSecondary,

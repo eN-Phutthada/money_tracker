@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../controllers/dashboard_controller.dart';
 import '../widgets/balance_card.dart';
 import '../widgets/daily_allowance_card.dart';
+import '../widgets/dashboard_header.dart';
 import '../widgets/fl_finance_chart_card.dart';
 import '../widgets/recent_transactions_card.dart';
 
@@ -17,6 +18,8 @@ class MobileDashboardView extends GetView<DashboardController> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: const [
+          DashboardHeader(),
+          SizedBox(height: 14),
           BalanceCard(),
           SizedBox(height: 14),
           DailyAllowanceCard(),

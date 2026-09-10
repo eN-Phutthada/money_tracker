@@ -1,6 +1,15 @@
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import '../../../data/models/budget_plan_model.dart';
+import '../../../widgets/app_feedback.dart';
 import '../../dashboard/controllers/dashboard_controller.dart';
+
+enum BudgetPresetType {
+  rule50_30_20,
+  rule60_20_20,
+  rule40_30_30,
+}
 
 /// GetX Controller สำหรับหน้าจอตั้งค่างบประมาณ
 class BudgetController extends GetxController {
@@ -10,6 +19,8 @@ class BudgetController extends GetxController {
   late final RxDouble targetDailyAllowance;
   late final RxDouble targetMonthlySavings;
   late final RxDouble plannedFixedCosts;
+  final RxBool isSaving = false.obs;
+  final RxBool isSaveSuccess = false.obs;
 
   @override
   void onInit() {
@@ -31,9 +42,117 @@ class BudgetController extends GetxController {
       plannedVariableBudget -
       targetMonthlySavings.value;
 
+  // Percentage Ratios (relative to planned income)
+  double get fixedCostsRatio => plannedIncome.value > 0 ? (plannedFixedCosts.value / plannedIncome.value).clamp(0.0, 2.0) : 0.0;
+  double get variableCostsRatio => plannedIncome.value > 0 ? (plannedVariableBudget / plannedIncome.value).clamp(0.0, 2.0) : 0.0;
+  double get savingsRatio => plannedIncome.value > 0 ? (targetMonthlySavings.value / plannedIncome.value).clamp(0.0, 2.0) : 0.0;
+  double get totalCommittedRatio => fixedCostsRatio + variableCostsRatio + savingsRatio;
+
+  String get healthStatusMessage {
+    if (expectedEndingBalance < 0) {
+      return 'budget_deficit_warning'.tr;
+    }
+    if (savingsRatio >= 0.25) {
+      return 'budget_savings_excellent'.tr;
+    }
+    if (savingsRatio >= 0.15) {
+      return 'budget_savings_good'.tr;
+    }
+    if (savingsRatio > 0) {
+      return 'budget_savings_fair'.tr;
+    }
+    return 'budget_savings_none'.tr;
+  }
+
+  Color get healthStatusColor {
+    if (expectedEndingBalance < 0) return const Color(0xFFEF4444);
+    if (savingsRatio >= 0.20) return const Color(0xFF10B981);
+    return const Color(0xFF3B82F6);
+  }
+
   void adjustDailyAllowance(double delta) {
-    final next = (targetDailyAllowance.value + delta).clamp(100.0, 5000.0);
+    final next = (targetDailyAllowance.value + delta).clamp(0.0, 10000.0);
     targetDailyAllowance.value = next;
+  }
+
+  void adjustPlannedIncome(double delta) {
+    final next = (plannedIncome.value + delta).clamp(0.0, 10000000.0);
+    plannedIncome.value = next;
+  }
+
+  void adjustTargetMonthlySavings(double delta) {
+    final next = (targetMonthlySavings.value + delta).clamp(0.0, 10000000.0);
+    targetMonthlySavings.value = next;
+  }
+
+  void adjustPlannedFixedCosts(double delta) {
+    final next = (plannedFixedCosts.value + delta).clamp(0.0, 10000000.0);
+    plannedFixedCosts.value = next;
+  }
+
+  void setPlannedIncome(double value) {
+    plannedIncome.value = value.clamp(0.0, 10000000.0);
+  }
+
+  void setTargetMonthlySavings(double value) {
+    targetMonthlySavings.value = value.clamp(0.0, 10000000.0);
+  }
+
+  void setPlannedFixedCosts(double value) {
+    plannedFixedCosts.value = value.clamp(0.0, 10000000.0);
+  }
+
+  /// ใช้สูตรการจัดสรรงบประมาณยอดนิยมอัตโนมัติ
+  void applyTemplate(BudgetPresetType type) {
+    final income = plannedIncome.value > 0 ? plannedIncome.value : 30000.0;
+    if (plannedIncome.value <= 0) {
+      plannedIncome.value = income;
+    }
+
+    String templateName = '';
+    double fixedPct = 0.50;
+    double varPct = 0.30;
+    double savingsPct = 0.20;
+
+    switch (type) {
+      case BudgetPresetType.rule50_30_20:
+        templateName = 'สูตร 50/30/20 (สมดุลชีวิต)';
+        fixedPct = 0.50;
+        varPct = 0.30;
+        savingsPct = 0.20;
+        break;
+      case BudgetPresetType.rule60_20_20:
+        templateName = 'สูตร 60/20/20 (เน้นภาระคงที่)';
+        fixedPct = 0.60;
+        varPct = 0.20;
+        savingsPct = 0.20;
+        break;
+      case BudgetPresetType.rule40_30_30:
+        templateName = 'สูตร 40/30/30 (สายออมดุดัน)';
+        fixedPct = 0.40;
+        varPct = 0.30;
+        savingsPct = 0.30;
+        break;
+    }
+
+    plannedFixedCosts.value = (income * fixedPct / 100).round() * 100.0;
+    targetMonthlySavings.value = (income * savingsPct / 100).round() * 100.0;
+
+    final varTotal = income * varPct;
+    final daily = (varTotal / daysInMonth / 10).round() * 10.0;
+    targetDailyAllowance.value = daily.clamp(50.0, 10000.0);
+
+    if (Get.context != null) {
+      final currencyFmt = NumberFormat.currency(locale: 'th_TH', symbol: '฿', decimalDigits: 0);
+      Get.snackbar(
+        'ใช้$templateName สำเร็จ',
+        'คำนวณจากรายรับ ${currencyFmt.format(income)} (คงที่ ${(fixedPct * 100).toInt()}%, จิปาถะ ${(varPct * 100).toInt()}%, เงินออม ${(savingsPct * 100).toInt()}%)',
+        snackPosition: SnackPosition.TOP,
+        duration: const Duration(seconds: 3),
+        backgroundColor: const Color(0xFF10B981).withValues(alpha: 0.15),
+        colorText: const Color(0xFF047857),
+      );
+    }
   }
 
   void save() {
@@ -45,12 +164,23 @@ class BudgetController extends GetxController {
     );
 
     dashboardController.updateBudgetPlan(newPlan);
-    Get.back();
 
-    Get.snackbar(
-      'บันทึกสำเร็จ',
-      'อัปเดตแผนงบประมาณใหม่เรียบร้อยแล้ว',
-      snackPosition: SnackPosition.TOP,
-    );
+    if (Get.context != null) {
+      isSaving.value = true;
+      isSaveSuccess.value = true;
+      try {
+        HapticFeedback.mediumImpact();
+      } catch (_) {}
+
+      Future.delayed(const Duration(milliseconds: 320), () {
+        isSaving.value = false;
+        isSaveSuccess.value = false;
+        Get.back();
+        AppFeedback.showSuccess(
+          title: 'budget_save_success'.tr,
+          message: 'budget_save_desc'.tr,
+        );
+      });
+    }
   }
 }

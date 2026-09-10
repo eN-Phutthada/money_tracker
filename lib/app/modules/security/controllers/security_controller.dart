@@ -21,9 +21,9 @@ class SecurityController extends GetxController {
     isLocked.value = _service.isLocked;
   }
 
-  bool verifyPin(String pin) {
+  bool verifyPin(String pin, {bool autoUnlock = true}) {
     final isValid = _service.verifyPin(pin);
-    if (isValid) {
+    if (isValid && autoUnlock) {
       isLocked.value = false;
     }
     return isValid;

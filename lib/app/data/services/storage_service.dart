@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/widgets.dart';
 import 'package:path_provider/path_provider.dart';
 import '../models/budget_plan_model.dart';
 import '../models/transaction_model.dart';
@@ -14,6 +15,12 @@ class StorageService {
 
   Future<Directory> getStorageDirectory() async {
     if (_storageDir != null) return _storageDir!;
+
+    if (WidgetsBinding.instance.runtimeType.toString().contains('Test') ||
+        Platform.environment.containsKey('FLUTTER_TEST')) {
+      _storageDir = Directory.systemTemp;
+      return _storageDir!;
+    }
 
     try {
       final docDir = await getApplicationDocumentsDirectory();
@@ -38,6 +45,80 @@ class StorageService {
   }
 
   // ==========================================
+  // INITIALIZATION STATE
+  // ==========================================
+  Future<File> _getInitFlagFile() async {
+    final dir = await getStorageDirectory();
+    return File('${dir.path}/.initialized');
+  }
+
+  Future<bool> isInitialized() async {
+    try {
+      final file = await _getInitFlagFile();
+      return await file.exists();
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> setInitialized() async {
+    try {
+      final file = await _getInitFlagFile();
+      await file.writeAsString(DateTime.now().toIso8601String(), flush: true);
+    } catch (_) {}
+  }
+
+  // ==========================================
+  // THEME MODE PREFERENCE
+  // ==========================================
+  Future<File> _getThemeFile() async {
+    final dir = await getStorageDirectory();
+    return File('${dir.path}/theme_mode.txt');
+  }
+
+  Future<String?> loadThemeMode() async {
+    try {
+      final file = await _getThemeFile();
+      if (!await file.exists()) return null;
+      return await file.readAsString();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> saveThemeMode(String mode) async {
+    try {
+      final file = await _getThemeFile();
+      await file.writeAsString(mode, flush: true);
+    } catch (_) {}
+  }
+
+  // ==========================================
+  // LANGUAGE PREFERENCE
+  // ==========================================
+  Future<File> _getLanguageFile() async {
+    final dir = await getStorageDirectory();
+    return File('${dir.path}/language.txt');
+  }
+
+  Future<String?> loadLanguage() async {
+    try {
+      final file = await _getLanguageFile();
+      if (!await file.exists()) return null;
+      return await file.readAsString();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> saveLanguage(String langCode) async {
+    try {
+      final file = await _getLanguageFile();
+      await file.writeAsString(langCode, flush: true);
+    } catch (_) {}
+  }
+
+  // ==========================================
   // TRANSACTIONS
   // ==========================================
   Future<File> _getTransactionsFile() async {
@@ -51,7 +132,7 @@ class StorageService {
       if (!await file.exists()) return null;
 
       final jsonString = await file.readAsString();
-      if (jsonString.trim().isEmpty) return null;
+      if (jsonString.trim().isEmpty) return <TransactionItem>[];
 
       final dynamic decoded = jsonDecode(jsonString);
       if (decoded is List) {
@@ -59,7 +140,7 @@ class StorageService {
             .map((item) => TransactionItem.fromJson(item as Map<String, dynamic>))
             .toList();
       }
-      return null;
+      return <TransactionItem>[];
     } catch (_) {
       return null;
     }
@@ -71,6 +152,7 @@ class StorageService {
       final jsonList = transactions.map((t) => t.toJson()).toList();
       final jsonString = const JsonEncoder.withIndent('  ').convert(jsonList);
       await file.writeAsString(jsonString, flush: true);
+      await setInitialized();
       return true;
     } catch (_) {
       return false;
@@ -108,6 +190,7 @@ class StorageService {
       final file = await _getBudgetPlanFile();
       final jsonString = const JsonEncoder.withIndent('  ').convert(plan.toJson());
       await file.writeAsString(jsonString, flush: true);
+      await setInitialized();
       return true;
     } catch (_) {
       return false;
@@ -115,7 +198,7 @@ class StorageService {
   }
 
   // ==========================================
-  // BACKUP / RESTORE / RESET
+  // BACKUP / RESTORE / RESET & EXPORT FILES
   // ==========================================
   Future<String> exportBackupJson(List<TransactionItem> transactions, BudgetPlan plan) async {
     final backupData = {
@@ -125,6 +208,33 @@ class StorageService {
       'transactions': transactions.map((t) => t.toJson()).toList(),
     };
     return const JsonEncoder.withIndent('  ').convert(backupData);
+  }
+
+  Future<String> saveExportFile(String filename, String content) async {
+    Directory exportDir;
+    try {
+      if (Platform.isWindows) {
+        final userProfile = Platform.environment['USERPROFILE'];
+        if (userProfile != null && userProfile.isNotEmpty) {
+          final downloadsDir = Directory('$userProfile/Downloads');
+          if (await downloadsDir.exists()) {
+            exportDir = downloadsDir;
+          } else {
+            exportDir = await getStorageDirectory();
+          }
+        } else {
+          exportDir = await getStorageDirectory();
+        }
+      } else {
+        exportDir = await getStorageDirectory();
+      }
+    } catch (_) {
+      exportDir = await getStorageDirectory();
+    }
+
+    final file = File('${exportDir.path}/$filename');
+    await file.writeAsString(content, flush: true);
+    return file.path;
   }
 
   Future<Map<String, dynamic>?> restoreBackupJson(String jsonString) async {
@@ -156,13 +266,26 @@ class StorageService {
     }
   }
 
-  Future<void> clearAllData() async {
+  Future<void> clearAllData({bool keepInitialized = true}) async {
     try {
       final tFile = await _getTransactionsFile();
-      if (await tFile.exists()) await tFile.delete();
+      if (await tFile.exists()) {
+        if (keepInitialized) {
+          await tFile.writeAsString('[]', flush: true);
+        } else {
+          await tFile.delete();
+        }
+      }
 
       final bFile = await _getBudgetPlanFile();
-      if (await bFile.exists()) await bFile.delete();
+      if (await bFile.exists() && !keepInitialized) {
+        await bFile.delete();
+      }
+
+      if (!keepInitialized) {
+        final initFile = await _getInitFlagFile();
+        if (await initFile.exists()) await initFile.delete();
+      }
     } catch (_) {}
   }
 }

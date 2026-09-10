@@ -5,7 +5,7 @@ import 'app_colors.dart';
 /// กำหนดค่า ThemeData ด้วย GoogleFonts (Plus Jakarta Sans) สไตล์ Modern FinTech 2026
 class AppTheme {
   static ThemeData get lightTheme {
-    final textTheme = GoogleFonts.plusJakartaSansTextTheme().apply(
+    final textTheme = GoogleFonts.promptTextTheme().apply(
       bodyColor: AppColors.textPrimary,
       displayColor: AppColors.textPrimary,
     );
@@ -44,7 +44,7 @@ class AppTheme {
   }
 
   static ThemeData get darkTheme {
-    final textTheme = GoogleFonts.plusJakartaSansTextTheme(
+    final textTheme = GoogleFonts.promptTextTheme(
       ThemeData(brightness: Brightness.dark).textTheme,
     ).apply(
       bodyColor: AppColors.darkTextPrimary,

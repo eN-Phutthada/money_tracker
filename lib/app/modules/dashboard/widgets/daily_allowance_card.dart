@@ -6,7 +6,9 @@ import '../../../routes/app_routes.dart';
 import '../../../theme/app_colors.dart';
 import '../controllers/dashboard_controller.dart';
 
-/// บัตรแสดงโควตาค่ากินรายวัน (Daily Allowance) และวงแหวน Burn Rate
+/// บัตรแสดงโควตาค่ากินรายวัน (Daily Allowance):
+/// 1. ยอดใช้จ่ายและโควตาคงเหลือของ "วันนี้"
+/// 2. โควตาเฉลี่ยต่อวันสำหรับวันที่เหลือของเดือน (Dynamic Monthly Run-rate)
 class DailyAllowanceCard extends GetView<DashboardController> {
   const DailyAllowanceCard({super.key});
 
@@ -16,12 +18,31 @@ class DailyAllowanceCard extends GetView<DashboardController> {
 
     return Obx(() {
       final targetDaily = controller.budgetPlan.value.targetDailyAllowance;
-      final remainingDaily = controller.remainingDailyAllowance;
-      final isSafe = remainingDaily >= targetDaily * 0.7;
-      final progress = (remainingDaily / (targetDaily > 0 ? targetDaily : 1)).clamp(0.0, 1.0);
+      final todaySpent = controller.todayVariableExpenses;
+      final todayRemaining = controller.todayRemainingAllowance;
+      final isOverToday = todayRemaining < 0;
+
+      // Progress calculation for today's quota
+      final usedProgress = targetDaily > 0 ? (todaySpent / targetDaily).clamp(0.0, 1.0) : 0.0;
+      final usedPct = targetDaily > 0 ? (todaySpent / targetDaily * 100).toInt() : 0;
+
+      // Color coding for today's ring & text
+      final Color ringColor;
+      if (isOverToday) {
+        ringColor = AppColors.deficitText;
+      } else if (usedProgress >= 0.85) {
+        ringColor = const Color(0xFFF59E0B); // Amber warning
+      } else {
+        ringColor = AppColors.primary;
+      }
+
+      // Monthly Run-rate metrics
+      final remainingDailyRunRate = controller.remainingDailyAllowance;
+      final remainingDays = controller.remainingDaysInMonth;
+      final isMonthlySafe = remainingDailyRunRate >= targetDaily * 0.7;
 
       return Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: isDark ? AppColors.darkSurface : AppColors.surface,
           borderRadius: BorderRadius.circular(22),
@@ -42,16 +63,16 @@ class DailyAllowanceCard extends GetView<DashboardController> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header: Title & Action
+            // 1. Header: Title & Action
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'โควตาค่ากินรายวัน',
-                    style: TextStyle(
+                    'daily_allowance_today'.tr,
+                    style: const TextStyle(
                       fontSize: 13,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                       color: AppColors.textSecondary,
                     ),
                     overflow: TextOverflow.ellipsis,
@@ -69,54 +90,69 @@ class DailyAllowanceCard extends GetView<DashboardController> {
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
-                      children: const [
+                      children: [
                         Text(
-                          'Daily Allowance',
-                          style: TextStyle(
+                          'budget_settings'.tr,
+                          style: const TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
                             color: AppColors.variableCostAccent,
                           ),
                         ),
-                        SizedBox(width: 4),
-                        Icon(Icons.tune_rounded, size: 11, color: AppColors.variableCostAccent),
+                        const SizedBox(width: 4),
+                        const Icon(Icons.tune_rounded, size: 11, color: AppColors.variableCostAccent),
                       ],
                     ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
 
-            // Progress Ring & Values
+            // 2. Micro View: Today's spending & remaining
             Row(
               children: [
                 SizedBox(
-                  width: 72,
-                  height: 72,
+                  width: 68,
+                  height: 68,
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
                       CustomPaint(
-                        size: const Size(72, 72),
+                        size: const Size(68, 68),
                         painter: _ProgressRingPainter(
-                          progress: progress,
+                          progress: usedProgress,
                           isDark: isDark,
-                          isSafe: isSafe,
+                          activeColor: ringColor,
                         ),
                       ),
-                      Text(
-                        '${(progress * 100).toInt()}%',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
-                          color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                        ),
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            isOverToday ? 'เกิน' : '$usedPct%',
+                            style: TextStyle(
+                              fontSize: isOverToday ? 12 : 13,
+                              fontWeight: FontWeight.w800,
+                              color: isOverToday
+                                  ? AppColors.deficitText
+                                  : (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
+                            ),
+                          ),
+                          Text(
+                            'วันนี้',
+                            style: TextStyle(
+                              fontSize: 8.5,
+                              fontWeight: FontWeight.w600,
+                              color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -129,22 +165,24 @@ class DailyAllowanceCard extends GetView<DashboardController> {
                           textBaseline: TextBaseline.alphabetic,
                           children: [
                             Text(
-                              remainingDaily.toStringAsFixed(0),
+                              isOverToday
+                                  ? '${'over_for_today'.tr} ฿${(-todayRemaining).toStringAsFixed(0)}'
+                                  : '${'remaining_for_today'.tr} ฿${todayRemaining.toStringAsFixed(0)}',
                               style: TextStyle(
-                                fontSize: 26,
+                                fontSize: 23,
                                 fontWeight: FontWeight.w800,
                                 letterSpacing: -0.5,
-                                color: isSafe
-                                    ? (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary)
-                                    : AppColors.deficitText,
+                                color: isOverToday
+                                    ? AppColors.deficitText
+                                    : (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
                               ),
                             ),
-                            const Text(
-                              ' ฿ / วัน',
+                            Text(
+                              isOverToday ? ' ${'today_over'.tr}' : ' ${'today_used'.tr}',
                               style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                                color: AppColors.textSecondary,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: isOverToday ? AppColors.deficitText : AppColors.textSecondary,
                               ),
                             ),
                           ],
@@ -152,13 +190,83 @@ class DailyAllowanceCard extends GetView<DashboardController> {
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        'เป้าหมาย ${targetDaily.toStringAsFixed(0)} ฿/วัน',
-                        style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                        '${'today_spent'.tr} ฿${todaySpent.toStringAsFixed(0)} • ${'target'.tr} ฿${targetDaily.toStringAsFixed(0)}/${'day'.tr}',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ],
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 12),
+
+            // 3. Macro View: Monthly Run-rate Bar for the rest of the month
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isDark ? AppColors.darkBorder : AppColors.border.withValues(alpha: 0.6),
+                  width: 0.8,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    remainingDays == 0 ? Icons.event_available_rounded : Icons.auto_graph_rounded,
+                    size: 14,
+                    color: AppColors.variableCostAccent,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      remainingDays == 0
+                          ? 'last_day_of_month'.tr
+                          : 'monthly_runrate_label'.tr,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (remainingDays > 0) ...[
+                    Text(
+                      '฿${remainingDailyRunRate.toStringAsFixed(0)}/${'day'.tr}',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
+                        color: isMonthlySafe
+                            ? (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary)
+                            : AppColors.deficitText,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '(${'days_left'.trParams({'days': '$remainingDays'})})',
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ] else ...[
+                    Text(
+                      'ends_today'.tr,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
           ],
         ),
@@ -170,15 +278,19 @@ class DailyAllowanceCard extends GetView<DashboardController> {
 class _ProgressRingPainter extends CustomPainter {
   final double progress;
   final bool isDark;
-  final bool isSafe;
+  final Color activeColor;
 
-  _ProgressRingPainter({required this.progress, required this.isDark, required this.isSafe});
+  _ProgressRingPainter({
+    required this.progress,
+    required this.isDark,
+    required this.activeColor,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2 - 5;
-    const strokeWidth = 6.5;
+    const strokeWidth = 6.0;
 
     // Background track
     final bgPaint = Paint()
@@ -189,7 +301,6 @@ class _ProgressRingPainter extends CustomPainter {
     canvas.drawCircle(center, radius, bgPaint);
 
     // Active arc
-    final activeColor = isSafe ? AppColors.primary : AppColors.deficitText;
     final activePaint = Paint()
       ..color = activeColor
       ..style = PaintingStyle.stroke
@@ -208,5 +319,7 @@ class _ProgressRingPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _ProgressRingPainter oldDelegate) =>
-      oldDelegate.progress != progress || oldDelegate.isDark != isDark;
+      oldDelegate.progress != progress ||
+      oldDelegate.isDark != isDark ||
+      oldDelegate.activeColor != activeColor;
 }

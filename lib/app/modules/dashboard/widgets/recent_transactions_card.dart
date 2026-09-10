@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import '../../../routes/app_routes.dart';
 import '../../../theme/app_colors.dart';
+import '../../transactions/views/quick_add_bottom_sheet.dart';
 import '../controllers/dashboard_controller.dart';
 
 /// บัตรแสดงรายการธุรกรรมล่าสุดพร้อมไอคอนแยกตามหมวดหมู่
@@ -20,7 +22,7 @@ class RecentTransactionsCard extends GetView<DashboardController> {
     if (category.contains('สื่อสาร') || category.contains('เน็ต')) return Icons.wifi_rounded;
     if (category.contains('เงินเดือน')) return Icons.account_balance_wallet_rounded;
     if (category.contains('ออม') || category.contains('DCA') || category.contains('กองทุน')) return Icons.savings_rounded;
-    if (category.contains('ประกัน')) return Icons.health_and_safety_rounded;
+    if (category.contains('ประกัน') || category.contains('สุขภาพ')) return Icons.health_and_safety_rounded;
     return Icons.receipt_long_rounded;
   }
 
@@ -57,29 +59,42 @@ class RecentTransactionsCard extends GetView<DashboardController> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'รายการล่าสุด',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                    'recent_transactions'.tr,
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  '${items.length} รายการ',
-                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                TextButton(
+                  onPressed: () => Get.toNamed(Routes.TRANSACTIONS_LIST),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '${'see_all'.tr} (${items.length})',
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primary),
+                      ),
+                      const Icon(Icons.chevron_right_rounded, size: 16, color: AppColors.primary),
+                    ],
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 14),
 
             if (items.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 24),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24),
                 child: Center(
                   child: Text(
-                    'ยังไม่มีรายการในรอบเวลานี้',
-                    style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                    'no_transactions'.tr,
+                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                   ),
                 ),
               )
@@ -109,6 +124,9 @@ class RecentTransactionsCard extends GetView<DashboardController> {
                     prefix = '-';
                   }
 
+                  final isEn = controller.isEnglish;
+                  final yearNum = isEn ? item.date.year % 100 : (item.date.year + 543) % 100;
+
                   return Dismissible(
                     key: Key(item.id),
                     direction: DismissDirection.endToStart,
@@ -122,52 +140,56 @@ class RecentTransactionsCard extends GetView<DashboardController> {
                       child: const Icon(Icons.delete_outline_rounded, color: AppColors.deficitText),
                     ),
                     onDismissed: (_) => controller.deleteTransaction(item.id),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 38,
-                            height: 38,
-                            decoration: BoxDecoration(
-                              color: amountColor.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(12),
+                    child: InkWell(
+                      onTap: () => QuickAddBottomSheet.show(context, existingItem: item),
+                      borderRadius: BorderRadius.circular(10),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 38,
+                              height: 38,
+                              decoration: BoxDecoration(
+                                color: amountColor.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Icon(icon, color: amountColor, size: 18),
                             ),
-                            child: Icon(icon, color: amountColor, size: 18),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  item.title,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                    color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    item.title.tr,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  '${item.categoryName} • ${item.date.day}/${item.date.month}/${(item.date.year + 543) % 100}',
-                                  style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
-                                ),
-                              ],
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    '${item.categoryName.tr} • ${item.date.day}/${item.date.month}/$yearNum',
+                                    style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            '$prefix${currencyFmt.format(item.amount)}',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: amountColor,
+                            const SizedBox(width: 8),
+                            Text(
+                              '$prefix${currencyFmt.format(item.amount)}',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: amountColor,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   );
