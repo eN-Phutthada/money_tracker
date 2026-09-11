@@ -7,7 +7,7 @@ import '../../../theme/app_colors.dart';
 import '../../../theme/app_popup_decorations.dart';
 import '../../dashboard/controllers/dashboard_controller.dart';
 
-/// Quick Add & Edit BottomSheet พร้อม Ergonomic Numpad และระบบเลือกวันที่
+/// Quick Add & Edit BottomSheet พร้อม Ergonomic Numpad และระบบเลือกวันที่ (FinTech 2026 Edition)
 class QuickAddBottomSheet extends StatefulWidget {
   final TransactionItem? existingItem;
 
@@ -19,7 +19,7 @@ class QuickAddBottomSheet extends StatefulWidget {
     if (isDesktop) {
       Get.dialog(
         AppGlassDialog(
-          maxWidth: 460,
+          maxWidth: 480,
           padding: const EdgeInsets.all(22),
           child: QuickAddBottomSheet(existingItem: existingItem),
         ),
@@ -413,11 +413,24 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
         decoration: BoxDecoration(
           color: isDark ? AppColors.darkSurface : AppColors.surface,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          border: Border(
+            top: BorderSide(
+              color: isDark ? AppColors.darkBorder.withValues(alpha: 0.8) : AppColors.border,
+              width: 1,
+            ),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.15),
+              blurRadius: 30,
+              offset: const Offset(0, -6),
+            ),
+          ],
         ),
         padding: EdgeInsets.only(
           left: 20,
           right: 20,
-          top: 14,
+          top: 10,
           bottom: MediaQuery.of(context).viewInsets.bottom + 16,
         ),
         child: SingleChildScrollView(
@@ -425,6 +438,21 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // Subtle Drag Handle Bar
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4.5,
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? AppColors.darkBorder.withValues(alpha: 0.8)
+                        : AppColors.border.withValues(alpha: 0.9),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+
               // Header
               AppPopupHeader(
                 title: isEditMode ? 'edit_transaction_title'.tr : 'record_income_expense'.tr,
@@ -447,36 +475,46 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
               ),
               const SizedBox(height: 14),
 
-              // Header Type Selector
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildTypeSegment(
-                      type: TransactionType.expense,
-                      label: 'expense'.tr,
-                      color: AppColors.deficitText,
-                      isDark: isDark,
-                    ),
+              // Header Type Selector (Floating Pill Deck)
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkBackground : AppColors.surfaceSecondary,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: isDark ? AppColors.darkBorder.withValues(alpha: 0.6) : AppColors.border.withValues(alpha: 0.6),
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _buildTypeSegment(
-                      type: TransactionType.income,
-                      label: 'income'.tr,
-                      color: AppColors.primary,
-                      isDark: isDark,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _buildTypeSegment(
+                        type: TransactionType.expense,
+                        label: 'expense'.tr,
+                        color: AppColors.deficitText,
+                        isDark: isDark,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _buildTypeSegment(
-                      type: TransactionType.savingsInvestment,
-                      label: 'filter_savings'.tr,
-                      color: AppColors.accent,
-                      isDark: isDark,
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: _buildTypeSegment(
+                        type: TransactionType.income,
+                        label: 'income'.tr,
+                        color: AppColors.primary,
+                        isDark: isDark,
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: _buildTypeSegment(
+                        type: TransactionType.savingsInvestment,
+                        label: 'filter_savings'.tr,
+                        color: AppColors.accent,
+                        isDark: isDark,
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 12),
 
@@ -491,13 +529,13 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
                 ),
               if (_selectedType == TransactionType.expense) const SizedBox(height: 12),
 
-              // Category Pills
+              // Category Pills Carousel
               SizedBox(
-                height: 38,
+                height: 40,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   itemCount: categories.length,
-                  separatorBuilder: (_, _) => const SizedBox(width: 6),
+                  separatorBuilder: (_, _) => const SizedBox(width: 8),
                   itemBuilder: (context, index) {
                     final cat = categories[index];
                     final isSelected = _selectedCategory == cat['name'];
@@ -508,31 +546,40 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
                         setState(() => _selectedCategory = cat['name'] as String);
                       },
                       child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 140),
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        duration: const Duration(milliseconds: 150),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                         decoration: BoxDecoration(
                           color: isSelected
                               ? AppColors.primary
                               : (isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary),
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: isSelected ? AppColors.primary : Colors.transparent,
                             width: 1.2,
                           ),
+                          boxShadow: isSelected
+                              ? [
+                                  BoxShadow(
+                                    color: AppColors.primary.withValues(alpha: 0.3),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ]
+                              : null,
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
                               cat['icon'] as IconData,
-                              size: 14,
+                              size: 15,
                               color: isSelected ? Colors.white : AppColors.textSecondary,
                             ),
-                            const SizedBox(width: 5),
+                            const SizedBox(width: 6),
                             Text(
                               (cat['name'] as String).tr,
                               style: TextStyle(
-                                fontSize: 11,
+                                fontSize: 11.5,
                                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                                 color: isSelected
                                     ? Colors.white
@@ -546,13 +593,13 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
                   },
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
 
               // Smart Title Suggestions Row
               Row(
                 children: [
-                  const Icon(Icons.tips_and_updates_rounded, size: 12, color: AppColors.accent),
-                  const SizedBox(width: 4),
+                  const Icon(Icons.auto_awesome_rounded, size: 12, color: AppColors.accent),
+                  const SizedBox(width: 5),
                   Expanded(
                     child: Text(
                       'quick_suggestions_hint'.tr,
@@ -571,71 +618,115 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
               _buildSmartSuggestions(isDark),
               const SizedBox(height: 10),
 
-              // Amount Display Area
+              // Hero Amount Display Area (Guaranteed Zero RenderFlex Overflow)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
-                  color: isDark ? AppColors.darkBackground : AppColors.surfaceSecondary,
-                  borderRadius: BorderRadius.circular(16),
+                  gradient: LinearGradient(
+                    colors: isDark
+                        ? [
+                            AppColors.darkBackground,
+                            AppColors.darkSurfaceSecondary.withValues(alpha: 0.4),
+                          ]
+                        : [
+                            AppColors.surfaceSecondary,
+                            AppColors.surface,
+                          ],
+                  ),
+                  borderRadius: BorderRadius.circular(18),
                   border: Border.all(
                     color: isDark ? AppColors.darkBorder : AppColors.border,
+                    width: 1.2,
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.03),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _selectedCategory.tr,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                          ),
-                        ),
-                        if (_titleController.text.isNotEmpty)
-                          ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 150),
+                    Flexible(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: (_selectedType == TransactionType.expense
+                                      ? AppColors.deficitText
+                                      : (_selectedType == TransactionType.income
+                                          ? AppColors.primary
+                                          : AppColors.accent))
+                                  .withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
                             child: Text(
-                              _titleController.text,
-                              style: const TextStyle(
-                                fontSize: 12,
+                              _selectedCategory.tr,
+                              style: TextStyle(
+                                fontSize: 10.5,
                                 fontWeight: FontWeight.w700,
-                                color: AppColors.primary,
+                                color: _selectedType == TransactionType.expense
+                                    ? AppColors.deficitText
+                                    : (_selectedType == TransactionType.income
+                                        ? AppColors.primary
+                                        : AppColors.accent),
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                      ],
-                    ),
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Row(
-                        children: [
-                          Text(
-                            _amountBuffer.isEmpty ? '0' : _amountBuffer,
-                            style: TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.w800,
-                              color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                              letterSpacing: -0.5,
+                          if (_titleController.text.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              _titleController.text,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '฿',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: _selectedType == TransactionType.expense
-                                  ? AppColors.deficitText
-                                  : (_selectedType == TransactionType.income ? AppColors.primary : AppColors.accent),
-                            ),
-                          ),
+                          ],
                         ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerRight,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              _amountBuffer.isEmpty ? '0' : _amountBuffer,
+                              style: TextStyle(
+                                fontSize: 32,
+                                fontWeight: FontWeight.w800,
+                                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                                letterSpacing: -0.5,
+                              ),
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              '฿',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                                color: _selectedType == TransactionType.expense
+                                    ? AppColors.deficitText
+                                    : (_selectedType == TransactionType.income
+                                        ? AppColors.primary
+                                        : AppColors.accent),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
@@ -646,6 +737,7 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
               // Quick Amount Add Pills & Clear Button
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
                 child: Row(
                   children: [
                     _buildQuickPill('+20', 20, isDark),
@@ -666,17 +758,21 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
                         },
                         borderRadius: BorderRadius.circular(8),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                           decoration: BoxDecoration(
                             color: AppColors.deficitBg,
                             borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: AppColors.deficitText.withValues(alpha: 0.2)),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               const Icon(Icons.clear_rounded, size: 12, color: AppColors.deficitText),
-                              const SizedBox(width: 2),
-                              Text('reset'.tr, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.deficitText)),
+                              const SizedBox(width: 3),
+                              Text(
+                                'reset'.tr,
+                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.deficitText),
+                              ),
                             ],
                           ),
                         ),
@@ -692,41 +788,44 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
 
               // Date Selection Row & Note
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
                   color: isDark ? AppColors.darkBackground : AppColors.surfaceSecondary,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: isDark ? AppColors.darkBorder.withValues(alpha: 0.6) : AppColors.border.withValues(alpha: 0.6),
+                  ),
                 ),
                 child: Row(
                   children: [
                     const Icon(Icons.calendar_today_rounded, size: 14, color: AppColors.primary),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         _formatDate(_selectedDate),
-                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+                        style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     _buildDateChip('today'.tr, () {
                       setState(() => _selectedDate = DateTime.now());
                     }, isDark),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 5),
                     _buildDateChip('yesterday'.tr, () {
                       final now = DateTime.now();
                       setState(() => _selectedDate = DateTime(now.year, now.month, now.day - 1, now.hour, now.minute));
                     }, isDark),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 5),
                     InkWell(
                       onTap: _pickDate,
                       borderRadius: BorderRadius.circular(8),
                       child: Container(
-                        padding: const EdgeInsets.all(4),
+                        padding: const EdgeInsets.all(5),
                         decoration: BoxDecoration(
                           color: AppColors.primary.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.circular(7),
                         ),
-                        child: const Icon(Icons.edit_calendar_rounded, size: 13, color: AppColors.primary),
+                        child: const Icon(Icons.edit_calendar_rounded, size: 14, color: AppColors.primary),
                       ),
                     ),
                   ],
@@ -744,7 +843,7 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
                 ),
                 decoration: InputDecoration(
                   hintText: 'note_hint'.tr,
-                  hintStyle: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                  hintStyle: const TextStyle(fontSize: 11.5, color: AppColors.textSecondary),
                   prefixIcon: const Icon(Icons.edit_note_rounded, size: 18, color: AppColors.textSecondary),
                   suffixIcon: _titleController.text.isNotEmpty
                       ? IconButton(
@@ -758,13 +857,21 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
                   fillColor: isDark ? AppColors.darkBackground : AppColors.surfaceSecondary,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
+                    borderSide: BorderSide(color: isDark ? AppColors.darkBorder : AppColors.border.withValues(alpha: 0.6)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: isDark ? AppColors.darkBorder : AppColors.border.withValues(alpha: 0.6)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
                   ),
                 ),
               ),
               const SizedBox(height: 12),
 
-              // Submit Button
+              // Glowing Submit Button with Animated State
               AnimatedContainer(
                 duration: const Duration(milliseconds: 260),
                 decoration: BoxDecoration(
@@ -927,8 +1034,17 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? color : (isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary),
-          borderRadius: BorderRadius.circular(10),
+          color: isSelected ? color : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: color.withValues(alpha: 0.35),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
         ),
         alignment: Alignment.center,
         child: Text(
@@ -958,7 +1074,7 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
             color: isSelected ? color.withValues(alpha: 0.15) : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: isSelected ? color : (isDark ? AppColors.darkBorder : AppColors.border),
               width: isSelected ? 1.5 : 1,
@@ -974,6 +1090,8 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
                   color: isSelected ? color : (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
               Text(
                 subtitle,
@@ -981,6 +1099,8 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
                   fontSize: 9,
                   color: isSelected ? color.withValues(alpha: 0.85) : AppColors.textSecondary,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
@@ -1029,12 +1149,16 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
                   padding: const EdgeInsets.symmetric(horizontal: 4),
                   child: InkWell(
                     onTap: () => _onNumpadPress(key),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(12),
                     child: Container(
-                      height: 42,
+                      height: 44,
                       decoration: BoxDecoration(
-                        color: isDark ? AppColors.darkSurfaceSecondary.withValues(alpha: 0.7) : AppColors.surfaceSecondary,
-                        borderRadius: BorderRadius.circular(10),
+                        color: isDark ? AppColors.darkSurfaceSecondary.withValues(alpha: 0.75) : AppColors.surfaceSecondary,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isDark ? AppColors.darkBorder.withValues(alpha: 0.45) : AppColors.border.withValues(alpha: 0.5),
+                          width: 0.8,
+                        ),
                       ),
                       alignment: Alignment.center,
                       child: key == '⌫'

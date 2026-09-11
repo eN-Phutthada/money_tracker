@@ -9,6 +9,14 @@ class AppColors {
   static const Color accent = Color(0xFF8B5CF6);        // Cyber Lavender (เงินออม & ลงทุน)
   static const Color accentLight = Color(0xFFEDE9FE);
 
+  // Radiant Gradient Tokens (FinTech 2026 Signature)
+  static const List<Color> primaryGradient = [Color(0xFF10B981), Color(0xFF059669)];
+  static const List<Color> accentGradient = [Color(0xFF8B5CF6), Color(0xFF7C3AED)];
+  static const List<Color> deficitGradient = [Color(0xFFF43F5E), Color(0xFFE11D48)];
+  static const List<Color> fixedCostGradient = [Color(0xFF3B82F6), Color(0xFF2563EB)];
+  static const List<Color> variableCostGradient = [Color(0xFFF59E0B), Color(0xFFD97706)];
+  static const List<Color> cosmicNavyGradient = [Color(0xFF111726), Color(0xFF090D16)];
+
   // Light Mode Palette
   static const Color background = Color(0xFFF8FAFC);    // Warm Off-white
   static const Color surface = Color(0xFFFFFFFF);

@@ -364,6 +364,82 @@ void main() {
       expect(en['หุ้น/ตราสาร'], 'Stocks & Bonds');
       expect(en['เงินสำรองฉุกเฉิน'], 'Emergency Fund');
     });
+
+    test('DashboardController balance privacy toggle (isBalanceHidden)', () {
+      final controller = Get.put(DashboardController());
+      expect(controller.isBalanceHidden.value, isFalse);
+
+      controller.toggleBalanceHidden();
+      expect(controller.isBalanceHidden.value, isTrue);
+
+      controller.toggleBalanceHidden();
+      expect(controller.isBalanceHidden.value, isFalse);
+    });
+
+    test('BalanceCard redesigned translation keys match in th_TH and en_US', () {
+      final th = AppTranslations().keys['th_TH']!;
+      final en = AppTranslations().keys['en_US']!;
+
+      expect(th['vs_budget_plan'], 'เทียบแผนงบประมาณ');
+      expect(th['plan_achievement'], 'บรรลุเป้าหมาย @percent%');
+      expect(th['total_outflow'], 'รายจ่ายรวม');
+      expect(th['total_inflow'], 'รายรับรวม');
+      expect(th['net_buffer'], 'ส่วนต่างสุทธิ');
+      expect(th['hide_balance'], 'ซ่อนยอดเงิน');
+      expect(th['show_balance'], 'แสดงยอดเงิน');
+
+      expect(en['vs_budget_plan'], 'vs. Planned Budget');
+      expect(en['plan_achievement'], '@percent% of Target');
+      expect(en['total_outflow'], 'Total Outflow');
+      expect(en['total_inflow'], 'Total Inflow');
+      expect(en['net_buffer'], 'Net Variance');
+      expect(en['hide_balance'], 'Hide balance');
+      expect(en['show_balance'], 'Show balance');
+    });
+
+    test('DashboardHeader redesigned translation keys match in th_TH and en_US', () {
+      final th = AppTranslations().keys['th_TH']!;
+      final en = AppTranslations().keys['en_US']!;
+
+      expect(th['select_period'], 'เลือกเดือนและรอบเวลา');
+      expect(th['jump_to_current_month'], 'กลับสู่เดือนปัจจุบัน (วันนี้)');
+      expect(th['quarter_1'], 'ไตรมาส 1');
+      expect(th['quarter_2'], 'ไตรมาส 2');
+      expect(th['quarter_3'], 'ไตรมาส 3');
+      expect(th['quarter_4'], 'ไตรมาส 4');
+      expect(th['active_period'], 'รอบปัจจุบัน');
+      expect(th['all_time_desc'], 'ข้อมูลสะสมทั้งหมด');
+
+      expect(en['select_period'], 'Select Month & Period');
+      expect(en['jump_to_current_month'], 'Back to Current Month (Today)');
+      expect(en['quarter_1'], 'Quarter 1 (Q1)');
+      expect(en['quarter_2'], 'Quarter 2 (Q2)');
+      expect(en['quarter_3'], 'Quarter 3 (Q3)');
+      expect(en['quarter_4'], 'Quarter 4 (Q4)');
+      expect(en['active_period'], 'Current Period');
+      expect(en['all_time_desc'], 'All accumulated records');
+    });
+
+    test('BudgetSettingsView redesigned translation keys match in th_TH and en_US', () {
+      final th = AppTranslations().keys['th_TH']!;
+      final en = AppTranslations().keys['en_US']!;
+
+      expect(th['rule_50_30_20_badge'], 'ยอดนิยม');
+      expect(th['rule_60_20_20_badge'], 'ภาระคงที่');
+      expect(th['rule_40_30_30_badge'], 'สายออมดุ');
+      expect(th['core_pillars_header'], '3 เสาหลักโครงสร้างงบประมาณ');
+      expect(th['allocation_breakdown'], 'สัดส่วนการจัดสรรรายรับ');
+      expect(th['daily_studio_title'], 'สตูดิโอโควตากินอยู่รายวัน');
+      expect(th['apply_template'], 'ปรับใช้สูตรนี้');
+
+      expect(en['rule_50_30_20_badge'], 'Popular');
+      expect(en['rule_60_20_20_badge'], 'Fixed Heavy');
+      expect(en['rule_40_30_30_badge'], 'High Savings');
+      expect(en['core_pillars_header'], '3 Core Budget Pillars');
+      expect(en['allocation_breakdown'], 'Income Allocation Breakdown');
+      expect(en['daily_studio_title'], 'Daily Allowance Studio');
+      expect(en['apply_template'], 'Apply Strategy');
+    });
   });
 }
 

@@ -20,15 +20,21 @@ class AppPages {
       name: Routes.DASHBOARD,
       page: () => const DashboardView(),
       binding: DashboardBinding(),
+      transition: Transition.fadeIn,
+      transitionDuration: const Duration(milliseconds: 140),
     ),
     GetPage(
       name: Routes.BUDGET_SETTINGS,
       page: () => const BudgetSettingsView(),
       binding: BudgetBinding(),
+      transition: Transition.fadeIn,
+      transitionDuration: const Duration(milliseconds: 140),
     ),
     GetPage(
       name: Routes.TRANSACTIONS_LIST,
       page: () => const TransactionsListView(),
+      transition: Transition.fadeIn,
+      transitionDuration: const Duration(milliseconds: 140),
     ),
     GetPage(
       name: Routes.DATA_MANAGEMENT,

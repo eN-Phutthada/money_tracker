@@ -144,13 +144,9 @@ class BudgetController extends GetxController {
 
     if (Get.context != null) {
       final currencyFmt = NumberFormat.currency(locale: 'th_TH', symbol: '฿', decimalDigits: 0);
-      Get.snackbar(
-        'ใช้$templateName สำเร็จ',
-        'คำนวณจากรายรับ ${currencyFmt.format(income)} (คงที่ ${(fixedPct * 100).toInt()}%, จิปาถะ ${(varPct * 100).toInt()}%, เงินออม ${(savingsPct * 100).toInt()}%)',
-        snackPosition: SnackPosition.TOP,
-        duration: const Duration(seconds: 3),
-        backgroundColor: const Color(0xFF10B981).withValues(alpha: 0.15),
-        colorText: const Color(0xFF047857),
+      AppFeedback.showSuccess(
+        title: 'ใช้$templateName สำเร็จ',
+        message: 'คำนวณจากรายรับ ${currencyFmt.format(income)} (คงที่ ${(fixedPct * 100).toInt()}%, จิปาถะ ${(varPct * 100).toInt()}%, เงินออม ${(savingsPct * 100).toInt()}%)',
       );
     }
   }

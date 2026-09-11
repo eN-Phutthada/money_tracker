@@ -1,8 +1,7 @@
-import 'dart:async';
+import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import '../data/models/transaction_model.dart';
@@ -11,11 +10,11 @@ import '../theme/app_colors.dart';
 /// ประเภทของการแจ้งเตือนแบบ In-App Feedback
 enum FeedbackType { success, info, warning, error }
 
-/// ระบบแสดงผล Feedback แจ้งเตือนความสำเร็จ (In-App Notification Banner & Toast)
-/// สไตล์ Glassmorphism FinTech ระดับพรีเมียม แสดงผลลอยด้านบนจอพร้อม Haptic Feedback
+/// ระบบแสดงผล Feedback แจ้งเตือนสไตล์ Liquid Glass Dynamic Island FinTech 2026
+/// สวยงามระดับพรีเมียม แสดงผลลอยด้านบนจอ พร้อม Countdown Bar, Haptic Feedback และ Drag-to-Dismiss
 class AppFeedback {
   static OverlayEntry? _activeEntry;
-  static Timer? _dismissTimer;
+  static _AppFeedbackHudState? _currentState;
 
   /// แสดงการแจ้งเตือนบันทึกสำเร็จ
   static void showSuccess({
@@ -23,7 +22,9 @@ class AppFeedback {
     required String message,
     double? amount,
     TransactionType? transactionType,
-    Duration duration = const Duration(milliseconds: 2800),
+    String? actionLabel,
+    VoidCallback? onAction,
+    Duration duration = const Duration(milliseconds: 3200),
   }) {
     show(
       title: title ?? 'save_success_title'.tr,
@@ -31,6 +32,8 @@ class AppFeedback {
       type: FeedbackType.success,
       amount: amount,
       transactionType: transactionType,
+      actionLabel: actionLabel,
+      onAction: onAction,
       duration: duration,
     );
   }
@@ -39,12 +42,16 @@ class AppFeedback {
   static void showInfo({
     String? title,
     required String message,
-    Duration duration = const Duration(milliseconds: 2600),
+    String? actionLabel,
+    VoidCallback? onAction,
+    Duration duration = const Duration(milliseconds: 2800),
   }) {
     show(
       title: title ?? 'แจ้งเตือน',
       message: message,
       type: FeedbackType.info,
+      actionLabel: actionLabel,
+      onAction: onAction,
       duration: duration,
     );
   }
@@ -53,20 +60,49 @@ class AppFeedback {
   static void showWarning({
     String? title,
     required String message,
-    Duration duration = const Duration(milliseconds: 3000),
+    String? actionLabel,
+    VoidCallback? onAction,
+    Duration duration = const Duration(milliseconds: 3400),
   }) {
     show(
       title: title ?? 'แจ้งเตือน',
       message: message,
       type: FeedbackType.warning,
+      actionLabel: actionLabel,
+      onAction: onAction,
+      duration: duration,
+    );
+  }
+
+  /// แสดงการแจ้งเตือนข้อผิดพลาด
+  static void showError({
+    String? title,
+    required String message,
+    String? actionLabel,
+    VoidCallback? onAction,
+    Duration duration = const Duration(milliseconds: 3600),
+  }) {
+    show(
+      title: title ?? 'เกิดข้อผิดพลาด',
+      message: message,
+      type: FeedbackType.error,
+      actionLabel: actionLabel,
+      onAction: onAction,
       duration: duration,
     );
   }
 
   /// ซ่อนการแจ้งเตือนปัจจุบันทันที
   static void dismiss() {
-    _dismissTimer?.cancel();
-    _dismissTimer = null;
+    if (_currentState != null && _currentState!.mounted) {
+      _currentState!.animateDismiss();
+    } else {
+      _cleanUpEntry();
+    }
+  }
+
+  static void _cleanUpEntry() {
+    _currentState = null;
     if (_activeEntry != null) {
       try {
         _activeEntry?.remove();
@@ -82,12 +118,16 @@ class AppFeedback {
     FeedbackType type = FeedbackType.success,
     double? amount,
     TransactionType? transactionType,
-    Duration duration = const Duration(milliseconds: 2800),
+    String? actionLabel,
+    VoidCallback? onAction,
+    Duration duration = const Duration(milliseconds: 3200),
   }) {
     // ปิด Toast ก่อนหน้าหากยังมีอยู่
-    dismiss();
+    if (_activeEntry != null) {
+      _cleanUpEntry();
+    }
 
-    // ตอบสนองด้วย Haptic Feedback ตามความสำคัญ
+    // ตอบสนองด้วย Haptic Feedback ตามระดับความสำคัญ
     try {
       if (type == FeedbackType.success) {
         HapticFeedback.mediumImpact();
@@ -98,24 +138,40 @@ class AppFeedback {
       }
     } catch (_) {}
 
-    final context = Get.overlayContext ?? Get.context;
+    BuildContext? context = Get.overlayContext;
+    if (context == null && Get.key.currentState != null) {
+      context = Get.key.currentContext;
+    }
+    context ??= Get.context;
     if (context == null) return;
 
+    OverlayState? overlay;
     try {
-      final overlay = Overlay.of(context, rootOverlay: true);
+      if (Get.key.currentState != null && Get.key.currentState!.overlay != null) {
+        overlay = Get.key.currentState!.overlay;
+      }
+    } catch (_) {}
 
+    overlay ??= Overlay.maybeOf(context, rootOverlay: true) ?? Overlay.maybeOf(context);
+    if (overlay == null) return;
+
+    try {
       late OverlayEntry entry;
       entry = OverlayEntry(
         builder: (ctx) {
-          return _AppFeedbackBanner(
+          return _AppFeedbackHud(
+            key: GlobalKey<_AppFeedbackHudState>(),
             title: title,
             message: message,
             type: type,
             amount: amount,
             transactionType: transactionType,
-            onDismiss: () {
+            actionLabel: actionLabel,
+            onAction: onAction,
+            duration: duration,
+            onDismissed: () {
               if (_activeEntry == entry) {
-                dismiss();
+                _cleanUpEntry();
               }
             },
           );
@@ -124,71 +180,177 @@ class AppFeedback {
 
       _activeEntry = entry;
       overlay.insert(entry);
-
-      _dismissTimer = Timer(duration, () {
-        if (_activeEntry == entry) {
-          dismiss();
-        }
-      });
-    } catch (_) {
-      // Fallback ป้องกัน Error หาก Overlay ยังไม่พร้อมใช้งาน
-      try {
-        if (Get.context != null) {
-          Get.snackbar(
-            title,
-            message,
-            snackPosition: SnackPosition.TOP,
-            duration: duration,
-            margin: const EdgeInsets.all(16),
-            borderRadius: 16,
-          );
-        }
-      } catch (_) {}
-    }
+    } catch (_) {}
   }
 }
 
-class _AppFeedbackBanner extends StatelessWidget {
+class _AppFeedbackHud extends StatefulWidget {
   final String title;
   final String message;
   final FeedbackType type;
   final double? amount;
   final TransactionType? transactionType;
-  final VoidCallback onDismiss;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+  final Duration duration;
+  final VoidCallback onDismissed;
 
-  const _AppFeedbackBanner({
+  const _AppFeedbackHud({
+    super.key,
     required this.title,
     required this.message,
     required this.type,
     this.amount,
     this.transactionType,
-    required this.onDismiss,
+    this.actionLabel,
+    this.onAction,
+    required this.duration,
+    required this.onDismissed,
   });
+
+  @override
+  State<_AppFeedbackHud> createState() => _AppFeedbackHudState();
+}
+
+class _AppFeedbackHudState extends State<_AppFeedbackHud> with TickerProviderStateMixin {
+  late AnimationController _entryController;
+  late Animation<double> _slideAnimation;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _opacityAnimation;
+
+  late AnimationController _progressController;
+  late AnimationController _shimmerController;
+
+  double _dragOffsetY = 0.0;
+  bool _isDismissing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    AppFeedback._currentState = this;
+
+    // 1. Entrance & Exit Spring Physics
+    _entryController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 380),
+      reverseDuration: const Duration(milliseconds: 240),
+    );
+
+    _slideAnimation = Tween<double>(begin: -70.0, end: 0.0).animate(
+      CurvedAnimation(
+        parent: _entryController,
+        curve: Curves.easeOutBack,
+        reverseCurve: Curves.easeInCubic,
+      ),
+    );
+
+    _scaleAnimation = Tween<double>(begin: 0.88, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _entryController,
+        curve: Curves.easeOutBack,
+        reverseCurve: Curves.easeIn,
+      ),
+    );
+
+    _opacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _entryController,
+        curve: const Interval(0.0, 0.65, curve: Curves.easeOut),
+        reverseCurve: Curves.easeIn,
+      ),
+    );
+
+    // 2. Countdown Progress Bar Animation
+    _progressController = AnimationController(
+      vsync: this,
+      duration: widget.duration,
+    );
+
+    _progressController.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        animateDismiss();
+      }
+    });
+
+    // 3. Subtle Liquid Edge Gleam Animation
+    _shimmerController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
+    );
+
+    final isTest = WidgetsBinding.instance.runtimeType.toString().contains('Test') ||
+        Platform.environment.containsKey('FLUTTER_TEST');
+    if (!isTest) {
+      _shimmerController.repeat(reverse: true);
+    }
+
+    // Start entrance and progress
+    _entryController.forward();
+    _progressController.forward();
+  }
+
+  @override
+  void dispose() {
+    if (AppFeedback._currentState == this) {
+      AppFeedback._currentState = null;
+    }
+    _progressController.dispose();
+    _entryController.dispose();
+    _shimmerController.dispose();
+    super.dispose();
+  }
+
+  void animateDismiss() {
+    if (_isDismissing) return;
+    _isDismissing = true;
+    _progressController.stop();
+    _entryController.reverse().then((_) {
+      widget.onDismissed();
+    });
+  }
+
+  void _pauseCountdown() {
+    if (_progressController.isAnimating) {
+      _progressController.stop();
+    }
+  }
+
+  void _resumeCountdown() {
+    if (!_isDismissing && !_progressController.isAnimating && _progressController.value < 1.0) {
+      _progressController.forward();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final topPadding = MediaQuery.of(context).padding.top;
+    final mediaQuery = MediaQuery.of(context);
+    final topPadding = mediaQuery.padding.top;
 
     Color themeColor;
     IconData icon;
+    String statusLabel;
 
-    switch (type) {
+    switch (widget.type) {
       case FeedbackType.success:
         themeColor = const Color(0xFF10B981);
         icon = Icons.check_circle_rounded;
+        statusLabel = 'SUCCESS';
         break;
       case FeedbackType.info:
         themeColor = AppColors.primary;
         icon = Icons.info_rounded;
+        statusLabel = 'INFO';
         break;
       case FeedbackType.warning:
         themeColor = const Color(0xFFF59E0B);
         icon = Icons.warning_amber_rounded;
+        statusLabel = 'WARNING';
         break;
       case FeedbackType.error:
         themeColor = AppColors.deficitText;
         icon = Icons.error_outline_rounded;
+        statusLabel = 'ALERT';
         break;
     }
 
@@ -196,191 +358,393 @@ class _AppFeedbackBanner extends StatelessWidget {
 
     return Positioned(
       top: topPadding > 0 ? topPadding + 10 : 18,
-      left: 16,
-      right: 16,
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
-          child: GestureDetector(
-            onTap: onDismiss,
-            onVerticalDragUpdate: (details) {
-              if (details.primaryDelta != null && details.primaryDelta! < -4) {
-                onDismiss();
-              }
-            },
-            child: Material(
-              color: Colors.transparent,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? AppColors.darkSurface.withValues(alpha: 0.94)
-                          : Colors.white.withValues(alpha: 0.96),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: themeColor.withValues(alpha: isDark ? 0.35 : 0.3),
-                        width: 1.2,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: themeColor.withValues(alpha: isDark ? 0.25 : 0.16),
-                          blurRadius: 24,
-                          spreadRadius: 0,
-                          offset: const Offset(0, 8),
-                        ),
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.08),
-                          blurRadius: 16,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        // Glowing Icon Squircle
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: themeColor.withValues(alpha: 0.14),
-                            borderRadius: BorderRadius.circular(13),
-                            border: Border.all(
-                              color: themeColor.withValues(alpha: 0.32),
-                              width: 1.2,
-                            ),
-                          ),
-                          child: Icon(icon, color: themeColor, size: 22)
-                              .animate(onPlay: (c) => c.forward())
-                              .scale(
-                                begin: const Offset(0.75, 0.75),
-                                end: const Offset(1.15, 1.15),
-                                duration: 240.ms,
-                                curve: Curves.easeOutBack,
-                              )
-                              .then()
-                              .scale(
-                                begin: const Offset(1.15, 1.15),
-                                end: const Offset(1.0, 1.0),
-                                duration: 160.ms,
-                              ),
-                        ),
-                        const SizedBox(width: 12),
+      left: 14,
+      right: 14,
+      child: AnimatedBuilder(
+        animation: Listenable.merge([_entryController, _shimmerController]),
+        builder: (context, child) {
+          final totalTranslateY = _slideAnimation.value + _dragOffsetY;
+          final totalOpacity = (_opacityAnimation.value * (1.0 - (-_dragOffsetY / 120.0).clamp(0.0, 1.0)))
+              .clamp(0.0, 1.0);
 
-                        // Title & Subtitle Info
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Row(
-                                children: [
-                                  Flexible(
-                                    child: Text(
-                                      title,
-                                      style: TextStyle(
-                                        fontSize: 13.5,
-                                        fontWeight: FontWeight.w800,
-                                        letterSpacing: -0.2,
-                                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  if (amount != null) ...[
-                                    const SizedBox(width: 6),
-                                    _buildAmountBadge(currencyFmt),
-                                  ],
-                                ],
+          return Transform.translate(
+            offset: Offset(0, totalTranslateY),
+            child: Transform.scale(
+              scale: _scaleAnimation.value,
+              child: Opacity(
+                opacity: totalOpacity,
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 440),
+                    child: GestureDetector(
+                      onTapDown: (_) => _pauseCountdown(),
+                      onTapUp: (_) => _resumeCountdown(),
+                      onTapCancel: () => _resumeCountdown(),
+                      onVerticalDragDown: (_) => _pauseCountdown(),
+                      onVerticalDragUpdate: (details) {
+                        setState(() {
+                          if (details.primaryDelta != null) {
+                            if (_dragOffsetY + details.primaryDelta! < 0) {
+                              _dragOffsetY += details.primaryDelta!;
+                            } else {
+                              // Rubber-band resistance when pulling down
+                              _dragOffsetY += details.primaryDelta! * 0.28;
+                            }
+                          }
+                        });
+                      },
+                      onVerticalDragEnd: (details) {
+                        if (_dragOffsetY < -25 || (details.primaryVelocity != null && details.primaryVelocity! < -250)) {
+                          HapticFeedback.selectionClick();
+                          animateDismiss();
+                        } else {
+                          setState(() {
+                            _dragOffsetY = 0.0;
+                          });
+                          _resumeCountdown();
+                        }
+                      },
+                      child: Material(
+                        color: Colors.transparent,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(24),
+                            boxShadow: [
+                              // Outer Dynamic Ambient Theme Glow
+                              BoxShadow(
+                                color: themeColor.withValues(alpha: isDark ? 0.32 : 0.22),
+                                blurRadius: 28,
+                                spreadRadius: -2,
+                                offset: const Offset(0, 10),
                               ),
-                              const SizedBox(height: 2),
-                              Text(
-                                message,
-                                style: const TextStyle(
-                                  fontSize: 11.5,
-                                  color: AppColors.textSecondary,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                              // Deep Surface Drop Shadow
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.12),
+                                blurRadius: 20,
+                                spreadRadius: 0,
+                                offset: const Offset(0, 6),
                               ),
                             ],
                           ),
-                        ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(24),
+                            child: BackdropFilter(
+                              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  // iOS 26 Multi-Stop Frosted Glass
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: isDark
+                                        ? [
+                                            AppColors.darkSurface.withValues(alpha: 0.94),
+                                            AppColors.darkSurfaceSecondary.withValues(alpha: 0.90),
+                                            AppColors.darkSurface.withValues(alpha: 0.96),
+                                          ]
+                                        : [
+                                            Colors.white.withValues(alpha: 0.97),
+                                            const Color(0xFFF8FAFC).withValues(alpha: 0.94),
+                                            Colors.white.withValues(alpha: 0.98),
+                                          ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(24),
+                                  // Specular Liquid Glass Border
+                                  border: Border.all(
+                                    color: isDark
+                                        ? Colors.white.withValues(alpha: 0.14 + (_shimmerController.value * 0.08))
+                                        : themeColor.withValues(alpha: 0.28 + (_shimmerController.value * 0.12)),
+                                    width: 1.2,
+                                  ),
+                                ),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    // Main Content Area
+                                    Padding(
+                                      padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+                                      child: Row(
+                                        crossAxisAlignment: CrossAxisAlignment.center,
+                                        children: [
+                                          // Glowing Squircle Icon Badge
+                                          _buildIconBadge(themeColor, icon, isDark),
+                                          const SizedBox(width: 12),
 
-                        const SizedBox(width: 8),
+                                          // Notification Text & Amount Chip
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                // Header row with status pill and amount
+                                                Row(
+                                                  children: [
+                                                    // Micro status indicator beacon
+                                                    Container(
+                                                      width: 5,
+                                                      height: 5,
+                                                      margin: const EdgeInsets.only(right: 5),
+                                                      decoration: BoxDecoration(
+                                                        shape: BoxShape.circle,
+                                                        color: themeColor,
+                                                        boxShadow: [
+                                                          BoxShadow(
+                                                            color: themeColor.withValues(alpha: 0.6),
+                                                            blurRadius: 4,
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                    Text(
+                                                      statusLabel,
+                                                      style: TextStyle(
+                                                        fontSize: 9,
+                                                        fontWeight: FontWeight.w800,
+                                                        letterSpacing: 0.6,
+                                                        color: themeColor,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 6),
+                                                    Flexible(
+                                                      child: Text(
+                                                        widget.title,
+                                                        style: TextStyle(
+                                                          fontSize: 13.5,
+                                                          fontWeight: FontWeight.w800,
+                                                          letterSpacing: -0.2,
+                                                          color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                                                        ),
+                                                        maxLines: 1,
+                                                        overflow: TextOverflow.ellipsis,
+                                                      ),
+                                                    ),
+                                                    if (widget.amount != null) ...[
+                                                      const SizedBox(width: 6),
+                                                      _buildAmountBadge(currencyFmt),
+                                                    ],
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 3),
+                                                Text(
+                                                  widget.message,
+                                                  style: TextStyle(
+                                                    fontSize: 11.5,
+                                                    height: 1.35,
+                                                    color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                  maxLines: 2,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
 
-                        // Dismiss button
-                        InkWell(
-                          onTap: onDismiss,
-                          borderRadius: BorderRadius.circular(12),
-                          child: Container(
-                            padding: const EdgeInsets.all(6),
-                            child: const Icon(
-                              Icons.close_rounded,
-                              size: 15,
-                              color: AppColors.textSecondary,
+                                          // Optional Action Button (e.g. Undo / View)
+                                          if (widget.actionLabel != null && widget.onAction != null) ...[
+                                            const SizedBox(width: 8),
+                                            _buildActionButton(themeColor, isDark),
+                                          ],
+
+                                          const SizedBox(width: 6),
+
+                                          // Smooth Dismiss Button
+                                          _buildCloseButton(isDark),
+                                        ],
+                                      ),
+                                    ),
+
+                                    // Liquid Progress Countdown Bar at the bottom rim
+                                    _buildProgressBar(themeColor),
+                                  ],
+                                ),
+                              ),
                             ),
                           ),
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-          )
-              .animate()
-              .slideY(
-                begin: -1.2,
-                end: 0,
-                duration: 320.ms,
-                curve: Curves.easeOutBack,
-              )
-              .fadeIn(duration: 220.ms),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildIconBadge(Color themeColor, IconData icon, bool isDark) {
+    return Container(
+      width: 42,
+      height: 42,
+      decoration: BoxDecoration(
+        color: themeColor.withValues(alpha: isDark ? 0.16 : 0.12),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: themeColor.withValues(alpha: isDark ? 0.35 : 0.28),
+          width: 1.2,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: themeColor.withValues(alpha: isDark ? 0.24 : 0.14),
+            blurRadius: 10,
+            spreadRadius: 1,
+          ),
+        ],
+      ),
+      alignment: Alignment.center,
+      child: Icon(
+        icon,
+        color: themeColor,
+        size: 23,
       ),
     );
   }
 
   Widget _buildAmountBadge(NumberFormat currencyFmt) {
-    if (amount == null) return const SizedBox.shrink();
+    if (widget.amount == null) return const SizedBox.shrink();
 
     Color pillColor;
     String prefix = '';
-    if (transactionType == TransactionType.income) {
+    final IconData trendIcon;
+
+    if (widget.transactionType == TransactionType.income) {
       pillColor = AppColors.primary;
       prefix = '+';
-    } else if (transactionType == TransactionType.savingsInvestment) {
+      trendIcon = Icons.arrow_upward_rounded;
+    } else if (widget.transactionType == TransactionType.savingsInvestment) {
       pillColor = AppColors.accent;
       prefix = '';
+      trendIcon = Icons.savings_outlined;
     } else {
       pillColor = AppColors.deficitText;
       prefix = '-';
+      trendIcon = Icons.arrow_downward_rounded;
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
       decoration: BoxDecoration(
         color: pillColor.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: pillColor.withValues(alpha: 0.25),
-          width: 0.8,
+          color: pillColor.withValues(alpha: 0.30),
+          width: 0.9,
         ),
       ),
-      child: Text(
-        '$prefix${currencyFmt.format(amount)}',
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w800,
-          color: pillColor,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(trendIcon, size: 10.5, color: pillColor),
+          const SizedBox(width: 2.5),
+          Text(
+            '$prefix${currencyFmt.format(widget.amount)}',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              color: pillColor,
+              letterSpacing: -0.2,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButton(Color themeColor, bool isDark) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          HapticFeedback.mediumImpact();
+          widget.onAction?.call();
+          animateDismiss();
+        },
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: themeColor.withValues(alpha: 0.14),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: themeColor.withValues(alpha: 0.32),
+              width: 1,
+            ),
+          ),
+          child: Text(
+            widget.actionLabel!,
+            style: TextStyle(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w700,
+              color: themeColor,
+            ),
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _buildCloseButton(bool isDark) {
+    return InkWell(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        animateDismiss();
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.06)
+              : Colors.black.withValues(alpha: 0.04),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(
+          Icons.close_rounded,
+          size: 15,
+          color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProgressBar(Color themeColor) {
+    return AnimatedBuilder(
+      animation: _progressController,
+      builder: (context, child) {
+        final progress = (1.0 - _progressController.value).clamp(0.0, 1.0);
+
+        return Container(
+          height: 2.5,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: themeColor.withValues(alpha: 0.08),
+          ),
+          alignment: Alignment.centerLeft,
+          child: FractionallySizedBox(
+            widthFactor: progress,
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    themeColor.withValues(alpha: 0.25),
+                    themeColor,
+                    Colors.white.withValues(alpha: 0.85),
+                  ],
+                  stops: const [0.0, 0.85, 1.0],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: themeColor.withValues(alpha: 0.45),
+                    blurRadius: 3,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

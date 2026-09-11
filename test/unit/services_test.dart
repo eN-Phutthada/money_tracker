@@ -4,6 +4,8 @@ import 'package:money_tracker/app/data/services/csv_service.dart';
 import 'package:money_tracker/app/data/services/security_service.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('CsvService Tests', () {
     test('Generate CSV with UTF-8 BOM and parse back', () {
       final now = DateTime(2026, 9, 9, 14, 30);
@@ -54,6 +56,34 @@ void main() {
       // Default: pin not enabled, verify returns true
       expect(service.isPinEnabled, isFalse);
       expect(service.verifyPin('1234'), isTrue);
+    });
+
+    test('PIN set, lock, verify, and recovery disable flow', () async {
+      final service = SecurityService();
+      // 1. Set PIN
+      final setResult = await service.setPin('8888');
+      expect(setResult, isTrue);
+      expect(service.isPinEnabled, isTrue);
+
+      // 2. Lock
+      service.lock();
+      expect(service.isLocked, isTrue);
+
+      // 3. Verify incorrect PIN
+      expect(service.verifyPin('0000'), isFalse);
+      expect(service.isLocked, isTrue);
+
+      // 4. Verify correct PIN
+      expect(service.verifyPin('8888'), isTrue);
+      expect(service.isLocked, isFalse);
+
+      // 5. Recovery flow: disablePin() when forgotten
+      service.lock();
+      expect(service.isLocked, isTrue);
+      final disableResult = await service.disablePin();
+      expect(disableResult, isTrue);
+      expect(service.isPinEnabled, isFalse);
+      expect(service.isLocked, isFalse);
     });
   });
 }

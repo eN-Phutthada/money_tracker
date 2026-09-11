@@ -27,7 +27,7 @@ class MobileDashboardView extends GetView<DashboardController> {
           FlFinanceChartCard(),
           SizedBox(height: 14),
           RecentTransactionsCard(),
-          SizedBox(height: 70), // Bottom padding for FAB
+          SizedBox(height: 96), // Bottom padding for Floating Navigation Dock
         ],
       ),
     );

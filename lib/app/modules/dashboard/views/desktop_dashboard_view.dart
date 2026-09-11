@@ -99,7 +99,14 @@ class DesktopDashboardView extends GetView<DashboardController> {
       padding: const EdgeInsets.symmetric(horizontal: 24),
       decoration: BoxDecoration(
         color: isDark ? AppColors.darkSurface : AppColors.surface,
-        border: Border(bottom: BorderSide(color: isDark ? AppColors.darkBorder : AppColors.border)),
+        border: Border(bottom: BorderSide(color: isDark ? AppColors.darkBorder : AppColors.border, width: 0.8)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -116,7 +123,7 @@ class DesktopDashboardView extends GetView<DashboardController> {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
-                    letterSpacing: -0.3,
+                    letterSpacing: -0.35,
                     color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                   ),
                 ),
@@ -143,7 +150,7 @@ class DesktopDashboardView extends GetView<DashboardController> {
                         onTap: controller.resetToCurrentPeriod,
                         borderRadius: BorderRadius.circular(10),
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -171,13 +178,17 @@ class DesktopDashboardView extends GetView<DashboardController> {
           // Action Controls
           Row(
             children: [
-              // Period Filter Tabs
+              // Period Filter Tabs (Floating Segmented Pill)
               Obx(() {
                 return Container(
                   padding: const EdgeInsets.all(3),
                   decoration: BoxDecoration(
                     color: isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isDark ? AppColors.darkBorder.withValues(alpha: 0.6) : AppColors.border.withValues(alpha: 0.6),
+                      width: 0.8,
+                    ),
                   ),
                   child: Row(
                     children: [
@@ -188,9 +199,9 @@ class DesktopDashboardView extends GetView<DashboardController> {
                   ),
                 );
               }),
-              const SizedBox(width: 12),
+              const SizedBox(width: 14),
 
-              // Add Transaction Button
+              // Add Transaction Button with Radiant Gradient
               ElevatedButton.icon(
                 onPressed: () => QuickAddBottomSheet.show(Get.context!),
                 icon: const Icon(Icons.add_rounded, size: 18),
@@ -200,7 +211,8 @@ class DesktopDashboardView extends GetView<DashboardController> {
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  elevation: 0,
+                  elevation: 2,
+                  shadowColor: AppColors.primary.withValues(alpha: 0.35),
                 ),
               ),
             ],
@@ -222,7 +234,16 @@ class DesktopDashboardView extends GetView<DashboardController> {
           color: isSelected
               ? (isDark ? AppColors.darkSurface : AppColors.surface)
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(9),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.05),
+                    blurRadius: 6,
+                    offset: const Offset(0, 1),
+                  ),
+                ]
+              : null,
         ),
         child: Text(
           label,
@@ -299,34 +320,50 @@ class DesktopDashboardView extends GetView<DashboardController> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isDark ? AppColors.darkSurface : AppColors.surface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.border),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDark ? AppColors.darkBorder : AppColors.border,
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Row(
         children: [
           Container(
-            width: 36,
-            height: 36,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: color.withValues(alpha: 0.25),
+                width: 0.8,
+              ),
             ),
-            child: Icon(icon, color: color, size: 18),
+            child: Icon(icon, color: color, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                Text(title, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
                 const SizedBox(height: 2),
                 FittedBox(
                   fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
                   child: Text(
                     amount,
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: 19,
                       fontWeight: FontWeight.w800,
+                      letterSpacing: -0.3,
                       color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                     ),
                   ),
@@ -342,14 +379,21 @@ class DesktopDashboardView extends GetView<DashboardController> {
   Widget _buildSidebar(BuildContext context, bool isDark) {
     return Obx(() {
       final collapsed = controller.isSidebarCollapsed.value;
-      final width = collapsed ? 78.0 : 230.0;
+      final width = collapsed ? 80.0 : 236.0;
 
       return AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         width: width,
         decoration: BoxDecoration(
           color: isDark ? AppColors.darkSurface : AppColors.surface,
-          border: Border(right: BorderSide(color: isDark ? AppColors.darkBorder : AppColors.border)),
+          border: Border(right: BorderSide(color: isDark ? AppColors.darkBorder : AppColors.border, width: 0.8)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.02),
+              blurRadius: 10,
+              offset: const Offset(2, 0),
+            ),
+          ],
         ),
         child: Column(
           children: [
@@ -359,11 +403,22 @@ class DesktopDashboardView extends GetView<DashboardController> {
               child: Row(
                 children: [
                   Container(
-                    width: 36,
-                    height: 36,
+                    width: 38,
+                    height: 38,
                     decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(10),
+                      gradient: LinearGradient(
+                        colors: AppColors.primaryGradient,
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withValues(alpha: 0.35),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
                     ),
                     child: const Icon(Icons.account_balance_wallet_rounded, color: Colors.white, size: 20),
                   ),
@@ -372,9 +427,19 @@ class DesktopDashboardView extends GetView<DashboardController> {
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text('MoneyTracker', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800)),
-                          Text('GetX 4.7.3', style: TextStyle(fontSize: 10, color: AppColors.primary, fontWeight: FontWeight.w700)),
+                        children: [
+                          const Text('MoneyTracker', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, letterSpacing: -0.3)),
+                          Row(
+                            children: [
+                              Container(
+                                width: 5,
+                                height: 5,
+                                decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.primary),
+                              ),
+                              const SizedBox(width: 4),
+                              const Text('FinTech 2026', style: TextStyle(fontSize: 10, color: AppColors.primary, fontWeight: FontWeight.w700)),
+                            ],
+                          ),
                         ],
                       ),
                     ),
@@ -463,7 +528,7 @@ class DesktopDashboardView extends GetView<DashboardController> {
                       onTap: () => showThemePickerDialog(context),
                     );
                   }),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 8),
                   IconButton(
                     icon: Icon(
                       collapsed
@@ -498,14 +563,20 @@ class DesktopDashboardView extends GetView<DashboardController> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(13),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
             color: isActive
                 ? AppColors.primary.withValues(alpha: 0.12)
                 : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(13),
+            border: isActive
+                ? Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.3),
+                    width: 0.8,
+                  )
+                : null,
           ),
           child: Row(
             children: [
@@ -533,10 +604,14 @@ class DesktopDashboardView extends GetView<DashboardController> {
                 ),
                 if (badgeShortcut != null)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
                       color: isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary,
                       borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: isDark ? AppColors.darkBorder : AppColors.border,
+                        width: 0.8,
+                      ),
                     ),
                     child: Text(
                       badgeShortcut,

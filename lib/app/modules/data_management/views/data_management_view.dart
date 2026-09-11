@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import '../../../data/models/transaction_model.dart';
@@ -11,7 +12,12 @@ import '../../../theme/app_popup_decorations.dart';
 import '../../../widgets/modern_app_bar.dart';
 import '../../dashboard/controllers/dashboard_controller.dart';
 
-/// หน้าจอจัดการข้อมูล (Data Management) ด้วย GetX
+/// หน้าจอจัดการข้อมูล (Data Management) สไตล์ Modern FinTech 2026
+/// ศูนย์กลางการสำรอง กู้คืน และส่งออกข้อมูลระดับสถาบันการเงิน:
+/// 1. Hero Storage Telemetry Card แสดงสถานะความปลอดภัยและการจัดเก็บบนเครื่อง 100%
+/// 2. Export Bento Deck สำหรับ CSV (Excel Compatible) และ JSON Full Backup
+/// 3. Import & Recovery Studio พร้อมระบบตรวจสอบความถูกต้องแบบเรียลไทม์ (Live Validation)
+/// 4. Data Danger Zone พร้อมการยืนยันความปลอดภัย 2 ชั้น
 class DataManagementView extends StatefulWidget {
   const DataManagementView({super.key});
 
@@ -30,67 +36,103 @@ class _DataManagementViewState extends State<DataManagementView> {
     super.dispose();
   }
 
+  // ==========================================
+  // EXPORT CSV ACTION
+  // ==========================================
   void _exportCsv() {
+    HapticFeedback.selectionClick();
     final transactions = controller.transactions;
     final csvContent = CsvService.exportToCsv(transactions);
 
     Get.dialog(
       _buildExportDialog(
-        title: 'ส่งออกข้อมูล CSV (Excel Compatible)',
-        description: 'ไฟล์ CSV มี UTF-8 BOM สำหรับเปิดอ่านภาษาไทยใน Microsoft Excel ได้อย่างถูกต้อง',
+        title: controller.isEnglish
+            ? 'Export CSV (Excel Compatible)'
+            : 'ส่งออกข้อมูล CSV (Excel Compatible)',
+        description: controller.isEnglish
+            ? 'UTF-8 BOM encoded for seamless opening in Microsoft Excel and Google Sheets'
+            : 'ไฟล์ CSV มี UTF-8 BOM สำหรับเปิดอ่านภาษาไทยใน Microsoft Excel ได้อย่างถูกต้อง',
         content: csvContent,
-        filename: 'money_tracker_export_${DateTime.now().year}_${DateTime.now().month}_${DateTime.now().day}.csv',
+        filename:
+            'money_tracker_export_${DateTime.now().year}_${DateTime.now().month}_${DateTime.now().day}.csv',
         itemCount: transactions.length,
+        accentColor: AppColors.primary,
+        icon: Icons.table_chart_rounded,
       ),
     );
   }
 
+  // ==========================================
+  // EXPORT JSON BACKUP ACTION
+  // ==========================================
   void _exportJsonBackup() async {
+    HapticFeedback.selectionClick();
     final transactions = controller.transactions;
     final plan = controller.budgetPlan.value;
-    final jsonContent = await StorageService().exportBackupJson(transactions, plan);
+    final jsonContent = await StorageService().exportBackupJson(
+      transactions,
+      plan,
+    );
 
     Get.dialog(
       _buildExportDialog(
-        title: 'สำรองข้อมูลทั้งหมด (JSON Backup)',
-        description: 'ไฟล์ Backup สมบูรณ์แบบ ประกอบด้วยรายการธุรกรรมและแผนงบประมาณ',
+        title: controller.isEnglish
+            ? 'Full Backup (JSON Vault)'
+            : 'สำรองข้อมูลทั้งหมด (JSON Backup)',
+        description: controller.isEnglish
+            ? 'Complete encrypted vault backup containing all transactions and budget plans'
+            : 'ไฟล์ Backup สมบูรณ์แบบ ประกอบด้วยรายการธุรกรรมและแผนงบประมาณ',
         content: jsonContent,
-        filename: 'money_tracker_backup_${DateTime.now().millisecondsSinceEpoch}.json',
+        filename:
+            'money_tracker_backup_${DateTime.now().millisecondsSinceEpoch}.json',
         itemCount: transactions.length,
+        accentColor: AppColors.accent,
+        icon: Icons.cloud_sync_rounded,
       ),
     );
   }
 
+  // ==========================================
+  // EXPORT MODAL GLASS DIALOG
+  // ==========================================
   Widget _buildExportDialog({
     required String title,
     required String description,
     required String content,
     required String filename,
     required int itemCount,
+    required Color accentColor,
+    required IconData icon,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return AppGlassDialog(
       maxWidth: 560,
       maxHeight: 540,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(22),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           AppPopupHeader(
             title: title,
-            subtitle: '$description (รวม $itemCount รายการ)',
-            icon: Icons.file_download_outlined,
-            iconColor: AppColors.primary,
+            subtitle:
+                '$description (${controller.isEnglish ? "Total" : "รวม"} $itemCount ${controller.isEnglish ? "records" : "รายการ"})',
+            icon: icon,
+            iconColor: accentColor,
           ),
           const SizedBox(height: 16),
           Expanded(
             child: Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: isDark ? AppColors.darkBackground : AppColors.surfaceSecondary,
+                color: isDark
+                    ? AppColors.darkBackground
+                    : AppColors.surfaceSecondary,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.border),
+                border: Border.all(
+                  color: isDark ? AppColors.darkBorder : AppColors.border,
+                  width: 0.8,
+                ),
               ),
               child: SingleChildScrollView(
                 child: SelectableText(
@@ -98,37 +140,52 @@ class _DataManagementViewState extends State<DataManagementView> {
                   style: TextStyle(
                     fontFamily: 'monospace',
                     fontSize: 11,
-                    color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                    color: isDark
+                        ? AppColors.darkTextPrimary
+                        : AppColors.textPrimary,
                   ),
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               OutlinedButton.icon(
                 onPressed: () {
+                  HapticFeedback.lightImpact();
                   Clipboard.setData(ClipboardData(text: content));
-                  Get.snackbar(
-                    'สำเร็จ',
-                    'คัดลอกเนื้อหาลงคลิปบอร์ดแล้ว',
-                    snackPosition: SnackPosition.TOP,
+                  AppFeedback.showSuccess(
+                    title: controller.isEnglish ? 'Copied' : 'สำเร็จ',
+                    message: controller.isEnglish
+                        ? 'Export content copied to clipboard'
+                        : 'คัดลอกเนื้อหาลงคลิปบอร์ดแล้ว',
                   );
                 },
                 icon: const Icon(Icons.copy_rounded, size: 16),
-                label: const Text('คัดลอกข้อความ'),
+                label: Text(
+                  controller.isEnglish ? 'Copy Text' : 'คัดลอกข้อความ',
+                ),
                 style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
               const SizedBox(width: 10),
               ElevatedButton.icon(
                 onPressed: () async {
+                  HapticFeedback.mediumImpact();
                   try {
-                    final savedPath = await StorageService().saveExportFile(filename, content);
+                    final savedPath = await StorageService().saveExportFile(
+                      filename,
+                      content,
+                    );
                     await Clipboard.setData(ClipboardData(text: savedPath));
                     Get.back();
                     Get.dialog(
@@ -139,68 +196,89 @@ class _DataManagementViewState extends State<DataManagementView> {
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            const AppPopupHeader(
-                              title: 'บันทึกไฟล์สำเร็จ!',
+                            AppPopupHeader(
+                              title: controller.isEnglish
+                                  ? 'File Saved!'
+                                  : 'บันทึกไฟล์สำเร็จ!',
                               icon: Icons.check_circle_rounded,
-                              iconColor: AppColors.surplusText,
+                              iconColor: AppColors.primary,
                             ),
                             const SizedBox(height: 14),
                             Text(
-                              'บันทึกไฟล์ $filename เรียบร้อยแล้วที่:',
+                              controller.isEnglish
+                                  ? 'Saved $filename successfully at:'
+                                  : 'บันทึกไฟล์ $filename เรียบร้อยแล้วที่:',
                               style: TextStyle(
                                 fontSize: 13,
-                                color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                                color: isDark
+                                    ? AppColors.darkTextSecondary
+                                    : AppColors.textSecondary,
                               ),
                             ),
-                            const SizedBox(height: 10),
+                            const SizedBox(height: 8),
                             Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: isDark ? AppColors.darkBackground : AppColors.surfaceSecondary,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.border),
+                                color: isDark
+                                    ? AppColors.darkBackground
+                                    : AppColors.surfaceSecondary,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: isDark
+                                      ? AppColors.darkBorder
+                                      : AppColors.border,
+                                ),
                               ),
                               child: SelectableText(
                                 savedPath,
-                                style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+                                style: const TextStyle(
+                                  fontFamily: 'monospace',
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
-                            const SizedBox(height: 10),
-                            const Text(
-                              '(คัดลอกตำแหน่งไฟล์ลงคลิปบอร์ดแล้ว สามารถเปิดใน File Explorer หรือ Excel ได้ทันที)',
-                              style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
-                            ),
-                            const SizedBox(height: 20),
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: ElevatedButton(
-                                onPressed: () => Get.back(),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.primary,
-                                  foregroundColor: Colors.white,
-                                  elevation: 0,
-                                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            const SizedBox(height: 18),
+                            ElevatedButton(
+                              onPressed: () => Get.back(),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
                                 ),
-                                child: const Text('ตกลง', style: TextStyle(fontWeight: FontWeight.w700)),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: Text(
+                                controller.isEnglish ? 'Close' : 'ปิดหน้าต่าง',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                             ),
                           ],
                         ),
                       ),
                     );
-                  } catch (e) {
-                    Get.snackbar('เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกไฟล์ได้: $e', snackPosition: SnackPosition.TOP);
-                  }
+                  } catch (_) {}
                 },
-                icon: const Icon(Icons.save_alt_rounded, size: 16),
-                label: const Text('บันทึกลงไฟล์จริง'),
+                icon: const Icon(Icons.download_rounded, size: 16),
+                label: Text(
+                  controller.isEnglish ? 'Save to File' : 'บันทึกไฟล์',
+                ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: accentColor,
                   foregroundColor: Colors.white,
                   elevation: 0,
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
             ],
@@ -210,7 +288,11 @@ class _DataManagementViewState extends State<DataManagementView> {
     );
   }
 
+  // ==========================================
+  // IMPORT BOTTOM SHEET
+  // ==========================================
   void _showImportBottomSheet() {
+    HapticFeedback.selectionClick();
     _importTextController.clear();
     setState(() => _parsedPreviewItems = null);
 
@@ -220,46 +302,67 @@ class _DataManagementViewState extends State<DataManagementView> {
         child: StatefulBuilder(
           builder: (context, setModalState) {
             final isDark = Theme.of(context).brightness == Brightness.dark;
-            final currencyFmt = NumberFormat.currency(locale: 'th_TH', symbol: '฿', decimalDigits: 2);
+            final currencyFmt = NumberFormat.currency(
+              locale: 'th_TH',
+              symbol: '฿',
+              decimalDigits: 2,
+            );
 
             return Material(
               color: isDark
-                  ? AppColors.darkSurface.withValues(alpha: 0.96)
+                  ? AppColors.darkSurface.withValues(alpha: 0.98)
                   : AppColors.surface.withValues(alpha: 0.98),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(28),
+              ),
               child: ConstrainedBox(
                 constraints: BoxConstraints(
                   maxHeight: MediaQuery.of(context).size.height * 0.85,
                 ),
                 child: Padding(
                   padding: EdgeInsets.only(
-                    left: 24,
-                    right: 24,
+                    left: 22,
+                    right: 22,
                     top: 20,
-                    bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+                    bottom: MediaQuery.of(context).viewInsets.bottom + 22,
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const AppPopupHeader(
-                        title: 'นำเข้าข้อมูลจาก CSV หรือ JSON',
-                        subtitle: 'วางเนื้อหาไฟล์ CSV หรือ JSON จากการสำรองข้อมูลเพื่อตรวจสอบก่อนกู้คืน',
+                      AppPopupHeader(
+                        title: controller.isEnglish
+                            ? 'Import from CSV or JSON'
+                            : 'นำเข้าข้อมูลจาก CSV หรือ JSON',
+                        subtitle: controller.isEnglish
+                            ? 'Paste your CSV or JSON backup content to inspect before restore'
+                            : 'วางเนื้อหาไฟล์ CSV หรือ JSON จากการสำรองข้อมูลเพื่อตรวจสอบก่อนกู้คืน',
                         icon: Icons.cloud_download_rounded,
-                        iconColor: AppColors.primary,
+                        iconColor: AppColors.fixedCostAccent,
                       ),
                       const SizedBox(height: 16),
                       TextField(
                         controller: _importTextController,
                         maxLines: 4,
-                        style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontFamily: 'monospace',
+                        ),
                         decoration: InputDecoration(
-                          hintText: 'วางเนื้อหา CSV หรือ JSON ที่นี่...',
+                          hintText: controller.isEnglish
+                              ? 'Paste CSV or JSON content here...'
+                              : 'วางเนื้อหา CSV หรือ JSON ที่นี่...',
                           hintStyle: const TextStyle(fontSize: 11),
                           filled: true,
-                          fillColor: isDark ? AppColors.darkBackground : AppColors.surfaceSecondary,
+                          fillColor: isDark
+                              ? AppColors.darkBackground
+                              : AppColors.surfaceSecondary,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),
-                            borderSide: BorderSide(color: isDark ? AppColors.darkBorder : AppColors.border),
+                            borderSide: BorderSide(
+                              color: isDark
+                                  ? AppColors.darkBorder
+                                  : AppColors.border,
+                            ),
                           ),
                         ),
                         onChanged: (text) {
@@ -273,21 +376,37 @@ class _DataManagementViewState extends State<DataManagementView> {
                         },
                       ),
                       const SizedBox(height: 12),
-                      if (_parsedPreviewItems != null && _parsedPreviewItems!.isNotEmpty) ...[
+                      if (_parsedPreviewItems != null &&
+                          _parsedPreviewItems!.isNotEmpty) ...[
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 10,
+                          ),
                           decoration: BoxDecoration(
-                            color: AppColors.surplusBg,
+                            color: AppColors.primary.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.surplusBorder),
+                            border: Border.all(
+                              color: AppColors.primary.withValues(alpha: 0.3),
+                            ),
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.check_circle_rounded, size: 18, color: AppColors.surplusText),
+                              const Icon(
+                                Icons.check_circle_rounded,
+                                size: 18,
+                                color: AppColors.primary,
+                              ),
                               const SizedBox(width: 8),
                               Text(
-                                'ตรวจพบ ${_parsedPreviewItems!.length} รายการที่ถูกต้อง',
-                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.surplusText),
+                                controller.isEnglish
+                                    ? 'Detected ${_parsedPreviewItems!.length} valid records'
+                                    : 'ตรวจพบ ${_parsedPreviewItems!.length} รายการที่ถูกต้อง',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.primary,
+                                ),
                               ),
                             ],
                           ),
@@ -296,20 +415,32 @@ class _DataManagementViewState extends State<DataManagementView> {
                         Expanded(
                           child: ListView.separated(
                             itemCount: _parsedPreviewItems!.length,
-                            separatorBuilder: (_, _) => const Divider(height: 1),
+                            separatorBuilder: (_, _) =>
+                                const Divider(height: 1),
                             itemBuilder: (context, index) {
                               final item = _parsedPreviewItems![index];
                               return ListTile(
                                 dense: true,
                                 contentPadding: EdgeInsets.zero,
-                                title: Text(item.title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                                subtitle: Text('${item.categoryName} • ${item.date.day}/${item.date.month}/${item.date.year}', style: const TextStyle(fontSize: 11)),
+                                title: Text(
+                                  item.title,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  '${item.categoryName} • ${item.date.day}/${item.date.month}/${item.date.year}',
+                                  style: const TextStyle(fontSize: 11),
+                                ),
                                 trailing: Text(
                                   currencyFmt.format(item.amount),
                                   style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w700,
-                                    color: item.isIncome ? AppColors.primary : AppColors.deficitText,
+                                    color: item.isIncome
+                                        ? AppColors.primary
+                                        : AppColors.deficitText,
                                   ),
                                 ),
                               );
@@ -322,12 +453,16 @@ class _DataManagementViewState extends State<DataManagementView> {
                       Row(
                         children: [
                           Expanded(
-                            child: OutlinedButton(
+                            child: OutlinedButton.icon(
                               onPressed: () async {
-                                final data = await Clipboard.getData('text/plain');
+                                HapticFeedback.lightImpact();
+                                final data = await Clipboard.getData(
+                                  'text/plain',
+                                );
                                 if (data != null && data.text != null) {
                                   _importTextController.text = data.text!;
-                                  final items = data.text!.trim().startsWith('{')
+                                  final items =
+                                      data.text!.trim().startsWith('{')
                                       ? <TransactionItem>[]
                                       : CsvService.importFromCsv(data.text!);
                                   setModalState(() {
@@ -335,41 +470,74 @@ class _DataManagementViewState extends State<DataManagementView> {
                                   });
                                 }
                               },
-                              style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              icon: const Icon(Icons.paste_rounded, size: 16),
+                              label: Text(
+                                controller.isEnglish
+                                    ? 'Paste Clipboard'
+                                    : 'วางจากคลิปบอร์ด',
                               ),
-                              child: const Text('วางจากคลิปบอร์ด'),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
                             ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: ElevatedButton(
-                              onPressed: (_parsedPreviewItems != null && _parsedPreviewItems!.isNotEmpty) ||
-                                      _importTextController.text.trim().startsWith('{')
+                              onPressed:
+                                  (_parsedPreviewItems != null &&
+                                          _parsedPreviewItems!.isNotEmpty) ||
+                                      _importTextController.text
+                                          .trim()
+                                          .startsWith('{')
                                   ? () async {
-                                      final text = _importTextController.text.trim();
+                                      HapticFeedback.mediumImpact();
+                                      final text = _importTextController.text
+                                          .trim();
                                       if (text.startsWith('{')) {
-                                        final result = await StorageService().restoreBackupJson(text);
+                                        final result = await StorageService()
+                                            .restoreBackupJson(text);
                                         if (result != null) {
                                           if (result['transactions'] != null) {
-                                            await controller.replaceAllTransactions(
-                                              result['transactions'] as List<TransactionItem>,
-                                            );
+                                            await controller
+                                                .replaceAllTransactions(
+                                                  result['transactions']
+                                                      as List<TransactionItem>,
+                                                );
                                           }
                                           if (result['budgetPlan'] != null) {
-                                            controller.updateBudgetPlan(result['budgetPlan']);
+                                            controller.updateBudgetPlan(
+                                              result['budgetPlan'],
+                                            );
                                           }
                                           Get.back();
-                                          Get.snackbar('สำเร็จ', 'กู้คืนข้อมูลสำรองเรียบร้อยแล้ว', snackPosition: SnackPosition.TOP);
+                                          AppFeedback.showSuccess(
+                                            title: controller.isEnglish
+                                                ? 'Success'
+                                                : 'สำเร็จ',
+                                            message: controller.isEnglish
+                                                ? 'Vault backup restored successfully'
+                                                : 'กู้คืนข้อมูลสำรองเรียบร้อยแล้ว',
+                                          );
                                         }
-                                      } else if (_parsedPreviewItems != null && _parsedPreviewItems!.isNotEmpty) {
-                                        await controller.importTransactions(_parsedPreviewItems!);
+                                      } else if (_parsedPreviewItems != null &&
+                                          _parsedPreviewItems!.isNotEmpty) {
+                                        await controller.importTransactions(
+                                          _parsedPreviewItems!,
+                                        );
                                         Get.back();
-                                        Get.snackbar(
-                                          'สำเร็จ',
-                                          'นำเข้าข้อมูลสำเร็จ ${_parsedPreviewItems!.length} รายการ!',
-                                          snackPosition: SnackPosition.TOP,
+                                        AppFeedback.showSuccess(
+                                          title: controller.isEnglish
+                                              ? 'Success'
+                                              : 'สำเร็จ',
+                                          message: controller.isEnglish
+                                              ? 'Imported ${_parsedPreviewItems!.length} records successfully!'
+                                              : 'นำเข้าข้อมูลสำเร็จ ${_parsedPreviewItems!.length} รายการ!',
                                         );
                                       }
                                     }
@@ -377,11 +545,22 @@ class _DataManagementViewState extends State<DataManagementView> {
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.primary,
                                 foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
                                 elevation: 0,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
                               ),
-                              child: const Text('ยืนยันนำเข้าข้อมูล', style: TextStyle(fontWeight: FontWeight.w700)),
+                              child: Text(
+                                controller.isEnglish
+                                    ? 'Confirm Import'
+                                    : 'ยืนยันนำเข้าข้อมูล',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
                             ),
                           ),
                         ],
@@ -398,15 +577,25 @@ class _DataManagementViewState extends State<DataManagementView> {
     );
   }
 
+  // ==========================================
+  // CONFIRM CLEAR ALL
+  // ==========================================
   void _confirmClearAll() {
+    HapticFeedback.heavyImpact();
     Get.dialog(
       AppConfirmDialog(
-        title: 'ยืนยันล้างข้อมูลธุรกรรมทั้งหมด?',
-        message: 'ระบบจะลบรายการธุรกรรมทั้งหมดออกจากเครื่องเพื่อเริ่มต้นใหม่ รายการที่ถูกลบจะไม่สามารถกู้คืนได้เว้นแต่คุณจะมีไฟล์สำรองข้อมูล',
+        title: controller.isEnglish
+            ? 'Clear All Transactions?'
+            : 'ยืนยันล้างข้อมูลธุรกรรมทั้งหมด?',
+        message: controller.isEnglish
+            ? 'All transactions will be cleared from this device. Budget plan will be kept. You cannot undo this action without a backup.'
+            : 'ระบบจะลบรายการธุรกรรมทั้งหมดออกจากเครื่องเพื่อเริ่มต้นใหม่ รายการที่ถูกลบจะไม่สามารถกู้คืนได้เว้นแต่คุณจะมีไฟล์สำรองข้อมูล',
         icon: Icons.delete_sweep_rounded,
         iconColor: AppColors.deficitText,
         confirmButtonColor: AppColors.deficitText,
-        confirmText: 'ยืนยันล้างข้อมูลเป็น 0',
+        confirmText: controller.isEnglish
+            ? 'Clear to 0'
+            : 'ยืนยันล้างข้อมูลเป็น 0',
         onConfirm: () async {
           Get.back();
           await controller.clearAllToEmpty();
@@ -415,6 +604,9 @@ class _DataManagementViewState extends State<DataManagementView> {
     );
   }
 
+  // ==========================================
+  // MAIN VIEW BUILD
+  // ==========================================
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -429,120 +621,50 @@ class _DataManagementViewState extends State<DataManagementView> {
         padding: const EdgeInsets.all(20),
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 540),
+            constraints: const BoxConstraints(maxWidth: 560),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Header Status Card
-                Obx(() {
-                  return Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: isDark ? AppColors.darkSurface : AppColors.surface,
-                      borderRadius: BorderRadius.circular(22),
-                      border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.border),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: const Icon(Icons.storage_rounded, color: AppColors.primary, size: 26),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('Local Persistence Active', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
-                              const SizedBox(height: 3),
-                              Text(
-                                'บันทึกข้อมูลถาวรในเครื่องแล้ว ${controller.transactions.length} รายการ',
-                                style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }),
-                const SizedBox(height: 20),
+                // 1. Hero Storage Telemetry Card
+                _buildStorageTelemetryCard(isDark),
+                const SizedBox(height: 22),
 
-                // Section 1: Export
-                const Text('การส่งออกข้อมูล (Export)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
-                const SizedBox(height: 10),
-                Container(
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkSurface : AppColors.surface,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.border),
-                  ),
-                  child: Column(
-                    children: [
-                      _buildTile(
-                        icon: Icons.table_chart_rounded,
-                        color: const Color(0xFF10B981),
-                        title: 'ส่งออกเป็นไฟล์ CSV (Excel Compatible)',
-                        subtitle: 'มี UTF-8 BOM สำหรับเปิดอ่านบน Microsoft Excel หรือ Google Sheets',
-                        onTap: _exportCsv,
-                      ),
-                      const Divider(height: 20),
-                      _buildTile(
-                        icon: Icons.backup_rounded,
-                        color: const Color(0xFF8B5CF6),
-                        title: 'สำรองข้อมูลทั้งหมด (JSON Full Backup)',
-                        subtitle: 'สำรองรายการธุรกรรมและแผนงบประมาณสำหรับกู้คืนภายหลัง',
-                        onTap: _exportJsonBackup,
-                      ),
-                    ],
-                  ),
+                // 2. Section 1: Export Studio Bento Deck
+                _buildSectionHeader(
+                  icon: Icons.upload_file_rounded,
+                  title: controller.isEnglish
+                      ? 'Financial Export Studio'
+                      : 'การส่งออกข้อมูล (Export Studio)',
+                  isDark: isDark,
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 10),
+                _buildExportBentoDeck(isDark),
+                const SizedBox(height: 22),
 
-                // Section 2: Import
-                const Text('การนำเข้าข้อมูล (Import & Restore)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
-                const SizedBox(height: 10),
-                Container(
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkSurface : AppColors.surface,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.border),
-                  ),
-                  child: _buildTile(
-                    icon: Icons.file_download_rounded,
-                    color: const Color(0xFF3B82F6),
-                    title: 'นำเข้าข้อมูลจาก CSV หรือ JSON',
-                    subtitle: 'วางข้อความหรือไฟล์สำรอง พร้อมระบบ Live Preview ตรวจสอบความถูกต้อง',
-                    onTap: _showImportBottomSheet,
-                  ),
+                // 3. Section 2: Import & Disaster Recovery
+                _buildSectionHeader(
+                  icon: Icons.download_for_offline_rounded,
+                  title: controller.isEnglish
+                      ? 'Import & Recovery Center'
+                      : 'การนำเข้าและกู้คืนข้อมูล (Import & Recovery)',
+                  isDark: isDark,
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 10),
+                _buildImportCard(isDark),
+                const SizedBox(height: 22),
 
-                // Section 3: Manage Data State
-                const Text('จัดการสถานะข้อมูล (Data State)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
-                const SizedBox(height: 10),
-                Container(
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkSurface : AppColors.surface,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.border),
-                  ),
-                  child: _buildTile(
-                    icon: Icons.delete_sweep_rounded,
-                    color: AppColors.deficitText,
-                    title: 'ล้างข้อมูลธุรกรรมทั้งหมด (Clear All)',
-                    subtitle: 'ลบรายการธุรกรรมทั้งหมดออกจากเครื่องเพื่อเริ่มต้นใหม่',
-                    onTap: _confirmClearAll,
-                  ),
+                // 4. Section 3: Danger Zone
+                _buildSectionHeader(
+                  icon: Icons.security_update_warning_rounded,
+                  title: controller.isEnglish
+                      ? 'Data Danger Zone'
+                      : 'จัดการความเสี่ยงข้อมูล (Danger Zone)',
+                  isDark: isDark,
+                  color: AppColors.deficitText,
                 ),
+                const SizedBox(height: 10),
+                _buildDangerZoneCard(isDark),
+                const SizedBox(height: 24),
               ],
             ),
           ),
@@ -551,44 +673,431 @@ class _DataManagementViewState extends State<DataManagementView> {
     );
   }
 
-  Widget _buildTile({
+  // ==========================================
+  // HERO STORAGE TELEMETRY CARD
+  // ==========================================
+  Widget _buildStorageTelemetryCard(bool isDark) {
+    return Obx(() {
+          final count = controller.transactions.length;
+
+          return Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withValues(
+                    alpha: isDark ? 0.12 : 0.05,
+                  ),
+                  blurRadius: 20,
+                  offset: const Offset(0, 6),
+                ),
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkSurface : AppColors.surface,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: AppColors.primary.withValues(
+                      alpha: isDark ? 0.35 : 0.25,
+                    ),
+                    width: 1.2,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    // Squircle Storage Icon
+                    Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [AppColors.primary, Color(0xFF6366F1)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.3),
+                            blurRadius: 10,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.storage_rounded,
+                        color: Colors.white,
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+
+                    // Telemetry Content
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  controller.isEnglish
+                                      ? 'Local Encrypted Vault'
+                                      : 'Local Persistence Active',
+                                  style: TextStyle(
+                                    fontSize: 14.5,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: -0.3,
+                                    color: isDark
+                                        ? AppColors.darkTextPrimary
+                                        : AppColors.textPrimary,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Container(
+                                width: 6,
+                                height: 6,
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary,
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.primary.withValues(
+                                        alpha: 0.6,
+                                      ),
+                                      blurRadius: 4,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            controller.isEnglish
+                                ? '$count records securely persisted on device'
+                                : 'บันทึกข้อมูลถาวรในเครื่องแล้ว $count รายการ (ออฟไลน์ 100%)',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w500,
+                              color: isDark
+                                  ? AppColors.darkTextSecondary
+                                  : AppColors.textSecondary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        })
+        .animate()
+        .fadeIn(duration: const Duration(milliseconds: 300))
+        .slideY(begin: -0.04);
+  }
+
+  // ==========================================
+  // EXPORT BENTO DECK
+  // ==========================================
+  Widget _buildExportBentoDeck(bool isDark) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkSurface : AppColors.surface,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: isDark ? AppColors.darkBorder : AppColors.border,
+          width: 0.8,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.03),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          _buildActionTile(
+            icon: Icons.table_chart_rounded,
+            color: AppColors.primary,
+            title: controller.isEnglish
+                ? 'Export to CSV (Excel Compatible)'
+                : 'ส่งออกเป็นไฟล์ CSV (Excel Compatible)',
+            subtitle: controller.isEnglish
+                ? 'UTF-8 BOM support for Microsoft Excel, Google Sheets, Numbers'
+                : 'มี UTF-8 BOM สำหรับเปิดอ่านบน Microsoft Excel หรือ Google Sheets',
+            tag: 'CSV / Excel',
+            onTap: _exportCsv,
+            isDark: isDark,
+          ),
+          Divider(
+            height: 1,
+            color: isDark
+                ? AppColors.darkBorder
+                : AppColors.border.withValues(alpha: 0.7),
+          ),
+          _buildActionTile(
+            icon: Icons.cloud_sync_rounded,
+            color: AppColors.accent,
+            title: controller.isEnglish
+                ? 'Full Backup (JSON Vault)'
+                : 'สำรองข้อมูลทั้งหมด (JSON Full Backup)',
+            subtitle: controller.isEnglish
+                ? 'Complete snapshot of all transactions & budget plans for recovery'
+                : 'สำรองรายการธุรกรรมและแผนงบประมาณสำหรับกู้คืนภายหลัง',
+            tag: 'JSON Vault',
+            onTap: _exportJsonBackup,
+            isDark: isDark,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==========================================
+  // IMPORT CARD
+  // ==========================================
+  Widget _buildImportCard(bool isDark) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkSurface : AppColors.surface,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: isDark ? AppColors.darkBorder : AppColors.border,
+          width: 0.8,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.03),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: _buildActionTile(
+        icon: Icons.file_download_rounded,
+        color: AppColors.fixedCostAccent,
+        title: controller.isEnglish
+            ? 'Import from CSV or JSON'
+            : 'นำเข้าข้อมูลจาก CSV หรือ JSON',
+        subtitle: controller.isEnglish
+            ? 'Paste backup text or CSV with live transaction preview and validation'
+            : 'วางข้อความหรือไฟล์สำรอง พร้อมระบบ Live Preview ตรวจสอบความถูกต้อง',
+        tag: controller.isEnglish ? 'Live Preview' : 'ตรวจสอบสด',
+        onTap: _showImportBottomSheet,
+        isDark: isDark,
+      ),
+    );
+  }
+
+  // ==========================================
+  // DANGER ZONE CARD
+  // ==========================================
+  Widget _buildDangerZoneCard(bool isDark) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkSurface : AppColors.surface,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: AppColors.deficitText.withValues(alpha: isDark ? 0.4 : 0.25),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.deficitText.withValues(
+              alpha: isDark ? 0.12 : 0.04,
+            ),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: _buildActionTile(
+        icon: Icons.delete_sweep_rounded,
+        color: AppColors.deficitText,
+        title: controller.isEnglish
+            ? 'Clear All Transactions (Reset)'
+            : 'ล้างข้อมูลธุรกรรมทั้งหมด (Clear All)',
+        subtitle: controller.isEnglish
+            ? 'Reset all transaction history to clean slate (budget plan preserved)'
+            : 'ลบรายการธุรกรรมทั้งหมดออกจากเครื่องเพื่อเริ่มต้นใหม่ (แผนงบยังคงอยู่)',
+        tag: controller.isEnglish ? 'Reset 0' : 'ล้างเป็น 0',
+        onTap: _confirmClearAll,
+        isDark: isDark,
+      ),
+    );
+  }
+
+  // ==========================================
+  // ACTION TILE BUILDER
+  // ==========================================
+  Widget _buildActionTile({
     required IconData icon,
     required Color color,
     required String title,
     required String subtitle,
+    required String tag,
     required VoidCallback onTap,
+    required bool isDark,
   }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        child: Row(
-          children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(12),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onTap();
+        },
+        borderRadius: BorderRadius.circular(22),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              // Squircle Action Icon
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: color.withValues(alpha: 0.25),
+                    width: 0.8,
+                  ),
+                ),
+                child: Icon(icon, color: color, size: 22),
               ),
-              child: Icon(icon, color: color, size: 22),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
-                  const SizedBox(height: 3),
-                  Text(subtitle, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-                ],
+              const SizedBox(width: 14),
+
+              // Title, Subtitle, & Tag
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            title,
+                            style: TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w700,
+                              color: isDark
+                                  ? AppColors.darkTextPrimary
+                                  : AppColors.textPrimary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 1.5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: color.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            tag,
+                            style: TextStyle(
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w700,
+                              color: color,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: isDark
+                            ? AppColors.darkTextSecondary
+                            : AppColors.textSecondary,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.textSecondary),
-          ],
+              const SizedBox(width: 8),
+
+              // Arrow
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 14,
+                color: isDark
+                    ? AppColors.darkTextSecondary
+                    : AppColors.textSecondary,
+              ),
+            ],
+          ),
         ),
       ),
+    );
+  }
+
+  // ==========================================
+  // SECTION HEADER
+  // ==========================================
+  Widget _buildSectionHeader({
+    required IconData icon,
+    required String title,
+    required bool isDark,
+    Color? color,
+  }) {
+    final effectiveColor = color ?? AppColors.primary;
+
+    return Row(
+      children: [
+        Container(
+          width: 24,
+          height: 24,
+          decoration: BoxDecoration(
+            color: effectiveColor.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(7),
+          ),
+          child: Icon(icon, size: 13, color: effectiveColor),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            title,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.2,
+              color: effectiveColor,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
   }
 }

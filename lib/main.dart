@@ -37,16 +37,22 @@ class MoneyTrackerApp extends StatelessWidget {
       initialBinding: DashboardBinding(),
       builder: (context, child) {
         final security = Get.put<SecurityController>(SecurityController(), permanent: true);
-        return Stack(
-          children: [
-            ?child,
-            Obx(() {
-              if (security.isLocked.value) {
-                return const PinLockView();
-              }
-              return const SizedBox.shrink();
-            }),
-          ],
+        final mediaQuery = MediaQuery.of(context);
+        return MediaQuery(
+          data: mediaQuery.copyWith(
+            textScaler: mediaQuery.textScaler.clamp(minScaleFactor: 0.85, maxScaleFactor: 1.05),
+          ),
+          child: Stack(
+            children: [
+              ?child,
+              Obx(() {
+                if (security.isLocked.value) {
+                  return const PinLockView();
+                }
+                return const SizedBox.shrink();
+              }),
+            ],
+          ),
         );
       },
     );

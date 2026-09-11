@@ -4,15 +4,15 @@ import 'package:get/get.dart';
 import '../../../data/models/transaction_model.dart';
 import '../../../routes/app_routes.dart';
 import '../../../theme/app_colors.dart';
-import '../../../theme/app_popup_decorations.dart';
+import '../../../widgets/liquid_glass_nav_dock.dart';
+import '../../../widgets/modern_app_bar.dart';
 import '../../security/controllers/security_controller.dart';
 import '../../transactions/views/quick_add_bottom_sheet.dart';
-import '../../../widgets/modern_app_bar.dart';
 import '../controllers/dashboard_controller.dart';
 import 'desktop_dashboard_view.dart';
 import 'mobile_dashboard_view.dart';
 
-/// หน้าจอหลักแดชบอร์ดพร้อมระบบตรวจจับหน้าจออัตโนมัติ (Mobile & Desktop)
+/// หน้าจอหลักแดชบอร์ดพร้อมระบบตรวจจับหน้าจออัตโนมัติ (Mobile & Desktop) สไตล์ FinTech 2026
 class DashboardView extends GetView<DashboardController> {
   const DashboardView({super.key});
 
@@ -48,25 +48,56 @@ class DashboardView extends GetView<DashboardController> {
   @override
   Widget build(BuildContext context) {
     final isDesktop = MediaQuery.sizeOf(context).width >= 900;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return KeyboardListener(
       focusNode: controller.keyboardFocusNode,
       autofocus: true,
       onKeyEvent: _handleKeyEvent,
       child: Scaffold(
+        extendBody: true,
+        backgroundColor: isDark
+            ? AppColors.darkBackground
+            : AppColors.background,
         appBar: isDesktop ? null : _buildMobileAppBar(context),
-        floatingActionButton: isDesktop
-            ? null
-            : FloatingActionButton.extended(
-                onPressed: () => QuickAddBottomSheet.show(context),
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                elevation: 3,
-                icon: const Icon(Icons.add_rounded, size: 22),
-                label: Text('save'.tr, style: const TextStyle(fontWeight: FontWeight.w700)),
+        body: LiquidGlassNavDock.floatingOnScreen(
+          context: context,
+          currentRoute: Routes.DASHBOARD,
+          body: Stack(
+            children: [
+              // Ambient Canvas Glow Lighting behind header
+              if (!isDesktop)
+                Positioned(
+                  top: -60,
+                  left: MediaQuery.of(context).size.width / 2 - 150,
+                  child: IgnorePointer(
+                    child: Container(
+                      width: 300,
+                      height: 240,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: RadialGradient(
+                          colors: [
+                            (isDark
+                                    ? AppColors.primary
+                                    : const Color(0xFF6EE7B7))
+                                .withValues(alpha: isDark ? 0.14 : 0.12),
+                            Colors.transparent,
+                          ],
+                          stops: const [0.0, 0.75],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+              SafeArea(
+                child: isDesktop
+                    ? const DesktopDashboardView()
+                    : const MobileDashboardView(),
               ),
-        body: SafeArea(
-          child: isDesktop ? const DesktopDashboardView() : const MobileDashboardView(),
+            ],
+          ),
         ),
       ),
     );
@@ -91,7 +122,7 @@ class DashboardView extends GetView<DashboardController> {
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.28),
+                color: AppColors.primary.withValues(alpha: 0.32),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -106,129 +137,12 @@ class DashboardView extends GetView<DashboardController> {
       ),
       title: 'Money Tracker',
       subtitle: 'Personal Finance',
-      badgeWidget: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-        decoration: BoxDecoration(
-          color: AppColors.primary.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: AppColors.primary.withValues(alpha: 0.28),
-            width: 0.8,
-          ),
-        ),
-        child: const Text(
-          'Smart FinTech',
-          style: TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w700,
-            color: AppColors.primary,
-          ),
-        ),
-      ),
       actions: [
-        ModernAppBar.squircleIconButton(
-          onTap: () => Get.toNamed(Routes.TRANSACTIONS_LIST),
-          icon: Icons.receipt_long_rounded,
-          isDark: isDark,
-          tooltip: 'all_transactions'.tr,
-        ),
-        ModernAppBar.squircleIconButton(
-          onTap: () => Get.toNamed(Routes.BUDGET_SETTINGS),
-          icon: Icons.tune_rounded,
-          isDark: isDark,
-          tooltip: 'budget_settings'.tr,
-        ),
-        Padding(
-          padding: const EdgeInsets.only(right: 10),
-          child: Material(
-            color: isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary,
-            borderRadius: BorderRadius.circular(12),
-            child: PopupMenuButton<String>(
-              icon: Icon(
-                Icons.more_vert_rounded,
-                size: 18,
-                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-              ),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              onSelected: (val) {
-                if (val == 'theme') {
-                  showThemePickerDialog(context);
-                } else if (val == 'language') {
-                  showLanguagePickerDialog(context);
-                } else if (val == 'data') {
-                  Get.toNamed(Routes.DATA_MANAGEMENT);
-                } else if (val == 'security') {
-                  Get.toNamed(Routes.PIN_SETTINGS);
-                } else if (val == 'lock') {
-                  if (Get.isRegistered<SecurityController>()) {
-                    Get.find<SecurityController>().lock();
-                  }
-                }
-              },
-              itemBuilder: (context) => [
-                PopupMenuItem(
-                  value: 'theme',
-                  child: Row(
-                    children: [
-                      Icon(
-                        controller.themeMode.value == ThemeMode.system
-                            ? Icons.brightness_auto_rounded
-                            : (controller.themeMode.value == ThemeMode.dark
-                                ? Icons.dark_mode_rounded
-                                : Icons.light_mode_rounded),
-                        size: 18,
-                        color: controller.themeMode.value == ThemeMode.system ? AppColors.primary : null,
-                      ),
-                      const SizedBox(width: 10),
-                      Text('theme_label'.trParams({'theme': controller.themeModeName}), style: const TextStyle(fontSize: 13)),
-                    ],
-                  ),
-                ),
-                PopupMenuItem(
-                  value: 'language',
-                  child: Row(
-                    children: [
-                      const Icon(Icons.language_rounded, size: 18, color: Color(0xFF3B82F6)),
-                      const SizedBox(width: 10),
-                      Text('language_label'.trParams({'lang': controller.currentLanguageName}), style: const TextStyle(fontSize: 13)),
-                    ],
-                  ),
-                ),
-                PopupMenuItem(
-                  value: 'data',
-                  child: Row(
-                    children: [
-                      const Icon(Icons.storage_rounded, size: 18, color: AppColors.primary),
-                      const SizedBox(width: 10),
-                      Text('data_management_short'.tr, style: const TextStyle(fontSize: 13)),
-                    ],
-                  ),
-                ),
-                PopupMenuItem(
-                  value: 'security',
-                  child: Row(
-                    children: [
-                      const Icon(Icons.security_rounded, size: 18, color: AppColors.accent),
-                      const SizedBox(width: 10),
-                      Text('security_pin_short'.tr, style: const TextStyle(fontSize: 13)),
-                    ],
-                  ),
-                ),
-                if (Get.isRegistered<SecurityController>() && Get.find<SecurityController>().isPinEnabled.value)
-                  PopupMenuItem(
-                    value: 'lock',
-                    child: Row(
-                      children: [
-                        const Icon(Icons.lock_outline_rounded, size: 18, color: AppColors.deficitText),
-                        const SizedBox(width: 10),
-                        Text('lock_screen_now'.tr, style: const TextStyle(fontSize: 13, color: AppColors.deficitText)),
-                      ],
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
+        // 1. Live Security Pulse Badge
+        ModernAppBar.securityBadge(context: context, isDark: isDark),
+
+        // 2. One-Tap Quick Theme Morphing Squircle
+        ModernAppBar.themeToggleButton(context: context, isDark: isDark),
       ],
     );
   }

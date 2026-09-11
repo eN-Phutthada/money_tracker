@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:money_tracker/main.dart';
@@ -6,6 +7,8 @@ import 'package:money_tracker/app/modules/dashboard/views/dashboard_view.dart';
 import 'package:money_tracker/app/modules/security/controllers/security_controller.dart';
 import 'package:money_tracker/app/modules/transactions/views/quick_add_bottom_sheet.dart';
 import 'package:money_tracker/app/routes/app_routes.dart';
+
+import 'package:money_tracker/app/widgets/liquid_glass_nav_dock.dart';
 
 void main() {
   testWidgets('Full navigation and interaction test', (WidgetTester tester) async {
@@ -17,6 +20,7 @@ void main() {
     expect(find.text('รายเดือน'), findsOneWidget);
     expect(find.text('รายปี'), findsOneWidget);
     expect(find.text('ทั้งหมด'), findsOneWidget);
+    expect(find.byType(LiquidGlassNavDock), findsOneWidget);
 
     // Test period switching in DashboardHeader
     await tester.tap(find.text('รายปี'));
@@ -30,6 +34,7 @@ void main() {
     Get.toNamed(Routes.BUDGET_SETTINGS);
     await tester.pumpAndSettle();
     expect(find.text('ตั้งค่างบประมาณ'), findsOneWidget);
+    expect(find.byType(LiquidGlassNavDock), findsOneWidget);
 
     // Go back
     Get.back();
@@ -39,6 +44,7 @@ void main() {
     Get.toNamed(Routes.TRANSACTIONS_LIST);
     await tester.pumpAndSettle();
     expect(find.text('รายการธุรกรรมทั้งหมด'), findsOneWidget);
+    expect(find.byType(LiquidGlassNavDock), findsOneWidget);
 
     // Go back
     Get.back();
@@ -47,7 +53,8 @@ void main() {
     // Try navigating to Data Management
     Get.toNamed(Routes.DATA_MANAGEMENT);
     await tester.pumpAndSettle();
-    expect(find.text('จัดการข้อมูล (Data Management)'), findsOneWidget);
+    expect(find.text('data_management'.tr), findsOneWidget);
+    expect(find.byType(LiquidGlassNavDock), findsNothing);
 
     // Go back
     Get.back();
@@ -57,6 +64,7 @@ void main() {
     Get.toNamed(Routes.PIN_SETTINGS);
     await tester.pumpAndSettle();
     expect(find.text('ความปลอดภัยและรหัส PIN'), findsOneWidget);
+    expect(find.byType(LiquidGlassNavDock), findsNothing);
 
     // Go back
     Get.back();
@@ -121,5 +129,36 @@ void main() {
 
     // Verify successfully returned to Dashboard
     expect(find.text('Personal Finance'), findsOneWidget);
+
+    // Test Language Toggle
+    dashController.toggleLanguage();
+    await tester.pumpAndSettle();
+    expect(dashController.isEnglish, isTrue);
+
+    // Toggle back to TH
+    dashController.toggleLanguage();
+    await tester.pumpAndSettle();
+    expect(dashController.isEnglish, isFalse);
+
+    // Test Top-Right AppBar Quick Theme Toggle Squircle
+    final initialTheme = dashController.themeMode.value;
+    await tester.tap(find.byIcon(Icons.brightness_auto_rounded));
+    await tester.pumpAndSettle();
+    expect(dashController.themeMode.value, isNot(initialTheme));
+
+
+    // Test Navigation Dock Hub & Vault Menu
+    expect(find.byIcon(Icons.widgets_rounded), findsOneWidget);
+    await tester.tap(find.byIcon(Icons.widgets_rounded));
+    await tester.pumpAndSettle();
+
+    // Verify Hub & Vault menu items are displayed
+    expect(find.text('HUB & VAULT CENTER'), findsOneWidget);
+    expect(find.text('จัดการข้อมูล (CSV)'), findsOneWidget);
+
+    // Dismiss the popup menu
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
   });
 }
+
