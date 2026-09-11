@@ -3,11 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
+import 'package:liquid_glass_easy/liquid_glass_easy.dart';
 import '../modules/dashboard/controllers/dashboard_controller.dart';
 import 'app_colors.dart';
 export '../widgets/app_feedback.dart';
 
-/// คลาสรวมการตกแต่ง Dialog และ Modal Popup สไตล์ Glassmorphism FinTech ระดับพรีเมียม
+/// คลาสรวมการตกแต่ง Dialog และ Modal Popup สไตล์ LiquidGlass FinTech ระดับพรีเมียม
 class AppGlassDialog extends StatelessWidget {
   final Widget child;
   final double maxWidth;
@@ -38,28 +39,69 @@ class AppGlassDialog extends StatelessWidget {
             maxHeight: maxHeight ?? double.infinity,
           ),
           child: Container(
-            padding: padding ?? const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: isDark
-                  ? AppColors.darkSurface.withValues(alpha: 0.94)
-                  : AppColors.surface.withValues(alpha: 0.96),
               borderRadius: BorderRadius.circular(26),
-              border: Border.all(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.1)
-                    : AppColors.border.withValues(alpha: 0.8),
-                width: 1.2,
-              ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.5 : 0.1),
+                  color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.12),
                   blurRadius: 36,
                   spreadRadius: -4,
                   offset: const Offset(0, 14),
                 ),
               ],
             ),
-            child: child,
+            child: LiquidGlassLens(
+              style: LiquidGlassStyle(
+                shape: const LiquidGlassShape.squircle(
+                  cornerRadius: 26,
+                  borderWidth: 1.2,
+                  lightIntensity: 1.3,
+                  lightDirection: 65,
+                  borderType: OpticalBorder(
+                    borderSaturation: 1.35,
+                    ambientIntensity: 1.15,
+                    borderSolidity: 0.25,
+                  ),
+                ),
+                appearance: LiquidGlassAppearance(
+                  color: isDark
+                      ? const Color(0xFF111726).withValues(alpha: 0.65)
+                      : const Color(0xFFFFFFFF).withValues(alpha: 0.76),
+                  blur: const LiquidGlassBlur(sigmaX: 18, sigmaY: 18),
+                ),
+                refraction: const LiquidGlassRefraction(
+                  distortion: 0.08,
+                  distortionWidth: 28,
+                  chromaticAberration: 0.002,
+                ),
+              ),
+              child: Container(
+                padding: padding ?? const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(26),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: isDark
+                        ? [
+                            AppColors.darkSurface.withValues(alpha: 0.30),
+                            AppColors.darkSurfaceSecondary.withValues(alpha: 0.16),
+                          ]
+                        : [
+                            Colors.white.withValues(alpha: 0.38),
+                            Colors.white.withValues(alpha: 0.20),
+                          ],
+                  ),
+                  border: Border.all(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.16)
+                        : AppColors.border.withValues(alpha: 0.8),
+                    width: 1.2,
+                  ),
+                ),
+                child: child,
+              ),
+            ),
           ),
         ),
       ),
@@ -132,6 +174,13 @@ class AppPopupHeader extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                       letterSpacing: -0.3,
                       color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                      shadows: [
+                        Shadow(
+                          color: (isDark ? Colors.black : Colors.white).withValues(alpha: 0.45),
+                          blurRadius: 2,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -140,9 +189,10 @@ class AppPopupHeader extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       subtitle!,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
-                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w500,
+                        color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569),
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -226,9 +276,17 @@ class AppConfirmDialog extends StatelessWidget {
           Text(
             message,
             style: TextStyle(
-              fontSize: 13,
-              color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-              height: 1.5,
+              fontSize: 13.5,
+              color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF1E293B),
+              fontWeight: FontWeight.w500,
+              height: 1.55,
+              shadows: [
+                Shadow(
+                  color: (isDark ? Colors.black : Colors.white).withValues(alpha: 0.35),
+                  blurRadius: 1.5,
+                  offset: const Offset(0, 0.5),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 22),
@@ -244,7 +302,7 @@ class AppConfirmDialog extends StatelessWidget {
                 child: Text(
                   cancelText,
                   style: TextStyle(
-                    color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                    color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -332,7 +390,7 @@ void showThemePickerDialog(BuildContext context) {
                     ),
                     const SizedBox(width: 12),
                     Text(
-                      'ธีมการแสดงผล (Theme)',
+                      dashboardController.isEnglish ? 'Display Theme' : 'ธีมการแสดงผล',
                       style: TextStyle(
                         fontSize: 16.5,
                         fontWeight: FontWeight.w800,
@@ -364,25 +422,13 @@ void showThemePickerDialog(BuildContext context) {
               return Column(
                 children: [
                   _buildThemeOptionTile(
-                    title: 'ตามระบบ (System Default)',
-                    subtitle: 'ปรับโหมดมืด/สว่างตามการตั้งค่าของอุปกรณ์อัตโนมัติ',
-                    badge: 'แนะนำ',
-                    icon: Icons.brightness_auto_rounded,
-                    iconColor: AppColors.primary,
-                    isSelected: currentMode == ThemeMode.system,
-                    onTap: () {
-                      dashboardController.setThemeMode(ThemeMode.system);
-                      Navigator.of(ctx).pop();
-                    },
-                    isDark: isDark,
-                  ),
-                  const SizedBox(height: 10),
-                  _buildThemeOptionTile(
-                    title: 'โหมดสว่าง (Light Mode)',
-                    subtitle: 'พื้นหลังโทนขาว คมชัด สดใส สบายตา',
+                    title: dashboardController.isEnglish ? 'Light Mode' : 'โหมดสว่าง',
+                    subtitle: dashboardController.isEnglish
+                        ? 'Crisp, bright white background'
+                        : 'พื้นหลังโทนขาว คมชัด สดใส สบายตา',
                     icon: Icons.light_mode_rounded,
                     iconColor: const Color(0xFFF59E0B),
-                    isSelected: currentMode == ThemeMode.light,
+                    isSelected: currentMode == ThemeMode.light || (currentMode == ThemeMode.system && !isDark),
                     onTap: () {
                       dashboardController.setThemeMode(ThemeMode.light);
                       Navigator.of(ctx).pop();
@@ -391,11 +437,13 @@ void showThemePickerDialog(BuildContext context) {
                   ),
                   const SizedBox(height: 10),
                   _buildThemeOptionTile(
-                    title: 'โหมดมืด (Dark Mode)',
-                    subtitle: 'พื้นหลังโทนเข้ม ถนอมสายตา และประหยัดแบตเตอรี่',
+                    title: dashboardController.isEnglish ? 'Dark Mode' : 'โหมดมืด',
+                    subtitle: dashboardController.isEnglish
+                        ? 'Sleek dark background, easy on the eyes'
+                        : 'พื้นหลังโทนเข้ม ถนอมสายตา และประหยัดแบตเตอรี่',
                     icon: Icons.dark_mode_rounded,
                     iconColor: const Color(0xFF6366F1),
-                    isSelected: currentMode == ThemeMode.dark,
+                    isSelected: currentMode == ThemeMode.dark || (currentMode == ThemeMode.system && isDark),
                     onTap: () {
                       dashboardController.setThemeMode(ThemeMode.dark);
                       Navigator.of(ctx).pop();
@@ -461,12 +509,16 @@ Widget _buildThemeOptionTile({
                 children: [
                   Row(
                     children: [
-                      Text(
-                        title,
-                        style: TextStyle(
-                          fontSize: 13.5,
-                          fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                          color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                      Flexible(
+                        child: Text(
+                          title,
+                          style: TextStyle(
+                            fontSize: 13.5,
+                            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       if (badge != null) ...[
@@ -605,7 +657,7 @@ void showLanguagePickerDialog(BuildContext context) {
               return Column(
                 children: [
                   _buildThemeOptionTile(
-                    title: 'ภาษาไทย (Thai)',
+                    title: 'ภาษาไทย',
                     subtitle: 'แสดงผลเป็นภาษาไทย และปี พ.ศ.',
                     badge: currentLang == 'th' ? 'ปัจจุบัน' : null,
                     icon: Icons.flag_rounded,
@@ -619,7 +671,7 @@ void showLanguagePickerDialog(BuildContext context) {
                   ),
                   const SizedBox(height: 10),
                   _buildThemeOptionTile(
-                    title: 'English (US)',
+                    title: 'English',
                     subtitle: 'Display in English with Gregorian Year (CE)',
                     badge: currentLang == 'en' ? 'Active' : null,
                     icon: Icons.language_rounded,

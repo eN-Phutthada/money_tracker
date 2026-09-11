@@ -140,9 +140,6 @@ class DashboardView extends GetView<DashboardController> {
       actions: [
         // 1. Live Security Pulse Badge
         ModernAppBar.securityBadge(context: context, isDark: isDark),
-
-        // 2. One-Tap Quick Theme Morphing Squircle
-        ModernAppBar.themeToggleButton(context: context, isDark: isDark),
       ],
     );
   }

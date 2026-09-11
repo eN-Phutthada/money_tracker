@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_popup_decorations.dart';
 import '../../../widgets/modern_app_bar.dart';
+import '../../../data/services/security_service.dart';
 import '../controllers/security_controller.dart';
 
 /// หน้าจอตั้งค่าความปลอดภัยและรหัส PIN ด้วย GetX (FinTech 2026 Security Command Center)
@@ -349,6 +350,45 @@ class PinSettingsView extends GetView<SecurityController> {
     }).toList();
   }
 
+  Future<void> _handleToggleBiometrics(BuildContext context, bool enabled) async {
+    HapticFeedback.selectionClick();
+    if (enabled) {
+      final availability = await controller.checkBiometricAvailability();
+      if (!availability.isAvailable) {
+        AppFeedback.showWarning(
+          title: 'ชีวมิติไม่พร้อมใช้งาน',
+          message: availability.message ?? 'biometric_not_supported'.tr,
+        );
+        return;
+      }
+
+      final result = await controller.authenticateWithBiometricsDetailed(
+        localizedReason: 'biometric_prompt_enable'.tr,
+      );
+
+      if (result.success) {
+        await controller.setBiometricsEnabled(true);
+        AppFeedback.showSuccess(
+          title: 'biometric_verified'.tr,
+          message: 'เปิดใช้งานการยืนยันตัวตนด้วยชีวมิติสำเร็จ',
+        );
+      } else {
+        if (result.failureReason != BiometricAuthFailureReason.canceled) {
+          AppFeedback.showWarning(
+            title: 'ไม่สามารถเปิดใช้งานได้',
+            message: result.errorMessage ?? 'biometric_failed'.tr,
+          );
+        }
+      }
+    } else {
+      await controller.setBiometricsEnabled(false);
+      AppFeedback.showInfo(
+        title: 'ปิดใช้งาน',
+        message: 'ปิดใช้งานการยืนยันตัวตนด้วยชีวมิติแล้ว',
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -574,7 +614,7 @@ class PinSettingsView extends GetView<SecurityController> {
                         Obx(() {
                           return SwitchListTile(
                             title: const Text(
-                              'ล็อกแอปด้วยรหัส PIN (PIN Lock)',
+                              'ล็อกแอปด้วยรหัส PIN',
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
@@ -625,7 +665,7 @@ class PinSettingsView extends GetView<SecurityController> {
                                   ),
                                 ),
                                 title: const Text(
-                                  'เปลี่ยนรหัสผ่าน PIN (Change PIN)',
+                                  'เปลี่ยนรหัส PIN',
                                   style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
@@ -654,27 +694,67 @@ class PinSettingsView extends GetView<SecurityController> {
                                 onTap: () => _showSetPinDialog(context),
                               ),
                               const Divider(height: 16),
-                              SwitchListTile(
-                                title: const Text(
-                                  'ยืนยันตัวตนด้วย Biometrics (Face / Touch ID)',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
+                              Obx(() {
+                                final availability = controller.biometricAvailability.value;
+                                final isNotAvailable = availability != null && !availability.isAvailable;
+
+                                return SwitchListTile(
+                                  title: Row(
+                                    children: [
+                                      const Flexible(
+                                        child: Text(
+                                          'ปลดล็อกด้วยสแกนนิ้ว / ใบหน้า',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      if (isNotAvailable) ...[
+                                        const SizedBox(width: 8),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.warning.withValues(alpha: 0.12),
+                                            borderRadius: BorderRadius.circular(6),
+                                            border: Border.all(
+                                              color: AppColors.warning.withValues(alpha: 0.3),
+                                              width: 0.8,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            availability.status == BiometricAvailabilityStatus.notEnrolled
+                                                ? 'biometric_not_enrolled_badge'.tr
+                                                : 'biometric_not_supported_badge'.tr,
+                                            style: const TextStyle(
+                                              fontSize: 9.5,
+                                              fontWeight: FontWeight.w700,
+                                              color: AppColors.warning,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ],
                                   ),
-                                ),
-                                subtitle: const Text(
-                                  'ปลดล็อกอย่างรวดเร็วด้วยการสแกนลายนิ้วมือหรือใบหน้า',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: AppColors.textSecondary,
+                                  subtitle: Padding(
+                                    padding: const EdgeInsets.only(top: 2),
+                                    child: Text(
+                                      controller.biometricStatusSubtitle,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: isNotAvailable ? AppColors.warning : AppColors.textSecondary,
+                                      ),
+                                    ),
                                   ),
-                                ),
-                                value: controller.isBiometricsEnabled.value,
-                                activeThumbColor: AppColors.primary,
-                                contentPadding: EdgeInsets.zero,
-                                onChanged: (val) =>
-                                    controller.setBiometricsEnabled(val),
-                              ),
+                                  value: controller.isBiometricsEnabled.value,
+                                  activeThumbColor: AppColors.primary,
+                                  contentPadding: EdgeInsets.zero,
+                                  onChanged: (val) =>
+                                      _handleToggleBiometrics(context, val),
+                                );
+                              }),
                             ],
                           );
                         }),

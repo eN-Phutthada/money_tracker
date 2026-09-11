@@ -249,25 +249,27 @@ void main() {
       expect(loadedSystem, 'system');
     });
 
-    test('DashboardController themeMode switching and cycling', () {
+    test('DashboardController themeMode initial system default and light/dark switching', () {
       Get.locale = const Locale('th', 'TH');
       final controller = Get.put(DashboardController());
       controller.setThemeMode(ThemeMode.system);
       expect(controller.themeMode.value, ThemeMode.system);
       expect(controller.themeModeName, 'ตามระบบ');
 
-      // Cycle: system -> light -> dark -> system
-      controller.toggleTheme();
-      expect(controller.themeMode.value, ThemeMode.light);
-      expect(controller.themeModeName, 'โหมดสว่าง');
-
+      // Toggle from initial state toggles to dark
       controller.toggleTheme();
       expect(controller.themeMode.value, ThemeMode.dark);
       expect(controller.themeModeName, 'โหมดมืด');
 
+      // Toggle from dark toggles to light
       controller.toggleTheme();
-      expect(controller.themeMode.value, ThemeMode.system);
-      expect(controller.themeModeName, 'ตามระบบ');
+      expect(controller.themeMode.value, ThemeMode.light);
+      expect(controller.themeModeName, 'โหมดสว่าง');
+
+      // Toggle again toggles to dark (does not cycle back to system)
+      controller.toggleTheme();
+      expect(controller.themeMode.value, ThemeMode.dark);
+      expect(controller.themeModeName, 'โหมดมืด');
     });
 
     test('Language storage lifecycle', () async {
@@ -338,7 +340,7 @@ void main() {
       expect(th['edit_transaction_desc'], 'แก้ไขยอดเงิน วันที่ หรือหมวดหมู่');
       expect(th['variable_cost_desc'], 'ตัดจากโควตารายวัน');
       expect(th['fixed_cost_desc'], 'ค่าใช้จ่ายประจำ/งวด');
-      expect(th['note_hint'], 'พิมพ์ชื่อหรือบันทึกเพิ่มเติม (ไม่บังคับ)');
+      expect(th['note_hint'], 'พิมพ์ชื่อหรือบันทึกเพิ่มเติม');
       expect(th['save_changes'], 'บันทึกการแก้ไข');
       expect(th['add_transaction'], 'บันทึกรายการ');
       expect(th['reset'], 'ล้าง');
@@ -402,7 +404,7 @@ void main() {
       final en = AppTranslations().keys['en_US']!;
 
       expect(th['select_period'], 'เลือกเดือนและรอบเวลา');
-      expect(th['jump_to_current_month'], 'กลับสู่เดือนปัจจุบัน (วันนี้)');
+      expect(th['jump_to_current_month'], 'กลับสู่เดือนปัจจุบัน');
       expect(th['quarter_1'], 'ไตรมาส 1');
       expect(th['quarter_2'], 'ไตรมาส 2');
       expect(th['quarter_3'], 'ไตรมาส 3');
@@ -431,6 +433,8 @@ void main() {
       expect(th['allocation_breakdown'], 'สัดส่วนการจัดสรรรายรับ');
       expect(th['daily_studio_title'], 'สตูดิโอโควตากินอยู่รายวัน');
       expect(th['apply_template'], 'ปรับใช้สูตรนี้');
+      expect(th['planned_fixed_costs_title'], 'ค่าใช้จ่ายคงที่');
+      expect(th['planned_savings_title'], 'เป้าหมายเงินออมและลงทุน');
 
       expect(en['rule_50_30_20_badge'], 'Popular');
       expect(en['rule_60_20_20_badge'], 'Fixed Heavy');
@@ -439,6 +443,8 @@ void main() {
       expect(en['allocation_breakdown'], 'Income Allocation Breakdown');
       expect(en['daily_studio_title'], 'Daily Allowance Studio');
       expect(en['apply_template'], 'Apply Strategy');
+      expect(en['planned_fixed_costs_title'], 'Fixed Costs');
+      expect(en['planned_savings_title'], 'Savings & Investment');
     });
   });
 }

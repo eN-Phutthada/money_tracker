@@ -205,7 +205,7 @@ class DesktopDashboardView extends GetView<DashboardController> {
               ElevatedButton.icon(
                 onPressed: () => QuickAddBottomSheet.show(Get.context!),
                 icon: const Icon(Icons.add_rounded, size: 18),
-                label: Text('${'save'.tr} (N)', style: const TextStyle(fontWeight: FontWeight.w700)),
+                label: Text('add_transaction'.tr, style: const TextStyle(fontWeight: FontWeight.w700)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,

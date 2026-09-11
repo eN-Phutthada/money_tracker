@@ -1,28 +1,25 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:liquid_glass_easy/liquid_glass_easy.dart';
 import '../modules/dashboard/controllers/dashboard_controller.dart';
 import '../modules/security/controllers/security_controller.dart';
 import '../modules/transactions/views/quick_add_bottom_sheet.dart';
 import '../routes/app_routes.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_popup_decorations.dart';
-import 'shaders/shaders.dart';
 
 /// แถบนำทางกระจกใสเหลวลอยตัวบนหน้าจอระดับอัลตร้าพรีเมียม (Ultra-Translucent Liquid Glass Navigation Dock)
-/// สไตล์ FinTech 2026:
+/// สไตล์ FinTech 2026 ขับเคลื่อนด้วย Flutter Package `liquid_glass_easy`:
 /// - ลอยอยู่บนหน้าจอ (Floating on Screen Overlay) ไม่ใส่ไว้ที่ bottom bar ของ Scaffold
-/// - ทำงานแบบ Universal พร้อมแสดงบนทุกหน้าจอของแอปพลิเคชัน
-/// - หักเหแสงด้วย ImageFilter.blur(sigma: 28)
+/// - ทำงานแบบ Universal พร้อมแสดงบนทุกหน้าจอของแอปพลิเคชัน (Windows, Android, iOS, macOS, Web)
+/// - เลนส์กระจกหักเหแสง Superellipse ขอบมน 28px สไตล์ Squircle พร้อม OpticalBorder
 /// - ขอบสะท้อนแสง Hairline Specular Highlight (1.2px)
+/// - รองรับทั้ง Skia (SkSL-compatible shaders) และ Impeller 100% โดยไม่มีคำเตือน compiler
 /// - รวมศูนย์ควบคุม Hub & Vault Center Menu สำหรับสลับธีม ภาษา สำรองข้อมูล และความปลอดภัย
 class LiquidGlassNavDock extends StatelessWidget {
   final String currentRoute;
   final GlobalKey? backgroundKey;
-
-  static final LiquidGlassLensShader _lensShader =
-      LiquidGlassLensShader()..initialize();
 
   const LiquidGlassNavDock({
     super.key,
@@ -41,23 +38,29 @@ class LiquidGlassNavDock extends StatelessWidget {
     if (isDesktop) return body;
 
     final actualBgKey = backgroundKey ?? GlobalKey();
+    final isTest = WidgetsBinding.instance.runtimeType.toString().contains('Test');
 
-    return Stack(
-      children: [
-        RepaintBoundary(
-          key: actualBgKey,
-          child: body,
-        ),
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: 12,
-          child: LiquidGlassNavDock(
-            currentRoute: currentRoute,
-            backgroundKey: actualBgKey,
+    return LiquidGlassView(
+      backgroundWidget: RepaintBoundary(
+        key: actualBgKey,
+        child: body,
+      ),
+      realTimeCapture: !isTest,
+      regionCapture: true,
+      refreshRate: LiquidGlassRefreshRate.medium,
+      child: Stack(
+        children: [
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 12,
+            child: LiquidGlassNavDock(
+              currentRoute: currentRoute,
+              backgroundKey: actualBgKey,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -66,6 +69,31 @@ class LiquidGlassNavDock extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final dashboardController = Get.find<DashboardController>();
 
+    final style = LiquidGlassStyle(
+      shape: const LiquidGlassShape.squircle(
+        cornerRadius: 28,
+        borderWidth: 1.2,
+        lightIntensity: 1.35,
+        lightDirection: 75,
+        borderType: OpticalBorder(
+          borderSaturation: 1.4,
+          ambientIntensity: 1.2,
+          borderSolidity: 0.25,
+        ),
+      ),
+      appearance: LiquidGlassAppearance(
+        color: isDark
+            ? const Color(0xFF111726).withValues(alpha: 0.48)
+            : const Color(0xFFFFFFFF).withValues(alpha: 0.58),
+        blur: const LiquidGlassBlur(sigmaX: 12, sigmaY: 12),
+      ),
+      refraction: const LiquidGlassRefraction(
+        distortion: 0.10,
+        distortionWidth: 30,
+        chromaticAberration: 0.003,
+      ),
+    );
+
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(18, 0, 18, 0),
@@ -73,24 +101,27 @@ class LiquidGlassNavDock extends StatelessWidget {
           heightFactor: 1.0,
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 390),
-            child: LiquidGlassBackgroundCapture(
-              backgroundKey: backgroundKey,
-              shader: _lensShader,
-              borderRadius: BorderRadius.circular(28),
-              effectSize: 5.0,
-              blurIntensity: 0.6,
-              dispersionStrength: 0.55,
-              refractionStrength: 2.2,
-              fallbackBuilder: (context, child) => ClipRRect(
-                borderRadius: BorderRadius.circular(28),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
-                  child: child,
-                ),
-              ),
-              child: SizedBox(
-                height: 66,
-                child: Padding(
+            child: SizedBox(
+              height: 66,
+              child: LiquidGlassLens(
+                style: style,
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(28),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: isDark
+                          ? [
+                              AppColors.darkSurface.withValues(alpha: 0.22),
+                              AppColors.darkSurfaceSecondary.withValues(alpha: 0.12),
+                            ]
+                          : [
+                              Colors.white.withValues(alpha: 0.28),
+                              Colors.white.withValues(alpha: 0.14),
+                            ],
+                    ),
+                  ),
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -103,7 +134,9 @@ class LiquidGlassNavDock extends StatelessWidget {
                         isDark: isDark,
                         onTap: () {
                           if (currentRoute != Routes.DASHBOARD) {
-                            Get.until((route) => route.isFirst || route.settings.name == Routes.DASHBOARD);
+                            Get.until((route) =>
+                                route.isFirst ||
+                                route.settings.name == Routes.DASHBOARD);
                           }
                         },
                       ),
@@ -168,93 +201,93 @@ class LiquidGlassNavDock extends StatelessWidget {
   }) {
     return Tooltip(
       message: tooltip,
-      child: InkWell(
-        onTap: () {
-          HapticFeedback.selectionClick();
-          onTap();
-        },
-        borderRadius: BorderRadius.circular(16),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 260),
-          curve: Curves.easeOutCubic,
-          width: 46,
-          height: 46,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            gradient: isActive
-                ? LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: isDark
-                        ? [
-                            Colors.white.withValues(alpha: 0.20),
-                            AppColors.primary.withValues(alpha: 0.22),
-                            AppColors.primary.withValues(alpha: 0.08),
-                          ]
-                        : [
-                            Colors.white.withValues(alpha: 0.75),
-                            AppColors.primary.withValues(alpha: 0.16),
-                            Colors.white.withValues(alpha: 0.35),
-                          ],
-                    stops: const [0.0, 0.55, 1.0],
-                  )
-                : null,
-            border: isActive
-                ? Border.all(
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.35)
-                        : Colors.white.withValues(alpha: 0.85),
-                    width: 1.0,
-                  )
-                : null,
-            boxShadow: isActive
-                ? [
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: isDark ? 0.25 : 0.14),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
-                    ),
-                    BoxShadow(
-                      color: Colors.white.withValues(alpha: isDark ? 0.15 : 0.60),
-                      blurRadius: 4,
-                      offset: const Offset(0, -1),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                size: 22,
-                color: isActive
-                    ? AppColors.primary
-                    : (isDark ? AppColors.darkTextSecondary : const Color(0xFF64748B)),
-              ),
-              if (isActive) ...[
-                const SizedBox(height: 3),
-                Container(
-                  width: 4.5,
-                  height: 4.5,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppColors.primary,
-                    boxShadow: [
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.selectionClick();
+            onTap();
+          },
+          borderRadius: BorderRadius.circular(16),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 260),
+            curve: Curves.easeOutCubic,
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              gradient: isActive
+                  ? LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: isDark
+                          ? [
+                              Colors.white.withValues(alpha: 0.20),
+                              AppColors.primary.withValues(alpha: 0.22),
+                              AppColors.primary.withValues(alpha: 0.08),
+                            ]
+                          : [
+                              Colors.white.withValues(alpha: 0.75),
+                              AppColors.primary.withValues(alpha: 0.16),
+                              Colors.white.withValues(alpha: 0.35),
+                            ],
+                      stops: const [0.0, 0.55, 1.0],
+                    )
+                  : null,
+              border: isActive
+                  ? Border.all(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.35)
+                          : Colors.white.withValues(alpha: 0.85),
+                      width: 1.0,
+                    )
+                  : null,
+              boxShadow: isActive
+                  ? [
                       BoxShadow(
-                        color: AppColors.primary,
-                        blurRadius: 6,
-                        spreadRadius: 0.8,
+                        color: AppColors.primary.withValues(alpha: isDark ? 0.25 : 0.14),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
                       ),
-                    ],
-                  ),
+                      BoxShadow(
+                        color: Colors.white.withValues(alpha: isDark ? 0.15 : 0.60),
+                        blurRadius: 4,
+                        offset: const Offset(0, -1),
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  size: 22,
+                  color: isActive
+                      ? AppColors.primary
+                      : (isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569)),
                 ),
+                if (isActive) ...[
+                  const SizedBox(height: 3),
+                  Container(
+                    width: 4.5,
+                    height: 4.5,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.primary,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary,
+                          blurRadius: 6,
+                          spreadRadius: 0.8,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
-      ),
-    );
+      );
   }
 
   /// เมนูศูนย์ควบคุม Hub & Vault สไตล์ Liquid Glass (ย้ายมาจากแถบ AppBar ด้านบนขวา)
@@ -362,20 +395,21 @@ class LiquidGlassNavDock extends StatelessWidget {
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(
-                      color: (controller.themeMode.value == ThemeMode.dark
+                      color: ((controller.themeMode.value == ThemeMode.dark ||
+                              (controller.themeMode.value == ThemeMode.system && isDark))
                               ? const Color(0xFF6366F1)
                               : const Color(0xFFF59E0B))
                           .withValues(alpha: 0.14),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Icon(
-                      controller.themeMode.value == ThemeMode.system
-                          ? Icons.brightness_auto_rounded
-                          : (controller.themeMode.value == ThemeMode.dark
-                              ? Icons.dark_mode_rounded
-                              : Icons.light_mode_rounded),
+                      (controller.themeMode.value == ThemeMode.dark ||
+                              (controller.themeMode.value == ThemeMode.system && isDark))
+                          ? Icons.dark_mode_rounded
+                          : Icons.light_mode_rounded,
                       size: 17,
-                      color: controller.themeMode.value == ThemeMode.dark
+                      color: (controller.themeMode.value == ThemeMode.dark ||
+                              (controller.themeMode.value == ThemeMode.system && isDark))
                           ? const Color(0xFF818CF8)
                           : const Color(0xFFF59E0B),
                     ),
@@ -383,12 +417,14 @@ class LiquidGlassNavDock extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'theme_label'.trParams({'theme': controller.themeModeName}),
+                      'theme_settings'.tr,
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   Container(
@@ -431,12 +467,14 @@ class LiquidGlassNavDock extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'language_label'.trParams({'lang': controller.currentLanguageName}),
+                      'language_settings'.tr,
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   Container(
@@ -674,83 +712,83 @@ class LiquidGlassNavDock extends StatelessWidget {
   Widget _buildCenterAddButton(BuildContext context) {
     return Tooltip(
       message: 'save'.tr,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            HapticFeedback.mediumImpact();
-            QuickAddBottomSheet.show(context);
-          },
-          borderRadius: BorderRadius.circular(19),
-          child: Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFF34D399), // Radiant Mint
-                  Color(0xFF10B981), // Core Emerald
-                  Color(0xFF047857), // Deep Forest Jewel
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () {
+              HapticFeedback.mediumImpact();
+              QuickAddBottomSheet.show(context);
+            },
+            borderRadius: BorderRadius.circular(19),
+            child: Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color(0xFF34D399), // Radiant Mint
+                    Color(0xFF10B981), // Core Emerald
+                    Color(0xFF047857), // Deep Forest Jewel
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(19),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.65),
+                  width: 1.4,
+                ),
+                boxShadow: [
+                  // Radiant emerald halo
+                  BoxShadow(
+                    color: const Color(0xFF10B981).withValues(alpha: 0.48),
+                    blurRadius: 20,
+                    offset: const Offset(0, 5),
+                    spreadRadius: 1,
+                  ),
+                  // Specular razor glint
+                  BoxShadow(
+                    color: Colors.white.withValues(alpha: 0.50),
+                    blurRadius: 5,
+                    offset: const Offset(0, -1),
+                  ),
                 ],
               ),
-              borderRadius: BorderRadius.circular(19),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.65),
-                width: 1.4,
-              ),
-              boxShadow: [
-                // Radiant emerald halo
-                BoxShadow(
-                  color: const Color(0xFF10B981).withValues(alpha: 0.48),
-                  blurRadius: 20,
-                  offset: const Offset(0, 5),
-                  spreadRadius: 1,
-                ),
-                // Specular razor glint
-                BoxShadow(
-                  color: Colors.white.withValues(alpha: 0.50),
-                  blurRadius: 5,
-                  offset: const Offset(0, -1),
-                ),
-              ],
-            ),
-            child: Stack(
-              children: [
-                // Upper glass dome sheen overlay
-                Positioned(
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: 24,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(17.5)),
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.white.withValues(alpha: 0.35),
-                          Colors.white.withValues(alpha: 0.0),
-                        ],
+              child: Stack(
+                children: [
+                  // Upper glass dome sheen overlay
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: 24,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(17.5)),
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.white.withValues(alpha: 0.35),
+                            Colors.white.withValues(alpha: 0.0),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-                // Center icon
-                const Center(
-                  child: Icon(
-                    Icons.add_rounded,
-                    color: Colors.white,
-                    size: 29,
+                  // Center icon
+                  const Center(
+                    child: Icon(
+                      Icons.add_rounded,
+                      color: Colors.white,
+                      size: 29,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
-      ),
-    );
+      );
   }
 }

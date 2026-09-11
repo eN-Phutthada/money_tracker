@@ -1,9 +1,9 @@
 import 'dart:io';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:liquid_glass_easy/liquid_glass_easy.dart';
 import '../data/models/transaction_model.dart';
 import '../theme/app_colors.dart';
 
@@ -426,38 +426,55 @@ class _AppFeedbackHudState extends State<_AppFeedbackHud> with TickerProviderSta
                               ),
                             ],
                           ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(24),
-                            child: BackdropFilter(
-                              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  // iOS 26 Multi-Stop Frosted Glass
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                    colors: isDark
-                                        ? [
-                                            AppColors.darkSurface.withValues(alpha: 0.94),
-                                            AppColors.darkSurfaceSecondary.withValues(alpha: 0.90),
-                                            AppColors.darkSurface.withValues(alpha: 0.96),
-                                          ]
-                                        : [
-                                            Colors.white.withValues(alpha: 0.97),
-                                            const Color(0xFFF8FAFC).withValues(alpha: 0.94),
-                                            Colors.white.withValues(alpha: 0.98),
-                                          ],
-                                  ),
-                                  borderRadius: BorderRadius.circular(24),
-                                  // Specular Liquid Glass Border
-                                  border: Border.all(
-                                    color: isDark
-                                        ? Colors.white.withValues(alpha: 0.14 + (_shimmerController.value * 0.08))
-                                        : themeColor.withValues(alpha: 0.28 + (_shimmerController.value * 0.12)),
-                                    width: 1.2,
-                                  ),
+                          child: LiquidGlassLens(
+                            style: LiquidGlassStyle(
+                              shape: const LiquidGlassShape.squircle(
+                                cornerRadius: 24,
+                                borderWidth: 1.2,
+                                lightIntensity: 1.3,
+                                lightDirection: 65,
+                                borderType: OpticalBorder(
+                                  borderSaturation: 1.35,
+                                  ambientIntensity: 1.15,
+                                  borderSolidity: 0.25,
                                 ),
-                                child: Column(
+                              ),
+                              appearance: LiquidGlassAppearance(
+                                color: isDark
+                                    ? const Color(0xFF111726).withValues(alpha: 0.65)
+                                    : const Color(0xFFFFFFFF).withValues(alpha: 0.76),
+                                blur: const LiquidGlassBlur(sigmaX: 16, sigmaY: 16),
+                              ),
+                              refraction: const LiquidGlassRefraction(
+                                distortion: 0.08,
+                                distortionWidth: 24,
+                                chromaticAberration: 0.003,
+                              ),
+                            ),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(24),
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: isDark
+                                      ? [
+                                          AppColors.darkSurface.withValues(alpha: 0.30),
+                                          AppColors.darkSurfaceSecondary.withValues(alpha: 0.16),
+                                        ]
+                                      : [
+                                          Colors.white.withValues(alpha: 0.38),
+                                          Colors.white.withValues(alpha: 0.20),
+                                        ],
+                                ),
+                                border: Border.all(
+                                  color: isDark
+                                      ? Colors.white.withValues(alpha: 0.16 + (_shimmerController.value * 0.08))
+                                      : themeColor.withValues(alpha: 0.28 + (_shimmerController.value * 0.12)),
+                                  width: 1.2,
+                                ),
+                              ),
+                              child: Column(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     // Main Content Area
@@ -513,6 +530,13 @@ class _AppFeedbackHudState extends State<_AppFeedbackHud> with TickerProviderSta
                                                           fontWeight: FontWeight.w800,
                                                           letterSpacing: -0.2,
                                                           color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                                                          shadows: [
+                                                            Shadow(
+                                                              color: (isDark ? Colors.black : Colors.white).withValues(alpha: 0.45),
+                                                              blurRadius: 2,
+                                                              offset: const Offset(0, 1),
+                                                            ),
+                                                          ],
                                                         ),
                                                         maxLines: 1,
                                                         overflow: TextOverflow.ellipsis,
@@ -530,8 +554,15 @@ class _AppFeedbackHudState extends State<_AppFeedbackHud> with TickerProviderSta
                                                   style: TextStyle(
                                                     fontSize: 11.5,
                                                     height: 1.35,
-                                                    color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                                                    color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF1E293B),
                                                     fontWeight: FontWeight.w500,
+                                                    shadows: [
+                                                      Shadow(
+                                                        color: (isDark ? Colors.black : Colors.white).withValues(alpha: 0.30),
+                                                        blurRadius: 1.5,
+                                                        offset: const Offset(0, 0.5),
+                                                      ),
+                                                    ],
                                                   ),
                                                   maxLines: 2,
                                                   overflow: TextOverflow.ellipsis,
@@ -563,7 +594,6 @@ class _AppFeedbackHudState extends State<_AppFeedbackHud> with TickerProviderSta
                           ),
                         ),
                       ),
-                    ),
                   ),
                 ),
               ),

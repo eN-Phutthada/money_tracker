@@ -21,7 +21,7 @@ class CsvService {
 
       String costNatureStr = '-';
       if (item.type == TransactionType.expense) {
-        costNatureStr = item.costNature == CostNature.fixed ? 'คงที่ (Fixed)' : 'จิปาถะ (Variable)';
+        costNatureStr = item.costNature == CostNature.fixed ? 'คงที่' : 'จิปาถะ';
       }
 
       final category = _escapeCsv(item.categoryName);

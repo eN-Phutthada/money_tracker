@@ -34,6 +34,12 @@ void main() {
     Get.toNamed(Routes.BUDGET_SETTINGS);
     await tester.pumpAndSettle();
     expect(find.text('ตั้งค่างบประมาณ'), findsOneWidget);
+    expect(find.text('เป้าหมายเงินออมและลงทุน'), findsOneWidget);
+    expect(find.text('ค่าใช้จ่ายคงที่'), findsOneWidget);
+    expect(find.text('เงินเดือน ฟรีแลนซ์ โบนัส ดอกเบี้ย และรายรับอื่นๆ'), findsOneWidget);
+    expect(find.text('DCA หุ้น กองทุนรวม สำรองฉุกเฉิน ทองคำ'), findsOneWidget);
+    expect(find.text('ค่าห้อง ค่าน้ำ ค่าไฟ ผ่อนรถ ประกัน ค่าสมาชิก'), findsOneWidget);
+    expect(find.textContaining('ของรายได้'), findsWidgets);
     expect(find.byType(LiquidGlassNavDock), findsOneWidget);
 
     // Go back
@@ -140,25 +146,29 @@ void main() {
     await tester.pumpAndSettle();
     expect(dashController.isEnglish, isFalse);
 
-    // Test Top-Right AppBar Quick Theme Toggle Squircle
-    final initialTheme = dashController.themeMode.value;
-    await tester.tap(find.byIcon(Icons.brightness_auto_rounded));
-    await tester.pumpAndSettle();
-    expect(dashController.themeMode.value, isNot(initialTheme));
-
-
-    // Test Navigation Dock Hub & Vault Menu
+    // Test Navigation Dock Hub & Vault Menu (Central Settings Location)
     expect(find.byIcon(Icons.widgets_rounded), findsOneWidget);
     await tester.tap(find.byIcon(Icons.widgets_rounded));
     await tester.pumpAndSettle();
 
     // Verify Hub & Vault menu items are displayed
     expect(find.text('HUB & VAULT CENTER'), findsOneWidget);
-    expect(find.text('จัดการข้อมูล (CSV)'), findsOneWidget);
+    expect(find.text('จัดการข้อมูล'), findsOneWidget);
+    expect(find.text('ธีมการแสดงผล'), findsOneWidget);
 
-    // Dismiss the popup menu
-    await tester.tapAt(const Offset(10, 10));
+    // Tap theme setting to open theme dialog
+    await tester.tap(find.text('ธีมการแสดงผล'));
     await tester.pumpAndSettle();
+
+    // Verify Light Mode and Dark Mode exist, and 'ตามระบบ' is removed
+    expect(find.text('โหมดสว่าง'), findsOneWidget);
+    expect(find.text('โหมดมืด'), findsOneWidget);
+    expect(find.text('ตามระบบ'), findsNothing);
+
+    // Select Dark Mode
+    await tester.tap(find.text('โหมดมืด'));
+    await tester.pumpAndSettle();
+    expect(dashController.themeMode.value, ThemeMode.dark);
   });
 }
 

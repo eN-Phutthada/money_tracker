@@ -410,12 +410,12 @@ class DashboardController extends GetxController {
   }
 
   void toggleTheme() {
-    if (themeMode.value == ThemeMode.system) {
+    final currentlyDark = (themeMode.value == ThemeMode.dark) ||
+        (themeMode.value == ThemeMode.system && (Get.isDarkMode || isDarkMode.value));
+    if (currentlyDark) {
       setThemeMode(ThemeMode.light);
-    } else if (themeMode.value == ThemeMode.light) {
-      setThemeMode(ThemeMode.dark);
     } else {
-      setThemeMode(ThemeMode.system);
+      setThemeMode(ThemeMode.dark);
     }
   }
 

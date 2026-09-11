@@ -48,7 +48,7 @@ class _DataManagementViewState extends State<DataManagementView> {
       _buildExportDialog(
         title: controller.isEnglish
             ? 'Export CSV (Excel Compatible)'
-            : 'ส่งออกข้อมูล CSV (Excel Compatible)',
+            : 'ส่งออกข้อมูล CSV',
         description: controller.isEnglish
             ? 'UTF-8 BOM encoded for seamless opening in Microsoft Excel and Google Sheets'
             : 'ไฟล์ CSV มี UTF-8 BOM สำหรับเปิดอ่านภาษาไทยใน Microsoft Excel ได้อย่างถูกต้อง',
@@ -78,7 +78,7 @@ class _DataManagementViewState extends State<DataManagementView> {
       _buildExportDialog(
         title: controller.isEnglish
             ? 'Full Backup (JSON Vault)'
-            : 'สำรองข้อมูลทั้งหมด (JSON Backup)',
+            : 'สำรองข้อมูลทั้งหมด',
         description: controller.isEnglish
             ? 'Complete encrypted vault backup containing all transactions and budget plans'
             : 'ไฟล์ Backup สมบูรณ์แบบ ประกอบด้วยรายการธุรกรรมและแผนงบประมาณ',
@@ -634,7 +634,7 @@ class _DataManagementViewState extends State<DataManagementView> {
                   icon: Icons.upload_file_rounded,
                   title: controller.isEnglish
                       ? 'Financial Export Studio'
-                      : 'การส่งออกข้อมูล (Export Studio)',
+                      : 'การส่งออกข้อมูล',
                   isDark: isDark,
                 ),
                 const SizedBox(height: 10),
@@ -646,7 +646,7 @@ class _DataManagementViewState extends State<DataManagementView> {
                   icon: Icons.download_for_offline_rounded,
                   title: controller.isEnglish
                       ? 'Import & Recovery Center'
-                      : 'การนำเข้าและกู้คืนข้อมูล (Import & Recovery)',
+                      : 'การนำเข้าและกู้คืนข้อมูล',
                   isDark: isDark,
                 ),
                 const SizedBox(height: 10),
@@ -658,7 +658,7 @@ class _DataManagementViewState extends State<DataManagementView> {
                   icon: Icons.security_update_warning_rounded,
                   title: controller.isEnglish
                       ? 'Data Danger Zone'
-                      : 'จัดการความเสี่ยงข้อมูล (Danger Zone)',
+                      : 'จัดการความเสี่ยงข้อมูล',
                   isDark: isDark,
                   color: AppColors.deficitText,
                 ),
@@ -840,7 +840,7 @@ class _DataManagementViewState extends State<DataManagementView> {
             color: AppColors.primary,
             title: controller.isEnglish
                 ? 'Export to CSV (Excel Compatible)'
-                : 'ส่งออกเป็นไฟล์ CSV (Excel Compatible)',
+                : 'ส่งออกเป็นไฟล์ CSV',
             subtitle: controller.isEnglish
                 ? 'UTF-8 BOM support for Microsoft Excel, Google Sheets, Numbers'
                 : 'มี UTF-8 BOM สำหรับเปิดอ่านบน Microsoft Excel หรือ Google Sheets',
@@ -859,7 +859,7 @@ class _DataManagementViewState extends State<DataManagementView> {
             color: AppColors.accent,
             title: controller.isEnglish
                 ? 'Full Backup (JSON Vault)'
-                : 'สำรองข้อมูลทั้งหมด (JSON Full Backup)',
+                : 'สำรองข้อมูลทั้งหมด',
             subtitle: controller.isEnglish
                 ? 'Complete snapshot of all transactions & budget plans for recovery'
                 : 'สำรองรายการธุรกรรมและแผนงบประมาณสำหรับกู้คืนภายหลัง',
@@ -935,7 +935,7 @@ class _DataManagementViewState extends State<DataManagementView> {
         color: AppColors.deficitText,
         title: controller.isEnglish
             ? 'Clear All Transactions (Reset)'
-            : 'ล้างข้อมูลธุรกรรมทั้งหมด (Clear All)',
+            : 'ล้างข้อมูลธุรกรรมทั้งหมด',
         subtitle: controller.isEnglish
             ? 'Reset all transaction history to clean slate (budget plan preserved)'
             : 'ลบรายการธุรกรรมทั้งหมดออกจากเครื่องเพื่อเริ่มต้นใหม่ (แผนงบยังคงอยู่)',

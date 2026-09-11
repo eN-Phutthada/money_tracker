@@ -1,11 +1,14 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
+import 'package:liquid_glass_easy/liquid_glass_easy.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_popup_decorations.dart';
+import '../../../data/services/security_service.dart';
 import '../controllers/security_controller.dart';
 
 enum _RecoveryMode { none, options, confirmReset }
@@ -46,6 +49,18 @@ class _PinLockViewState extends State<PinLockView> with SingleTickerProviderStat
       vsync: this,
       duration: const Duration(milliseconds: 380),
     );
+
+    final isTest = WidgetsBinding.instance.runtimeType.toString().contains('Test') ||
+        Platform.environment.containsKey('FLUTTER_TEST');
+
+    // Auto-prompt real biometrics on launch if enabled
+    if (!isTest && controller.isBiometricsEnabled.value) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _authenticateWithBiometrics();
+        }
+      });
+    }
   }
 
   @override
@@ -149,22 +164,31 @@ class _PinLockViewState extends State<PinLockView> with SingleTickerProviderStat
     }
   }
 
-  void _simulateBiometrics() {
+  Future<void> _authenticateWithBiometrics() async {
+    if (_isBiometricScanning || _isSuccess || _isExiting) return;
+
     HapticFeedback.mediumImpact();
     setState(() {
       _isBiometricScanning = true;
       _recoveryMode = _RecoveryMode.none;
     });
 
-    Timer(const Duration(milliseconds: 900), () async {
-      if (!mounted) return;
+    final result = await controller.authenticateWithBiometricsDetailed(
+      localizedReason: 'biometric_reason'.tr,
+    );
+
+    if (!mounted) return;
+
+    if (result.success) {
       setState(() {
         _isBiometricScanning = false;
         _isSuccess = true;
+        _isError = false;
+        _errorMessage = '';
         _enteredPin = '••••';
       });
       HapticFeedback.mediumImpact();
-      await Future.delayed(const Duration(milliseconds: 400));
+      await Future.delayed(const Duration(milliseconds: 350));
       if (!mounted) return;
       setState(() {
         _isExiting = true;
@@ -173,7 +197,24 @@ class _PinLockViewState extends State<PinLockView> with SingleTickerProviderStat
       if (!mounted) return;
       controller.unlock();
       widget.onUnlocked?.call();
-    });
+    } else {
+      setState(() {
+        _isBiometricScanning = false;
+        if (result.failureReason != BiometricAuthFailureReason.canceled) {
+          _isError = true;
+          _errorMessage = result.errorMessage ?? 'biometric_failed'.tr;
+          HapticFeedback.heavyImpact();
+          _shakeController.forward(from: 0.0);
+        }
+      });
+      if (result.failureReason != BiometricAuthFailureReason.canceled &&
+          result.failureReason != null) {
+        AppFeedback.showWarning(
+          title: 'ชีวมิติไม่สำเร็จ',
+          message: result.errorMessage ?? 'biometric_failed'.tr,
+        );
+      }
+    }
   }
 
   /// แสดงตัวเลือกกู้คืนการเข้าใช้งานเมื่อลืมรหัส PIN (แสดงทับบนหน้าจอล็อกโดยตรง)
@@ -217,25 +258,15 @@ class _PinLockViewState extends State<PinLockView> with SingleTickerProviderStat
   Widget _buildBiometricsOverlay(bool isDark) {
     return Positioned.fill(
       child: Container(
-        color: Colors.black.withValues(alpha: isDark ? 0.60 : 0.40),
+        color: Colors.black.withValues(alpha: isDark ? 0.65 : 0.45),
         alignment: Alignment.center,
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
           child: Container(
             constraints: const BoxConstraints(maxWidth: 300),
             margin: const EdgeInsets.symmetric(horizontal: 24),
-            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
             decoration: BoxDecoration(
-              color: isDark
-                  ? AppColors.darkSurface.withValues(alpha: 0.94)
-                  : AppColors.surface.withValues(alpha: 0.96),
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.12)
-                    : AppColors.border.withValues(alpha: 0.8),
-                width: 1.2,
-              ),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.12),
@@ -244,55 +275,113 @@ class _PinLockViewState extends State<PinLockView> with SingleTickerProviderStat
                 ),
               ],
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.12),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: AppColors.primary.withValues(alpha: 0.35),
-                      width: 2,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.25),
-                        blurRadius: 18,
-                        spreadRadius: 2,
+            child: LiquidGlassLens(
+              style: LiquidGlassStyle(
+                shape: const LiquidGlassShape.squircle(
+                  cornerRadius: 24,
+                  borderWidth: 1.2,
+                  lightIntensity: 1.3,
+                  lightDirection: 65,
+                  borderType: OpticalBorder(
+                    borderSaturation: 1.35,
+                    ambientIntensity: 1.15,
+                    borderSolidity: 0.25,
+                  ),
+                ),
+                appearance: LiquidGlassAppearance(
+                  color: isDark
+                      ? const Color(0xFF111726).withValues(alpha: 0.65)
+                      : const Color(0xFFFFFFFF).withValues(alpha: 0.76),
+                  blur: const LiquidGlassBlur(sigmaX: 18, sigmaY: 18),
+                ),
+                refraction: const LiquidGlassRefraction(
+                  distortion: 0.08,
+                  distortionWidth: 26,
+                  chromaticAberration: 0.002,
+                ),
+              ),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(24),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: isDark
+                        ? [
+                            AppColors.darkSurface.withValues(alpha: 0.30),
+                            AppColors.darkSurfaceSecondary.withValues(alpha: 0.16),
+                          ]
+                        : [
+                            Colors.white.withValues(alpha: 0.38),
+                            Colors.white.withValues(alpha: 0.20),
+                          ],
+                  ),
+                  border: Border.all(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.16)
+                        : AppColors.border.withValues(alpha: 0.8),
+                    width: 1.2,
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 72,
+                      height: 72,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.12),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: AppColors.primary.withValues(alpha: 0.35),
+                          width: 2,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.25),
+                            blurRadius: 18,
+                            spreadRadius: 2,
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  child: const Icon(Icons.fingerprint_rounded, size: 44, color: AppColors.primary),
-                )
-                    .animate(onPlay: (c) => c.repeat(reverse: true))
-                    .scale(
-                      begin: const Offset(1, 1),
-                      end: const Offset(1.08, 1.08),
-                      duration: const Duration(milliseconds: 600),
-                      curve: Curves.easeInOut,
+                      child: const Icon(Icons.fingerprint_rounded, size: 44, color: AppColors.primary),
+                    )
+                        .animate(onPlay: (c) => c.repeat(reverse: true))
+                        .scale(
+                          begin: const Offset(1, 1),
+                          end: const Offset(1.08, 1.08),
+                          duration: const Duration(milliseconds: 600),
+                          curve: Curves.easeInOut,
+                        ),
+                    const SizedBox(height: 20),
+                    Text(
+                      'scanning_biometrics'.tr,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                        shadows: [
+                          Shadow(
+                            color: (isDark ? Colors.black : Colors.white).withValues(alpha: 0.45),
+                            blurRadius: 2,
+                            offset: const Offset(0, 1),
+                          ),
+                        ],
+                      ),
                     ),
-                const SizedBox(height: 20),
-                Text(
-                  'scanning_biometrics'.tr,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                  ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'biometric_verified'.tr,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.surplusText,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  'biometric_verified'.tr,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.surplusText,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ),
@@ -322,18 +411,8 @@ class _PinLockViewState extends State<PinLockView> with SingleTickerProviderStat
                 filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
                 child: Container(
                   constraints: const BoxConstraints(maxWidth: 380),
-                  padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: isDark
-                        ? AppColors.darkSurface.withValues(alpha: 0.95)
-                        : AppColors.surface.withValues(alpha: 0.97),
                     borderRadius: BorderRadius.circular(26),
-                    border: Border.all(
-                      color: isDark
-                          ? Colors.white.withValues(alpha: 0.12)
-                          : AppColors.border.withValues(alpha: 0.8),
-                      width: 1.2,
-                    ),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: isDark ? 0.5 : 0.15),
@@ -343,11 +422,62 @@ class _PinLockViewState extends State<PinLockView> with SingleTickerProviderStat
                       ),
                     ],
                   ),
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 250),
-                    child: _recoveryMode == _RecoveryMode.options
-                        ? _buildRecoveryOptionsCard(isDark)
-                        : _buildRecoveryConfirmCard(isDark),
+                  child: LiquidGlassLens(
+                    style: LiquidGlassStyle(
+                      shape: const LiquidGlassShape.squircle(
+                        cornerRadius: 26,
+                        borderWidth: 1.2,
+                        lightIntensity: 1.3,
+                        lightDirection: 65,
+                        borderType: OpticalBorder(
+                          borderSaturation: 1.35,
+                          ambientIntensity: 1.15,
+                          borderSolidity: 0.25,
+                        ),
+                      ),
+                      appearance: LiquidGlassAppearance(
+                        color: isDark
+                            ? const Color(0xFF111726).withValues(alpha: 0.65)
+                            : const Color(0xFFFFFFFF).withValues(alpha: 0.76),
+                        blur: const LiquidGlassBlur(sigmaX: 18, sigmaY: 18),
+                      ),
+                      refraction: const LiquidGlassRefraction(
+                        distortion: 0.08,
+                        distortionWidth: 28,
+                        chromaticAberration: 0.002,
+                      ),
+                    ),
+                    child: Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(26),
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: isDark
+                              ? [
+                                  AppColors.darkSurface.withValues(alpha: 0.30),
+                                  AppColors.darkSurfaceSecondary.withValues(alpha: 0.16),
+                                ]
+                              : [
+                                  Colors.white.withValues(alpha: 0.38),
+                                  Colors.white.withValues(alpha: 0.20),
+                                ],
+                        ),
+                        border: Border.all(
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.16)
+                              : AppColors.border.withValues(alpha: 0.8),
+                          width: 1.2,
+                        ),
+                      ),
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 250),
+                        child: _recoveryMode == _RecoveryMode.options
+                            ? _buildRecoveryOptionsCard(isDark)
+                            : _buildRecoveryConfirmCard(isDark),
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -380,7 +510,7 @@ class _PinLockViewState extends State<PinLockView> with SingleTickerProviderStat
             child: InkWell(
               onTap: () {
                 _closeRecovery();
-                _simulateBiometrics();
+                _authenticateWithBiometrics();
               },
               borderRadius: BorderRadius.circular(16),
               child: Container(
@@ -426,7 +556,8 @@ class _PinLockViewState extends State<PinLockView> with SingleTickerProviderStat
                             'recovery_biometric_desc'.tr,
                             style: TextStyle(
                               fontSize: 11.5,
-                              color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                              color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569),
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ],
@@ -496,7 +627,8 @@ class _PinLockViewState extends State<PinLockView> with SingleTickerProviderStat
                           'recovery_reset_desc'.tr,
                           style: TextStyle(
                             fontSize: 11.5,
-                            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                            color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569),
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
@@ -557,7 +689,7 @@ class _PinLockViewState extends State<PinLockView> with SingleTickerProviderStat
                   style: TextStyle(
                     fontSize: 12,
                     height: 1.45,
-                    color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                    color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF1E293B),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -662,14 +794,16 @@ class _PinLockViewState extends State<PinLockView> with SingleTickerProviderStat
           backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
           body: Stack(
             children: [
-              // Ambient Vault Glow Orb behind the crest
+              // Ambient Vault Glow Orb behind the crest (expands and illuminates on success)
               Positioned(
-                top: -60,
-                left: MediaQuery.of(context).size.width / 2 - 140,
+                top: _isSuccess ? -80 : -60,
+                left: MediaQuery.of(context).size.width / 2 - (_isSuccess ? 200 : 140),
                 child: IgnorePointer(
-                  child: Container(
-                    width: 280,
-                    height: 280,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 500),
+                    curve: Curves.easeOutCubic,
+                    width: _isSuccess ? 400 : 280,
+                    height: _isSuccess ? 400 : 280,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       gradient: RadialGradient(
@@ -677,10 +811,13 @@ class _PinLockViewState extends State<PinLockView> with SingleTickerProviderStat
                           (_isSuccess
                                   ? const Color(0xFF10B981)
                                   : (_isError ? AppColors.deficitText : AppColors.primary))
-                              .withValues(alpha: isDark ? 0.16 : 0.08),
+                              .withValues(alpha: _isSuccess ? (isDark ? 0.30 : 0.22) : (isDark ? 0.16 : 0.08)),
+                          (_isSuccess
+                                  ? const Color(0xFF059669).withValues(alpha: isDark ? 0.12 : 0.08)
+                                  : Colors.transparent),
                           Colors.transparent,
                         ],
-                        stops: const [0.0, 0.75],
+                        stops: const [0.0, 0.55, 1.0],
                       ),
                     ),
                   ),
@@ -716,7 +853,7 @@ class _PinLockViewState extends State<PinLockView> with SingleTickerProviderStat
 
                               // Shield / Unlocked Success Icon Crest Badge
                               AnimatedContainer(
-                                duration: const Duration(milliseconds: 350),
+                                duration: const Duration(milliseconds: 380),
                                 curve: Curves.easeOutBack,
                                 width: _isSuccess ? 68 : 60,
                                 height: _isSuccess ? 68 : 60,
@@ -727,8 +864,8 @@ class _PinLockViewState extends State<PinLockView> with SingleTickerProviderStat
                                     end: Alignment.bottomRight,
                                     colors: _isSuccess
                                         ? [
-                                            const Color(0xFF10B981).withValues(alpha: 0.28),
-                                            const Color(0xFF059669).withValues(alpha: 0.16),
+                                            const Color(0xFF10B981),
+                                            const Color(0xFF059669),
                                           ]
                                         : [
                                             AppColors.primary.withValues(alpha: isDark ? 0.20 : 0.14),
@@ -737,26 +874,35 @@ class _PinLockViewState extends State<PinLockView> with SingleTickerProviderStat
                                   ),
                                   border: Border.all(
                                     color: _isSuccess
-                                        ? const Color(0xFF10B981).withValues(alpha: 0.55)
+                                        ? Colors.white.withValues(alpha: 0.45)
                                         : AppColors.primary.withValues(alpha: 0.35),
                                     width: _isSuccess ? 2.2 : 1.5,
                                   ),
                                   boxShadow: [
+                                    if (_isSuccess)
+                                      BoxShadow(
+                                        color: const Color(0xFF10B981).withValues(alpha: 0.35),
+                                        blurRadius: 28,
+                                        spreadRadius: 6,
+                                      ),
                                     BoxShadow(
                                       color: (_isSuccess ? const Color(0xFF10B981) : AppColors.primary)
-                                          .withValues(alpha: _isSuccess ? 0.40 : 0.18),
-                                      blurRadius: _isSuccess ? 22 : 14,
-                                      spreadRadius: _isSuccess ? 4 : 1,
+                                          .withValues(alpha: _isSuccess ? 0.50 : 0.18),
+                                      blurRadius: _isSuccess ? 20 : 12,
+                                      offset: _isSuccess ? const Offset(0, 3) : Offset.zero,
                                     ),
                                   ],
                                 ),
                                 child: AnimatedSwitcher(
-                                  duration: const Duration(milliseconds: 250),
-                                  transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
+                                  duration: const Duration(milliseconds: 280),
+                                  transitionBuilder: (child, anim) => ScaleTransition(
+                                    scale: CurvedAnimation(parent: anim, curve: Curves.elasticOut),
+                                    child: child,
+                                  ),
                                   child: Icon(
-                                    _isSuccess ? Icons.lock_open_rounded : Icons.lock_outline_rounded,
+                                    _isSuccess ? Icons.check_rounded : Icons.lock_outline_rounded,
                                     key: ValueKey(_isSuccess),
-                                    color: _isSuccess ? const Color(0xFF10B981) : AppColors.primary,
+                                    color: _isSuccess ? Colors.white : AppColors.primary,
                                     size: _isSuccess ? 34 : 28,
                                   ),
                                 ),
@@ -764,37 +910,64 @@ class _PinLockViewState extends State<PinLockView> with SingleTickerProviderStat
                               const SizedBox(height: 10),
 
                               // Security Vault Tag Pill
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              AnimatedContainer(
+                                duration: const Duration(milliseconds: 300),
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: _isSuccess ? 10 : 8,
+                                  vertical: _isSuccess ? 3.5 : 2,
+                                ),
                                 decoration: BoxDecoration(
                                   color: (_isSuccess ? const Color(0xFF10B981) : AppColors.primary)
-                                      .withValues(alpha: 0.10),
+                                      .withValues(alpha: _isSuccess ? 0.15 : 0.10),
                                   borderRadius: BorderRadius.circular(20),
                                   border: Border.all(
                                     color: (_isSuccess ? const Color(0xFF10B981) : AppColors.primary)
-                                        .withValues(alpha: 0.25),
-                                    width: 0.8,
+                                        .withValues(alpha: _isSuccess ? 0.45 : 0.25),
+                                    width: _isSuccess ? 1.0 : 0.8,
                                   ),
+                                  boxShadow: _isSuccess
+                                      ? [
+                                          BoxShadow(
+                                            color: const Color(0xFF10B981).withValues(alpha: 0.22),
+                                            blurRadius: 10,
+                                            spreadRadius: 1,
+                                          ),
+                                        ]
+                                      : null,
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Container(
-                                      width: 4,
-                                      height: 4,
+                                    AnimatedContainer(
+                                      duration: const Duration(milliseconds: 300),
+                                      width: _isSuccess ? 5 : 4,
+                                      height: _isSuccess ? 5 : 4,
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
                                         color: _isSuccess ? const Color(0xFF10B981) : AppColors.primary,
+                                        boxShadow: _isSuccess
+                                            ? [
+                                                BoxShadow(
+                                                  color: const Color(0xFF10B981),
+                                                  blurRadius: 6,
+                                                  spreadRadius: 1.5,
+                                                ),
+                                              ]
+                                            : null,
                                       ),
                                     ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      _isSuccess ? 'SECURE ACCESS GRANTED' : 'VAULT ENCRYPTION ACTIVE',
-                                      style: TextStyle(
-                                        fontSize: 8.5,
-                                        fontWeight: FontWeight.w800,
-                                        letterSpacing: 0.5,
-                                        color: _isSuccess ? const Color(0xFF10B981) : AppColors.primary,
+                                    const SizedBox(width: 5),
+                                    AnimatedSwitcher(
+                                      duration: const Duration(milliseconds: 250),
+                                      child: Text(
+                                        _isSuccess ? 'pin_access_granted'.tr : 'pin_vault_active'.tr,
+                                        key: ValueKey(_isSuccess),
+                                        style: TextStyle(
+                                          fontSize: 8.5,
+                                          fontWeight: FontWeight.w800,
+                                          letterSpacing: 0.5,
+                                          color: _isSuccess ? const Color(0xFF10B981) : AppColors.primary,
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -803,38 +976,49 @@ class _PinLockViewState extends State<PinLockView> with SingleTickerProviderStat
                               const SizedBox(height: 10),
 
                               AnimatedSwitcher(
-                                duration: const Duration(milliseconds: 250),
+                                duration: const Duration(milliseconds: 300),
+                                transitionBuilder: (child, anim) => FadeTransition(
+                                  opacity: anim,
+                                  child: SlideTransition(
+                                    position: Tween<Offset>(
+                                      begin: const Offset(0, 0.15),
+                                      end: Offset.zero,
+                                    ).animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic)),
+                                    child: child,
+                                  ),
+                                ),
                                 child: _isSuccess
                                     ? Column(
                                         key: const ValueKey('success_state'),
                                         children: [
                                           Text(
                                             'pin_success'.tr,
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontSize: 20,
                                               fontWeight: FontWeight.w800,
                                               letterSpacing: -0.3,
-                                              color: Color(0xFF10B981),
+                                              color: isDark ? const Color(0xFF34D399) : const Color(0xFF059669),
                                             ),
                                           ),
                                           const SizedBox(height: 4),
                                           Text(
                                             'pin_welcome'.tr,
-                                            style: const TextStyle(
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(
                                               fontSize: 12,
                                               fontWeight: FontWeight.w600,
-                                              color: Color(0xFF10B981),
+                                              color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
                                             ),
                                           ),
                                         ],
                                       )
                                     : Column(
                                         key: const ValueKey('normal_state'),
-                                        children: [
-                                          const Text(
-                                            'Money Tracker Security',
-                                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: -0.3),
-                                          ),
+                                         children: [
+                                           const Text(
+                                             'Money Tracker Security',
+                                             style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: -0.3),
+                                           ),
                                           const SizedBox(height: 4),
                                           Text(
                                             _isError ? _errorMessage : 'enter_pin'.tr,
@@ -849,7 +1033,7 @@ class _PinLockViewState extends State<PinLockView> with SingleTickerProviderStat
                               ),
                               const SizedBox(height: 16),
 
-                              // 4 Dots with staggered scale bounce animation on success
+                              // 4 Dots with staggered scale bounce & ripple wave animation on success
                               AnimatedBuilder(
                                 animation: _shakeController,
                                 builder: (context, child) {
@@ -869,7 +1053,7 @@ class _PinLockViewState extends State<PinLockView> with SingleTickerProviderStat
                                             : (_isError ? AppColors.deficitText : AppColors.primary);
 
                                         Widget dot = AnimatedContainer(
-                                          duration: const Duration(milliseconds: 200),
+                                          duration: const Duration(milliseconds: 220),
                                           margin: const EdgeInsets.symmetric(horizontal: 8),
                                           width: _isSuccess ? 16 : 14,
                                           height: _isSuccess ? 16 : 14,
@@ -885,8 +1069,8 @@ class _PinLockViewState extends State<PinLockView> with SingleTickerProviderStat
                                             boxShadow: isFilled
                                                 ? [
                                                     BoxShadow(
-                                                      color: color.withValues(alpha: _isSuccess ? 0.6 : 0.4),
-                                                      blurRadius: _isSuccess ? 12 : 8,
+                                                      color: color.withValues(alpha: _isSuccess ? 0.70 : 0.4),
+                                                      blurRadius: _isSuccess ? 14 : 8,
                                                       spreadRadius: _isSuccess ? 2.5 : 1.5,
                                                     ),
                                                   ]
@@ -899,13 +1083,13 @@ class _PinLockViewState extends State<PinLockView> with SingleTickerProviderStat
                                               .animate(delay: Duration(milliseconds: index * 60))
                                               .scale(
                                                 begin: const Offset(0.8, 0.8),
-                                                end: const Offset(1.25, 1.25),
+                                                end: const Offset(1.3, 1.3),
                                                 duration: const Duration(milliseconds: 220),
                                                 curve: Curves.easeOutBack,
                                               )
                                               .then()
                                               .scale(
-                                                begin: const Offset(1.25, 1.25),
+                                                begin: const Offset(1.3, 1.3),
                                                 end: const Offset(1.0, 1.0),
                                                 duration: const Duration(milliseconds: 180),
                                               );
@@ -952,34 +1136,46 @@ class _PinLockViewState extends State<PinLockView> with SingleTickerProviderStat
                               ],
                               const Spacer(),
 
-                              // FinTech Numpad (Compact & Ergonomic)
-                              AnimatedOpacity(
-                                opacity: _isSuccess ? 0.35 : 1.0,
-                                duration: const Duration(milliseconds: 250),
-                                child: _buildNumpad(isDark),
-                              ),
-                              const SizedBox(height: 10),
+                              // FinTech Numpad & Recovery (Smoothly slides down & fades out on success)
+                              AnimatedSlide(
+                                duration: const Duration(milliseconds: 320),
+                                curve: Curves.easeInCubic,
+                                offset: _isSuccess ? const Offset(0, 0.25) : Offset.zero,
+                                child: AnimatedOpacity(
+                                  opacity: _isSuccess ? 0.0 : 1.0,
+                                  duration: const Duration(milliseconds: 250),
+                                  curve: Curves.easeOut,
+                                  child: IgnorePointer(
+                                    ignoring: _isSuccess,
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        _buildNumpad(isDark),
+                                        const SizedBox(height: 10),
 
-                              // Forgot PIN Recovery Trigger Button
-                              if (!_isSuccess) ...[
-                                TextButton.icon(
-                                  onPressed: _showForgotPinDialog,
-                                  icon: const Icon(Icons.help_outline_rounded, size: 15),
-                                  label: Text(
-                                    'forgot_pin'.tr,
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                                        // Forgot PIN Recovery Trigger Button
+                                        TextButton.icon(
+                                          onPressed: _showForgotPinDialog,
+                                          icon: const Icon(Icons.help_outline_rounded, size: 15),
+                                          label: Text(
+                                            'forgot_pin'.tr,
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                              color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                                            ),
+                                          ),
+                                          style: TextButton.styleFrom(
+                                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 6),
+                                      ],
                                     ),
                                   ),
-                                  style: TextButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                  ),
                                 ),
-                                const SizedBox(height: 6),
-                              ],
+                              ),
                             ],
                           ),
                         ),
@@ -1024,7 +1220,7 @@ class _PinLockViewState extends State<PinLockView> with SingleTickerProviderStat
 
               if (key == 'BIO') {
                 return InkWell(
-                  onTap: _simulateBiometrics,
+                  onTap: _authenticateWithBiometrics,
                   borderRadius: BorderRadius.circular(31),
                   child: Container(
                     width: 62,

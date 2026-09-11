@@ -43,7 +43,8 @@ class AppColors {
   static const Color variableCostAccent = Color(0xFFF59E0B);  // Amber Gold
   static const Color variableCostPastel = Color(0xFFFFFBEB);
 
-  // Status & Financial Health (Surplus / Deficit)
+  // Status & Financial Health (Surplus / Deficit / Warning)
+  static const Color warning = Color(0xFFF59E0B);           // Amber Warning
   static const Color surplusBg = Color(0xFFECFDF5);
   static const Color surplusBorder = Color(0xFFA7F3D0);
   static const Color surplusText = Color(0xFF065F46);
