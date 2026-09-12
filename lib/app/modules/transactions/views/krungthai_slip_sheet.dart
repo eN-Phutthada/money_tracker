@@ -1067,19 +1067,158 @@ class _KrungthaiSlipSheetState extends State<KrungthaiSlipSheet> {
     super.dispose();
   }
 
-  List<String> get _categories => [
-        'อาหาร/ของกิน',
-        'กาแฟ/เครื่องดื่ม',
-        'การเดินทาง',
-        'ช้อปปิ้ง',
-        'ที่อยู่อาศัย',
-        'สาธารณูปโภค',
-        'สุขภาพ/ยา',
-        'การศึกษา',
-        'เงินออม/DCA',
-        'บันเทิง/พักผ่อน',
-        'อื่นๆ',
-      ];
+  List<String> get _categories => _currentCategories;
+
+  List<String> get _currentCategories {
+    switch (_selectedType) {
+      case TransactionType.income:
+        return [
+          'เงินเดือน',
+          'โบนัส',
+          'ขายของ/รายได้เสริม',
+          'เงินคืน/โอนคืน',
+          'ดอกเบี้ย/ปันผล',
+          'อื่นๆ',
+        ];
+      case TransactionType.savingsInvestment:
+        return [
+          'เงินออม/DCA',
+          'กองทุนรวม',
+          'หุ้น',
+          'สลากออมทรัพย์',
+          'คริปโต/สินทรัพย์ดิจิทัล',
+          'ทองคำ',
+          'สำรองฉุกเฉิน',
+          'อื่นๆ',
+        ];
+      case TransactionType.expense:
+        return [
+          'อาหาร/ของกิน',
+          'กาแฟ/เครื่องดื่ม',
+          'การเดินทาง',
+          'ช้อปปิ้ง',
+          'ที่อยู่อาศัย',
+          'สาธารณูปโภค',
+          'สุขภาพ/ยา',
+          'การศึกษา',
+          'บันเทิง/พักผ่อน',
+          'เงินออม/DCA',
+          'อื่นๆ',
+        ];
+    }
+  }
+
+  void _onTypeChanged(TransactionType newType) {
+    setState(() {
+      _selectedType = newType;
+      final cats = _currentCategories;
+      if (!cats.contains(_selectedCategory)) {
+        _selectedCategory = cats.first;
+      }
+    });
+  }
+
+  Widget _buildTypeOption({
+    required String label,
+    required IconData icon,
+    required TransactionType type,
+    required Color activeColor,
+    required bool isDark,
+  }) {
+    final isSelected = _selectedType == type;
+    return InkWell(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        _onTypeChanged(type);
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? activeColor.withValues(alpha: 0.16)
+              : (isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected
+                ? activeColor
+                : (isDark ? AppColors.darkBorder : AppColors.border),
+            width: isSelected ? 1.6 : 1.0,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 15,
+              color: isSelected
+                  ? activeColor
+                  : (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
+            ),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  color: isSelected
+                      ? activeColor
+                      : (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildConfidenceBadge(bool isDark) {
+    final conf = widget.slip.predictionConfidence;
+    Color badgeColor;
+    String label;
+    if (conf >= 0.70) {
+      badgeColor = const Color(0xFF00C853);
+      label = 'แม่นยำสูง ${(conf * 100).round()}%';
+    } else if (conf >= 0.40) {
+      badgeColor = const Color(0xFFFF9800);
+      label = 'ปานกลาง ${(conf * 100).round()}%';
+    } else {
+      badgeColor = const Color(0xFF00A3E0);
+      label = 'ค่าเริ่มต้น';
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: badgeColor.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: badgeColor.withValues(alpha: 0.35),
+          width: 0.8,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.auto_awesome_rounded, size: 12, color: badgeColor),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10.5,
+              fontWeight: FontWeight.w700,
+              color: badgeColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   void _showEditAmountDialog() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -1217,6 +1356,33 @@ class _KrungthaiSlipSheetState extends State<KrungthaiSlipSheet> {
         ),
       ),
     );
+  }
+
+  Future<void> _pickDateTime() async {
+    HapticFeedback.selectionClick();
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2035),
+    );
+    if (pickedDate == null || !mounted) return;
+
+    final pickedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: _selectedDate.hour, minute: _selectedDate.minute),
+    );
+    if (!mounted) return;
+
+    setState(() {
+      _selectedDate = DateTime(
+        pickedDate.year,
+        pickedDate.month,
+        pickedDate.day,
+        pickedTime?.hour ?? _selectedDate.hour,
+        pickedTime?.minute ?? _selectedDate.minute,
+      );
+    });
   }
 
   void _submit() {
@@ -1449,19 +1615,49 @@ class _KrungthaiSlipSheetState extends State<KrungthaiSlipSheet> {
                               ),
                             ],
                             const SizedBox(height: 8),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(Icons.access_time_rounded, size: 13, color: Color(0xFF64748B)),
-                                const SizedBox(width: 4),
-                                Text(
-                                  DateFormat('dd MMM yyyy, HH:mm น.').format(_selectedDate),
-                                  style: TextStyle(
-                                    fontSize: 11.5,
-                                    color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                            Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: _pickDateTime,
+                                borderRadius: BorderRadius.circular(8),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: (isDark ? const Color(0xFF00A3E0) : const Color(0xFF0284C7)).withValues(alpha: 0.08),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: (isDark ? const Color(0xFF00A3E0) : const Color(0xFF0284C7)).withValues(alpha: 0.20),
+                                      width: 0.8,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.access_time_rounded,
+                                        size: 13,
+                                        color: isDark ? const Color(0xFF7DD3FC) : const Color(0xFF0284C7),
+                                      ),
+                                      const SizedBox(width: 5),
+                                      Text(
+                                        DateFormat('dd MMM yyyy, HH:mm น.').format(_selectedDate),
+                                        style: TextStyle(
+                                          fontSize: 11.5,
+                                          fontWeight: FontWeight.w600,
+                                          color: isDark ? const Color(0xFF7DD3FC) : const Color(0xFF0284C7),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Icon(
+                                        Icons.edit_calendar_rounded,
+                                        size: 11,
+                                        color: isDark ? const Color(0xFF7DD3FC) : const Color(0xFF0284C7),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                              ],
+                              ),
                             ),
                           ],
                         ),
@@ -1562,6 +1758,52 @@ class _KrungthaiSlipSheetState extends State<KrungthaiSlipSheet> {
 
                   const SizedBox(height: 16),
 
+                  // Transaction Type Selector
+                  Text(
+                    'ประเภทธุรกรรม',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildTypeOption(
+                          label: 'รายจ่าย',
+                          icon: Icons.arrow_upward_rounded,
+                          type: TransactionType.expense,
+                          activeColor: const Color(0xFFFF5252),
+                          isDark: isDark,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _buildTypeOption(
+                          label: 'รายรับ',
+                          icon: Icons.arrow_downward_rounded,
+                          type: TransactionType.income,
+                          activeColor: const Color(0xFF00C853),
+                          isDark: isDark,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _buildTypeOption(
+                          label: 'เงินออม/DCA',
+                          icon: Icons.savings_rounded,
+                          type: TransactionType.savingsInvestment,
+                          activeColor: const Color(0xFF00A3E0),
+                          isDark: isDark,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 16),
+
                   // Editable Title Field
                   Text(
                     'ชื่อรายการธุรกรรม',
@@ -1595,14 +1837,50 @@ class _KrungthaiSlipSheetState extends State<KrungthaiSlipSheet> {
                   const SizedBox(height: 16),
 
                   // Category Selector Chips
-                  Text(
-                    'หมวดหมู่ค่าใช้จ่าย',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _selectedType == TransactionType.income
+                              ? 'หมวดหมู่รายรับ'
+                              : _selectedType == TransactionType.savingsInvestment
+                                  ? 'หมวดหมู่เงินออม/ลงทุน'
+                                  : 'หมวดหมู่ค่าใช้จ่าย',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      _buildConfidenceBadge(isDark),
+                    ],
                   ),
+                  if (widget.slip.predictionReason.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.auto_awesome_rounded,
+                          size: 13,
+                          color: const Color(0xFF00A3E0).withValues(alpha: 0.8),
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            'แนะนำจาก: ${widget.slip.predictionReason}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 6,
@@ -1633,37 +1911,39 @@ class _KrungthaiSlipSheetState extends State<KrungthaiSlipSheet> {
                     }).toList(),
                   ),
 
-                  const SizedBox(height: 14),
+                  if (_selectedType == TransactionType.expense) ...[
+                    const SizedBox(height: 14),
 
-                  // Cost Nature (Fixed vs Variable)
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 6,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      Text(
-                        'ลักษณะค่าใช้จ่าย: ',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                    // Cost Nature (Fixed vs Variable)
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 6,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Text(
+                          'ลักษณะค่าใช้จ่าย: ',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                          ),
                         ),
-                      ),
-                      ChoiceChip(
-                        label: const Text('ค่าใช้จ่ายผันแปร'),
-                        selected: _selectedCostNature == CostNature.variable,
-                        onSelected: (val) {
-                          if (val) setState(() => _selectedCostNature = CostNature.variable);
-                        },
-                      ),
-                      ChoiceChip(
-                        label: const Text('ค่าใช้จ่ายคงที่'),
-                        selected: _selectedCostNature == CostNature.fixed,
-                        onSelected: (val) {
-                          if (val) setState(() => _selectedCostNature = CostNature.fixed);
-                        },
-                      ),
-                    ],
-                  ),
+                        ChoiceChip(
+                          label: const Text('ค่าใช้จ่ายผันแปร'),
+                          selected: _selectedCostNature == CostNature.variable,
+                          onSelected: (val) {
+                            if (val) setState(() => _selectedCostNature = CostNature.variable);
+                          },
+                        ),
+                        ChoiceChip(
+                          label: const Text('ค่าใช้จ่ายคงที่'),
+                          selected: _selectedCostNature == CostNature.fixed,
+                          onSelected: (val) {
+                            if (val) setState(() => _selectedCostNature = CostNature.fixed);
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
 
                   const SizedBox(height: 20),
 

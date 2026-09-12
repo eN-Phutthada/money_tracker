@@ -295,8 +295,12 @@ class AppTranslations extends Translations {
       'theme_dark': 'โหมดมืด',
       'theme_dark_desc': 'พื้นหลังโทนเข้ม ถนอมสายตา และประหยัดแบตเตอรี่',
       'language_settings': 'ภาษา',
+      'lang_system': 'ตามค่าเริ่มต้นระบบ',
+      'lang_system_desc': 'ปรับเปลี่ยนภาษาตามการตั้งค่าของอุปกรณ์อัตโนมัติ',
       'lang_thai': 'ภาษาไทย',
+      'lang_thai_desc': 'แสดงผลเป็นภาษาไทย และปี พ.ศ.',
       'lang_english': 'English',
+      'lang_english_desc': 'แสดงผลเป็นภาษาอังกฤษ และปี ค.ศ.',
       'recommended': 'แนะนำ',
 
       // Transaction Sheet (QuickAdd)
@@ -650,8 +654,12 @@ class AppTranslations extends Translations {
       'theme_dark': 'Dark',
       'theme_dark_desc': 'Sleek dark background, easy on the eyes',
       'language_settings': 'Language',
+      'lang_system': 'System Default',
+      'lang_system_desc': 'Match device system language automatically',
       'lang_thai': 'ภาษาไทย',
+      'lang_thai_desc': 'Display in Thai with Buddhist Era (BE)',
       'lang_english': 'English',
+      'lang_english_desc': 'Display in English with Gregorian Year (CE)',
       'recommended': 'Recommended',
 
       // Transaction Sheet (QuickAdd)

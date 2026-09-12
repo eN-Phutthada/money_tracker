@@ -9,19 +9,40 @@ import 'app/routes/app_pages.dart';
 import 'app/theme/app_theme.dart';
 import 'app/translations/app_translations.dart';
 
+Locale resolveInitialLocale(String? savedLang) {
+  if (savedLang == 'en') {
+    return const Locale('en', 'US');
+  }
+  if (savedLang == 'th') {
+    return const Locale('th', 'TH');
+  }
+  // Default to system locale
+  try {
+    final sysLang = WidgetsBinding.instance.platformDispatcher.locale.languageCode.toLowerCase();
+    return sysLang == 'th' ? const Locale('th', 'TH') : const Locale('en', 'US');
+  } catch (_) {
+    return const Locale('th', 'TH');
+  }
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SecurityService().init();
   await KrungthaiSlipService().init();
   final savedLang = await StorageService().loadLanguage();
-  final initialLocale = savedLang == 'en' ? const Locale('en', 'US') : const Locale('th', 'TH');
+  final initialLocale = resolveInitialLocale(savedLang);
   runApp(MoneyTrackerApp(initialLocale: initialLocale));
 }
 
 /// Root Application Widget ด้วย GetX 4.7.3 (Simplified Architecture)
 class MoneyTrackerApp extends StatelessWidget {
-  final Locale initialLocale;
-  const MoneyTrackerApp({super.key, this.initialLocale = const Locale('th', 'TH')});
+  final Locale? initialLocale;
+  const MoneyTrackerApp({super.key, this.initialLocale});
+
+  Locale get _effectiveLocale {
+    if (initialLocale != null) return initialLocale!;
+    return resolveInitialLocale(null);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,8 +50,8 @@ class MoneyTrackerApp extends StatelessWidget {
       title: 'Money Tracker - FinTech 2026',
       debugShowCheckedModeBanner: false,
       translations: AppTranslations(),
-      locale: initialLocale,
-      fallbackLocale: const Locale('th', 'TH'),
+      locale: _effectiveLocale,
+      fallbackLocale: const Locale('en', 'US'),
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.system,

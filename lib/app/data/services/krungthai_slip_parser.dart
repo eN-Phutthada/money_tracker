@@ -1,5 +1,6 @@
 import '../models/krungthai_slip_model.dart';
 import '../models/transaction_model.dart';
+import 'slip_category_predictor.dart';
 
 /// เครื่องยนต์ Regular Expression และ Semantic Analysis สำหรับถอดรหัสสลิปธนาคารกรุงไทย
 class KrungthaiSlipParser {
@@ -22,7 +23,8 @@ class KrungthaiSlipParser {
 
     final isKrungthai = isKrungthaiSlip(normalized);
     final amount = _extractAmount(normalized, lines);
-    final date = _extractDateTime(normalized) ?? DateTime.now();
+    final parsedDate = _extractDateTime(normalized, lines);
+    final date = parsedDate ?? DateTime.now();
     final refNo = _extractReferenceNumber(normalized, lines);
     final sender = _extractSender(lines);
     final senderAccount = _extractSenderAccount(lines);
@@ -37,7 +39,13 @@ class KrungthaiSlipParser {
       bankName = 'ธนาคารกรุงไทย (เป๋าตัง)';
     }
 
-    final suggested = _classifyCategoryAndNature(memo, receiver, normalized);
+    final prediction = SlipCategoryPredictor.predict(
+      memo: memo,
+      receiverName: receiver,
+      fullText: normalized,
+      amount: amount,
+      transactionDate: date,
+    );
 
     return KrungthaiSlipData(
       amount: amount,
@@ -50,10 +58,13 @@ class KrungthaiSlipParser {
       memo: memo,
       bankName: bankName,
       isKrungthai: isKrungthai,
-      suggestedCategory: suggested.category,
-      suggestedType: suggested.type,
-      suggestedCostNature: suggested.costNature,
+      suggestedCategory: prediction.category,
+      suggestedType: prediction.type,
+      suggestedCostNature: prediction.costNature,
       rawText: rawText,
+      hasParsedDateTime: parsedDate != null,
+      predictionConfidence: prediction.confidence,
+      predictionReason: prediction.reason,
     );
   }
 
@@ -148,9 +159,17 @@ class KrungthaiSlipParser {
     return 0.0;
   }
 
-  /// สกัดวันและเวลา (Date & Time)
-  static DateTime? _extractDateTime(String fullText) {
+  /// สกัดวันและเวลา (Date & Time) จากข้อความสลิป
+  /// พร้อมอัลกอริทึม Multi-Tier Recognition ป้องกันการสกัดเวลาผิด (เช่น เวลาบน Status Bar ของมือถือ)
+  static DateTime? _extractDateTime(String fullText, List<String> lines) {
     int? day, month, year, hour, minute, second;
+
+    int parseYear(int raw) {
+      if (raw >= 2500) return raw - 543;
+      if (raw >= 60 && raw <= 99) return (2500 + raw) - 543;
+      if (raw >= 2000) return raw;
+      return 2000 + raw;
+    }
 
     // ตรวจสอบเดือนภาษาไทย
     final thaiMonths = {
@@ -173,66 +192,189 @@ class KrungthaiSlipParser {
       'jul': 7, 'aug': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12,
     };
 
-    // 1. วันที่แบบไทย: "11 ก.ย. 2569" หรือ "11 ก.ย. 69"
-    final thaiDateRegex = RegExp(
-      r'(\d{1,2})\s*(ม\.ค\.|ก\.พ\.|มี\.ค\.|เม\.ย\.|พ\.ค\.|มิ\.ย\.|ก\.ค\.|ส\.ค\.|ก\.ย\.|ต\.ค\.|พ\.ย\.|ธ\.ค\.|มกราคม|กุมภาพันธ์|มีนาคม|เมษายน|พฤษภาคม|มิถุนายน|กรกฎาคม|สิงหาคม|กันยายน|ตุลาคม|พฤศจิกายน|ธันวาคม)\s*(\d{2,4})',
+    // 1. ตรวจหาคู่ "วันที่แบบไทย + เวลา" ในบรรทัดเดียวกัน (Compound Thai Date-Time)
+    // ตัวอย่าง: "วันที่ทำรายการ 02 ส.ค. 2569 - 22:02", "2 ส.ค. 69 เวลา 22.02 น.", "02 สิงหาคม 2569 / 22:02:30"
+    final thaiMonthPattern = thaiMonths.keys.map(RegExp.escape).join('|');
+    final compoundThaiRegex = RegExp(
+      '(\\d{1,2})\\s*($thaiMonthPattern)\\s*(\\d{2,4})\\s*(?:[-–,\\s/]+|(?:[-–,\\s/]*เวลา\\s*[:：]?\\s*))(\\d{1,2})[:.](\\d{2})(?:[:.](\\d{2}))?\\s*(?:น\\.|น)?',
+      caseSensitive: false,
     );
-    final thaiMatch = thaiDateRegex.firstMatch(fullText);
-    if (thaiMatch != null) {
-      day = int.tryParse(thaiMatch.group(1)!);
-      month = thaiMonths[thaiMatch.group(2)!];
-      final rawYear = int.tryParse(thaiMatch.group(3)!);
-      if (rawYear != null) {
-        if (rawYear >= 2500) {
-          year = rawYear - 543;
-        } else if (rawYear >= 60 && rawYear <= 99) {
-          year = (2500 + rawYear) - 543;
-        } else if (rawYear >= 2000) {
-          year = rawYear;
-        } else {
-          year = 2000 + rawYear;
-        }
+
+    final compoundMatch = compoundThaiRegex.firstMatch(fullText);
+    if (compoundMatch != null) {
+      day = int.tryParse(compoundMatch.group(1)!);
+      month = thaiMonths[compoundMatch.group(2)!];
+      final rawYear = int.tryParse(compoundMatch.group(3)!);
+      if (rawYear != null) year = parseYear(rawYear);
+      hour = int.tryParse(compoundMatch.group(4)!);
+      minute = int.tryParse(compoundMatch.group(5)!);
+      second = compoundMatch.group(6) != null ? int.tryParse(compoundMatch.group(6)!) : 0;
+
+      if (day != null && month != null && year != null && hour != null && minute != null) {
+        return DateTime(year, month, day, hour, minute, second ?? 0);
       }
     }
 
-    // 2. วันที่แบบอังกฤษ: "11 Sep 2026"
-    if (day == null || month == null || year == null) {
-      final engDateRegex = RegExp(
+    // 2. ตรวจหาคู่ "วันที่แบบอังกฤษ + เวลา"
+    // ตัวอย่าง: "02 Aug 2026 22:02:15", "2 Sep 2026, 22.02"
+    final compoundEngRegex = RegExp(
+      r'(\d{1,2})\s*(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s*(\d{2,4})\s*[-–,\s/]+\s*(\d{1,2})[:.](\d{2})(?:[:.](\d{2}))?',
+      caseSensitive: false,
+    );
+    final engMatch = compoundEngRegex.firstMatch(fullText);
+    if (engMatch != null) {
+      day = int.tryParse(engMatch.group(1)!);
+      month = engMonths[engMatch.group(2)!.toLowerCase()];
+      final rawYear = int.tryParse(engMatch.group(3)!);
+      if (rawYear != null) year = parseYear(rawYear);
+      hour = int.tryParse(engMatch.group(4)!);
+      minute = int.tryParse(engMatch.group(5)!);
+      second = engMatch.group(6) != null ? int.tryParse(engMatch.group(6)!) : 0;
+
+      if (day != null && month != null && year != null && hour != null && minute != null) {
+        return DateTime(year, month, day, hour, minute, second ?? 0);
+      }
+    }
+
+    // 3. ตรวจหาคู่ "วันที่แบบตัวเลข + เวลา"
+    // ตัวอย่าง: "02/08/2569 22:02", "02/08/2026 - 22.02"
+    final compoundNumRegex = RegExp(
+      r'(\d{1,2})[/.-](\d{1,2})[/.-](\d{2,4})\s*[-–,\s/]+\s*(\d{1,2})[:.](\d{2})(?:[:.](\d{2}))?',
+    );
+    final numMatch = compoundNumRegex.firstMatch(fullText);
+    if (numMatch != null) {
+      day = int.tryParse(numMatch.group(1)!);
+      month = int.tryParse(numMatch.group(2)!);
+      final rawYear = int.tryParse(numMatch.group(3)!);
+      if (rawYear != null) year = parseYear(rawYear);
+      hour = int.tryParse(numMatch.group(4)!);
+      minute = int.tryParse(numMatch.group(5)!);
+      second = numMatch.group(6) != null ? int.tryParse(numMatch.group(6)!) : 0;
+
+      if (day != null && month != null && year != null && hour != null && minute != null) {
+        return DateTime(year, month, day, hour, minute, second ?? 0);
+      }
+    }
+
+    // 4. กรณีวันที่และเวลาอยู่คนละบรรทัดกัน (Multi-line Contextual Parsing)
+    // 4.1 ค้นหาบรรทัดวันที่
+    int? dateLineIndex;
+    final thaiDateOnlyRegex = RegExp(
+      '(\\d{1,2})\\s*($thaiMonthPattern)\\s*(\\d{2,4})',
+      caseSensitive: false,
+    );
+
+    for (int i = 0; i < lines.length; i++) {
+      final line = lines[i];
+      final m = thaiDateOnlyRegex.firstMatch(line);
+      if (m != null) {
+        day = int.tryParse(m.group(1)!);
+        month = thaiMonths[m.group(2)!];
+        final rawYear = int.tryParse(m.group(3)!);
+        if (rawYear != null) year = parseYear(rawYear);
+        dateLineIndex = i;
+        break;
+      }
+    }
+
+    if (dateLineIndex == null) {
+      final engDateOnlyRegex = RegExp(
         r'(\d{1,2})\s*(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s*(\d{2,4})',
         caseSensitive: false,
       );
-      final engMatch = engDateRegex.firstMatch(fullText);
-      if (engMatch != null) {
-        day = int.tryParse(engMatch.group(1)!);
-        month = engMonths[engMatch.group(2)!.toLowerCase()];
-        final rawYear = int.tryParse(engMatch.group(3)!);
-        if (rawYear != null) {
-          year = rawYear > 2500 ? rawYear - 543 : (rawYear < 100 ? 2000 + rawYear : rawYear);
+      for (int i = 0; i < lines.length; i++) {
+        final line = lines[i];
+        final m = engDateOnlyRegex.firstMatch(line);
+        if (m != null) {
+          day = int.tryParse(m.group(1)!);
+          month = engMonths[m.group(2)!.toLowerCase()];
+          final rawYear = int.tryParse(m.group(3)!);
+          if (rawYear != null) year = parseYear(rawYear);
+          dateLineIndex = i;
+          break;
         }
       }
     }
 
-    // 3. วันที่แบบตัวเลข: "11/09/2026" หรือ "11/09/2569"
-    if (day == null || month == null || year == null) {
-      final numDateRegex = RegExp(r'(\d{1,2})[/.-](\d{1,2})[/.-](\d{2,4})');
-      final numMatch = numDateRegex.firstMatch(fullText);
-      if (numMatch != null) {
-        day = int.tryParse(numMatch.group(1)!);
-        month = int.tryParse(numMatch.group(2)!);
-        final rawYear = int.tryParse(numMatch.group(3)!);
-        if (rawYear != null) {
-          year = rawYear > 2500 ? rawYear - 543 : (rawYear < 100 ? 2000 + rawYear : rawYear);
+    if (dateLineIndex == null) {
+      final numDateOnlyRegex = RegExp(r'(\d{1,2})[/.-](\d{1,2})[/.-](\d{2,4})');
+      for (int i = 0; i < lines.length; i++) {
+        final line = lines[i];
+        final m = numDateOnlyRegex.firstMatch(line);
+        if (m != null) {
+          day = int.tryParse(m.group(1)!);
+          month = int.tryParse(m.group(2)!);
+          final rawYear = int.tryParse(m.group(3)!);
+          if (rawYear != null) year = parseYear(rawYear);
+          dateLineIndex = i;
+          break;
         }
       }
     }
 
-    // สกัดเวลา: "14:35:22" หรือ "14:35"
-    final timeRegex = RegExp(r'(\d{1,2}):(\d{2})(?::(\d{2}))?');
-    final timeMatch = timeRegex.firstMatch(fullText);
-    if (timeMatch != null) {
-      hour = int.tryParse(timeMatch.group(1)!);
-      minute = int.tryParse(timeMatch.group(2)!);
-      second = timeMatch.group(3) != null ? int.tryParse(timeMatch.group(3)!) : 0;
+    // 4.2 สกัดเวลาที่เกี่ยวข้องกับบรรทัดวันที่
+    final timeContextRegex = RegExp(r'(?:เวลา|Time)?\s*[:：]?\s*(\d{1,2})[:.](\d{2})(?:[:.](\d{2}))?\s*(?:น\.|น)?');
+
+    if (dateLineIndex != null) {
+      // ตรวจบรรทัดวันที่
+      final mSelf = timeContextRegex.firstMatch(lines[dateLineIndex]);
+      if (mSelf != null && mSelf.group(1) != null && mSelf.group(2) != null) {
+        hour = int.tryParse(mSelf.group(1)!);
+        minute = int.tryParse(mSelf.group(2)!);
+        second = mSelf.group(3) != null ? int.tryParse(mSelf.group(3)!) : 0;
+      }
+
+      // ตรวจบรรทัดถัดไป 1-2 บรรทัด
+      if (hour == null) {
+        for (int step = 1; step <= 2 && (dateLineIndex + step) < lines.length; step++) {
+          final cand = lines[dateLineIndex + step];
+          final mNext = timeContextRegex.firstMatch(cand);
+          if (mNext != null && mNext.group(1) != null && mNext.group(2) != null) {
+            hour = int.tryParse(mNext.group(1)!);
+            minute = int.tryParse(mNext.group(2)!);
+            second = mNext.group(3) != null ? int.tryParse(mNext.group(3)!) : 0;
+            break;
+          }
+        }
+      }
+    }
+
+    // 4.3 หากยังไม่พบเวลา ค้นหาบรรทัดที่มี "เวลา" หรือ "น." ในสลิป (ข้ามบรรทัดแรกเพื่อเลี่ยง status bar ของมือถือ)
+    if (hour == null) {
+      final explicitTimeRegex = RegExp(r'(?:เวลา|Time)\s*[:：]?\s*(\d{1,2})[:.](\d{2})(?:[:.](\d{2}))?|(\d{1,2})[:.](\d{2})(?:[:.](\d{2}))?\s*น\.');
+      for (int i = 1; i < lines.length; i++) {
+        final m = explicitTimeRegex.firstMatch(lines[i]);
+        if (m != null) {
+          final hStr = m.group(1) ?? m.group(3);
+          final mStr = m.group(2) ?? m.group(4);
+          final sStr = m.group(5);
+          if (hStr != null && mStr != null) {
+            hour = int.tryParse(hStr);
+            minute = int.tryParse(mStr);
+            second = sStr != null ? int.tryParse(sStr) : 0;
+            break;
+          }
+        }
+      }
+    }
+
+    // 4.4 Fallback ท้ายสุด: หาเวลาใดๆ ในสลิป (เริ่มจากบรรทัดที่ 1 ลงไป เพื่อข้าม status bar)
+    if (hour == null) {
+      final fallbackTimeRegex = RegExp(r'(\d{1,2})[:.](\d{2})(?:[:.](\d{2}))?');
+      final startIndex = lines.length > 1 ? 1 : 0;
+      for (int i = startIndex; i < lines.length; i++) {
+        final m = fallbackTimeRegex.firstMatch(lines[i]);
+        if (m != null) {
+          final h = int.tryParse(m.group(1)!);
+          final min = int.tryParse(m.group(2)!);
+          if (h != null && min != null && h >= 0 && h <= 23 && min >= 0 && min <= 59) {
+            hour = h;
+            minute = min;
+            second = m.group(3) != null ? int.tryParse(m.group(3)!) : 0;
+            break;
+          }
+        }
+      }
     }
 
     if (day != null && month != null && year != null) {
@@ -240,8 +382,8 @@ class KrungthaiSlipParser {
         year,
         month,
         day,
-        hour ?? DateTime.now().hour,
-        minute ?? DateTime.now().minute,
+        hour ?? 0,
+        minute ?? 0,
         second ?? 0,
       );
     }
@@ -381,90 +523,6 @@ class KrungthaiSlipParser {
         .trim();
   }
 
-  /// จำแนกหมวดหมู่อัตโนมัติด้วย Semantic Keyword Matching
-  static _CategoryClassification _classifyCategoryAndNature(String? memo, String? receiver, [String? fullText]) {
-    final combined = '${memo ?? ''} ${receiver ?? ''} ${fullText ?? ''}'.toLowerCase();
-
-    // 1. อาหารและเครื่องดื่ม
-    if (_containsAny(combined, ['ข้าว', 'อาหาร', 'กิน', 'ก๋วยเตี๋ยว', 'ขนม', 'ชาบู', 'ส้มตำ', 'lunch', 'dinner', 'food', 'meal', 'กะเพรา', 'หมูกระทะ', 'เซเว่น', '7-eleven', '7-11'])) {
-      return const _CategoryClassification('อาหาร/ของกิน', TransactionType.expense, CostNature.variable);
-    }
-    if (_containsAny(combined, ['กาแฟ', 'ชา', 'cafe', 'coffee', 'starbucks', 'amazon', 'tea', 'ชานม', 'เต่าบิน'])) {
-      return const _CategoryClassification('กาแฟ/เครื่องดื่ม', TransactionType.expense, CostNature.variable);
-    }
-
-    // 2. การเดินทาง
-    if (_containsAny(combined, ['bts', 'mrt', 'grab', 'bolt', 'น้ำมัน', 'แท็กซี่', 'ค่าทางด่วน', 'ตั๋ว', 'ปตท', 'บางจาก', 'shell', 'caltex', 'วิน', 'รถไฟ'])) {
-      return const _CategoryClassification('การเดินทาง', TransactionType.expense, CostNature.variable);
-    }
-
-    // 3. ที่อยู่อาศัย & สาธารณูปโภค (Fixed Costs)
-    if (_containsAny(combined, ['ค่าห้อง', 'ค่าเช่า', 'หอ', 'คอนโด', 'rent', 'นิติ'])) {
-      return const _CategoryClassification('ที่อยู่อาศัย', TransactionType.expense, CostNature.fixed);
-    }
-    if (_containsAny(combined, ['ค่าน้ำ', 'ค่าไฟ', 'การไฟฟ้านครหลวง', 'การประปา', 'pea', 'mea', 'เน็ต', 'internet', 'โทรศัพท์', 'ais', 'true', 'dtac', 'nt broadband', 'tot'])) {
-      return const _CategoryClassification('สาธารณูปโภค', TransactionType.expense, CostNature.fixed);
-    }
-
-    // 4. สุขภาพ & ยา
-    if (_containsAny(combined, ['ยา', 'หมอ', 'คลินิก', 'โรงพยาบาล', 'hospital', 'pharmacy', 'ทันตกรรม', 'ฟัน'])) {
-      return const _CategoryClassification('สุขภาพ/ยา', TransactionType.expense, CostNature.variable);
-    }
-
-    // 5. การศึกษา
-    if (_containsAny(combined, ['เรียน', 'หนังสือ', 'คอร์ส', 'course', 'tuition', 'ค่าเทอม', 'มหาลัย'])) {
-      return const _CategoryClassification('การศึกษา', TransactionType.expense, CostNature.variable);
-    }
-
-    // 6. เงินออมและการลงทุน
-    if (_containsAny(combined, ['ออม', 'dca', 'กองทุน', 'หุ้น', 'savings', 'invest', 'สลาก', 'ทอง', 'crypto', 'binance', 'innovestx', 'dime'])) {
-      return const _CategoryClassification('เงินออม/DCA', TransactionType.savingsInvestment, CostNature.notApplicable);
-    }
-
-    // 7. ช้อปปิ้ง
-    if (_containsAny(combined, ['shopee', 'lazada', 'tiktok', 'เสื้อ', 'กางเกง', 'รองเท้า', 'ของเล่น', 'uniqlo', 'zara', 'shop', 'หูฟัง'])) {
-      return const _CategoryClassification('ช้อปปิ้ง', TransactionType.expense, CostNature.variable);
-    }
-
-    // 8. บันเทิง/พักผ่อน (รวมบริการสตรีมมิ่ง เกม และตั๋วภาพยนตร์)
-    if (_containsAny(combined, [
-      'netflix',
-      'spotify',
-      'youtube',
-      'สตรีมมิ่ง',
-      'streaming',
-      'เอ็นเอฟ',
-      'nf',
-      'disney',
-      'prime',
-      'hbo',
-      'apple tv',
-      'ตั๋วหนัง',
-      'major',
-      'sf',
-      'เกม',
-      'steam',
-      'game',
-    ])) {
-      return const _CategoryClassification('บันเทิง/พักผ่อน', TransactionType.expense, CostNature.variable);
-    }
-
-    // ค่าเริ่มต้น
-    return const _CategoryClassification('อื่นๆ', TransactionType.expense, CostNature.variable);
-  }
-
-  static bool _containsAny(String text, List<String> keywords) {
-    for (final k in keywords) {
-      if (RegExp(r'^[a-zA-Z0-9]+$').hasMatch(k)) {
-        final reg = RegExp(r'\b' + RegExp.escape(k) + r'\b', caseSensitive: false);
-        if (reg.hasMatch(text)) return true;
-      } else {
-        if (text.contains(k)) return true;
-      }
-    }
-    return false;
-  }
-
   /// ค้นหารายการเดิมที่ตรงกับสลิปนี้ (ถ้ามี)
   static TransactionItem? findDuplicateTransaction(KrungthaiSlipData slip, List<TransactionItem> transactions) {
     for (final t in transactions) {
@@ -490,12 +548,4 @@ class KrungthaiSlipParser {
   static bool isDuplicate(KrungthaiSlipData slip, List<TransactionItem> transactions) {
     return findDuplicateTransaction(slip, transactions) != null;
   }
-}
-
-class _CategoryClassification {
-  final String category;
-  final TransactionType type;
-  final CostNature costNature;
-
-  const _CategoryClassification(this.category, this.type, this.costNature);
 }

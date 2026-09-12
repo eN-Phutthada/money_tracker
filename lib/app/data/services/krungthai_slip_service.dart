@@ -9,6 +9,7 @@ import '../../widgets/app_feedback.dart';
 import 'krungthai_ocr_service.dart';
 import 'krungthai_qr_decoder.dart';
 import 'krungthai_slip_parser.dart';
+import 'slip_category_predictor.dart';
 import 'storage_service.dart';
 
 /// ผลลัพธ์การประมวลผลสลิปแบบกลุ่ม (Batch Slip Result)
@@ -36,7 +37,8 @@ class KrungthaiBatchResult {
 /// - ระบบสแกนแบบกลุ่ม (Batch Processing)
 /// - ระบบตรวจจับสลิปใหม่อัตโนมัติจากโฟลเดอร์เป้าหมาย (Target Folder Auto-Scan)
 class KrungthaiSlipService {
-  static final KrungthaiSlipService _instance = KrungthaiSlipService._internal();
+  static final KrungthaiSlipService _instance =
+      KrungthaiSlipService._internal();
   factory KrungthaiSlipService() => _instance;
   KrungthaiSlipService._internal();
 
@@ -83,7 +85,10 @@ class KrungthaiSlipService {
     await _storageService.saveSlipFolderAutoScanPref(value);
   }
 
-  Future<void> setTargetFolder({required String path, required String name}) async {
+  Future<void> setTargetFolder({
+    required String path,
+    required String name,
+  }) async {
     targetFolderPath.value = path;
     targetFolderName.value = name;
     await _storageService.saveSlipTargetFolder(path, name);
@@ -92,9 +97,7 @@ class KrungthaiSlipService {
   /// เลือกรูปสลิปหลายรูปพร้อมกันจากอัลบั้ม (Multi-Image Pick)
   Future<List<XFile>> pickMultiSlipImagesFromGallery() async {
     try {
-      final images = await _picker.pickMultiImage(
-        imageQuality: 95,
-      );
+      final images = await _picker.pickMultiImage(imageQuality: 95);
       return images;
     } catch (_) {
       return [];
@@ -111,7 +114,8 @@ class KrungthaiSlipService {
     final duplicateSlips = <Map<String, dynamic>>[];
     int invalidCount = 0;
 
-    final transactions = existingTransactions ??
+    final transactions =
+        existingTransactions ??
         (Get.isRegistered<DashboardController>()
             ? Get.find<DashboardController>().transactions
             : <TransactionItem>[]);
@@ -123,7 +127,10 @@ class KrungthaiSlipService {
       if (slip == null) {
         invalidCount++;
       } else {
-        final duplicate = KrungthaiSlipParser.findDuplicateTransaction(slip, transactions);
+        final duplicate = KrungthaiSlipParser.findDuplicateTransaction(
+          slip,
+          transactions,
+        );
         if (duplicate != null) {
           duplicateSlips.add({'slip': slip, 'existing': duplicate});
         } else {
@@ -144,7 +151,8 @@ class KrungthaiSlipService {
   Future<List<KrungthaiSlipData>> scanTargetFolderForNewSlips({
     List<TransactionItem>? existingTransactions,
   }) async {
-    if (!isFolderAutoScanEnabled.value || targetFolderPath.value.trim().isEmpty) {
+    if (!isFolderAutoScanEnabled.value ||
+        targetFolderPath.value.trim().isEmpty) {
       return [];
     }
 
@@ -163,7 +171,9 @@ class KrungthaiSlipService {
       if (imageFiles.isEmpty) return [];
 
       // เรียงลำดับจากรูปที่แก้ไขล่าสุด
-      imageFiles.sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
+      imageFiles.sort(
+        (a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()),
+      );
 
       // ตรวจสอบรูปภาพล่าสุดไม่เกิน 8 รูปล่าสุดเพื่อความรวดเร็ว
       final recentFiles = imageFiles.take(8).toList();
@@ -176,7 +186,8 @@ class KrungthaiSlipService {
 
       if (filesToProcess.isEmpty) return [];
 
-      final transactions = existingTransactions ??
+      final transactions =
+          existingTransactions ??
           (Get.isRegistered<DashboardController>()
               ? Get.find<DashboardController>().transactions
               : <TransactionItem>[]);
@@ -210,7 +221,7 @@ class KrungthaiSlipService {
       {
         'id': 'ktb_next',
         'name': 'Krungthai NEXT',
-        'defaultPath': '/storage/emulated/0/Pictures/Krungthai',
+        'defaultPath': '/storage/emulated/0/Pictures/Krungthai NEXT',
         'subtitle': 'โฟลเดอร์สลิปอัตโนมัติจากแอป Krungthai NEXT',
       },
       {
@@ -281,6 +292,7 @@ class KrungthaiSlipService {
         ocrSlip = KrungthaiSlipParser.parse(ocrText);
       }
 
+      KrungthaiSlipData? result;
       // 3. ผสานข้อมูล (Data Fusion) เพื่อความแม่นยำสูงสุด
       if (qrSlip != null && ocrSlip != null) {
         // ให้ความสำคัญกับยอดเงินจาก OCR ก่อน เพราะพิมพ์ชัดเจนบนสลิปจริง (QR ของ BOT มักไม่มี Tag 54 ยอดเงิน)
@@ -288,9 +300,22 @@ class KrungthaiSlipService {
             ? ocrSlip.amount
             : (qrSlip.amount > 0 ? qrSlip.amount : 0.0);
         final finalRef = qrSlip.referenceNo ?? ocrSlip.referenceNo;
-        final finalDate = qrSlip.transactionDate.year >= 2024 ? qrSlip.transactionDate : ocrSlip.transactionDate;
+        // กำหนดวันและเวลาทำรายการ:
+        // ให้ความสำคัญสูงสุดกับ OCR เป็นอันดับแรก เพราะอ่านวันและเวลา (ชั่วโมง:นาที) ที่ระบุบนสลิปจริง
+        // ขณะที่ QR Code ของ BOT จะไม่มีเวลา (Hour:Minute) และในหลายกรณีไม่มีวันที่
+        DateTime finalDate;
+        bool hasDateTime = false;
+        if (ocrSlip.hasParsedDateTime) {
+          finalDate = ocrSlip.transactionDate;
+          hasDateTime = true;
+        } else if (qrSlip.hasParsedDateTime) {
+          finalDate = qrSlip.transactionDate;
+          hasDateTime = true;
+        } else {
+          finalDate = ocrSlip.transactionDate;
+        }
 
-        return KrungthaiSlipData(
+        result = KrungthaiSlipData(
           amount: finalAmount,
           transactionDate: finalDate,
           senderName: ocrSlip.senderName ?? qrSlip.senderName,
@@ -299,25 +324,32 @@ class KrungthaiSlipService {
           receiverAccount: ocrSlip.receiverAccount ?? qrSlip.receiverAccount,
           referenceNo: finalRef,
           memo: ocrSlip.memo ?? qrSlip.memo,
-          bankName: qrSlip.bankName.contains('NEXT') || qrSlip.bankName.contains('เป๋าตัง')
+          bankName:
+              qrSlip.bankName.contains('NEXT') ||
+                  qrSlip.bankName.contains('เป๋าตัง')
               ? qrSlip.bankName
               : ocrSlip.bankName,
           isKrungthai: true,
           suggestedCategory: ocrSlip.suggestedCategory,
           suggestedType: ocrSlip.suggestedType,
           suggestedCostNature: ocrSlip.suggestedCostNature,
-          rawText: '${qrSlip.rawText}\n\n-- OCR Extracted Text --\n${ocrSlip.rawText}',
+          rawText:
+              '${qrSlip.rawText}\n\n-- OCR Extracted Text --\n${ocrSlip.rawText}',
+          hasParsedDateTime: hasDateTime,
+          predictionConfidence: ocrSlip.predictionConfidence,
+          predictionReason: ocrSlip.predictionReason,
         );
+      } else if (qrSlip != null) {
+        // หากพบเฉพาะ QR Code
+        result = qrSlip;
+      } else if (ocrSlip != null &&
+          (ocrSlip.isKrungthai || ocrSlip.amount > 0)) {
+        // หากพบเฉพาะ OCR Text และมีข้อมูลที่เชื่อถือได้
+        result = ocrSlip;
       }
 
-      // หากพบเฉพาะ QR Code
-      if (qrSlip != null) {
-        return qrSlip;
-      }
-
-      // หากพบเฉพาะ OCR Text และมีข้อมูลที่เชื่อถือได้
-      if (ocrSlip != null && (ocrSlip.isKrungthai || ocrSlip.amount > 0)) {
-        return ocrSlip;
+      if (result != null) {
+        return enrichWithHistory(result);
       }
 
       return null;
@@ -326,9 +358,40 @@ class KrungthaiSlipService {
     }
   }
 
+  /// นำประวัติรายการธุรกรรมในระบบมาช่วยเพิ่มความแม่นยำในการทำนายหมวดหมู่ (History-Based Learning)
+  KrungthaiSlipData enrichWithHistory(KrungthaiSlipData slip) {
+    try {
+      if (Get.isRegistered<DashboardController>()) {
+        final controller = Get.find<DashboardController>();
+        final history = controller.transactions;
+        if (history.isNotEmpty) {
+          final prediction = SlipCategoryPredictor.predict(
+            memo: slip.memo,
+            receiverName: slip.receiverName,
+            fullText: slip.rawText,
+            amount: slip.amount,
+            transactionDate: slip.transactionDate,
+            history: history,
+          );
+          if (prediction.confidence >= slip.predictionConfidence) {
+            return slip.copyWith(
+              suggestedCategory: prediction.category,
+              suggestedType: prediction.type,
+              suggestedCostNature: prediction.costNature,
+              predictionConfidence: prediction.confidence,
+              predictionReason: prediction.reason,
+            );
+          }
+        }
+      }
+    } catch (_) {}
+    return slip;
+  }
+
   /// แปลงข้อความสลิปเป็น `KrungthaiSlipData`
   KrungthaiSlipData parseSlipText(String text) {
-    return KrungthaiSlipParser.parse(text);
+    final parsed = KrungthaiSlipParser.parse(text);
+    return enrichWithHistory(parsed);
   }
 
   /// บันทึกรายการสลิปลงระบบ (รองรับทั้งโหมดทันทีและแก้ไขก่อน)

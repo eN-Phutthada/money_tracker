@@ -2,7 +2,7 @@ import 'dart:typed_data';
 import 'package:image/image.dart' as img;
 import 'package:zxing2/qrcode.dart';
 import '../models/krungthai_slip_model.dart';
-import '../models/transaction_model.dart';
+import 'slip_category_predictor.dart';
 
 /// ตัวถอดรหัส QR Code บนสลิปธนาคารกรุงไทย (PromptPay / BOT Slip Verification Standard)
 /// ทำงานด้วย Pure Dart 100% รองรับทุกแพลตฟอร์ม (Android, iOS, Windows, macOS, Web)
@@ -143,12 +143,14 @@ class KrungthaiQrDecoder {
         final amount = amountStr != null ? double.tryParse(amountStr) ?? 0.0 : 0.0;
 
         DateTime date = DateTime.now();
+        bool hasDate = false;
         final dateStr = uri.queryParameters['date'] ?? uri.queryParameters['dateTime'];
         if (dateStr != null && dateStr.length >= 8) {
           final y = int.tryParse(dateStr.substring(0, 4)) ?? date.year;
           final m = int.tryParse(dateStr.substring(4, 6)) ?? date.month;
           final d = int.tryParse(dateStr.substring(6, 8)) ?? date.day;
           date = DateTime(y, m, d);
+          hasDate = true;
         }
 
         final bankVariant = lower.contains('paotang') ? 'ธนาคารกรุงไทย (เป๋าตัง)' : 'ธนาคารกรุงไทย (Krungthai NEXT)';
@@ -160,6 +162,7 @@ class KrungthaiQrDecoder {
           bankName: bankVariant,
           isKrungthai: true,
           rawText: qrText,
+          hasParsedDateTime: hasDate,
         );
       }
     }
@@ -216,17 +219,25 @@ class KrungthaiQrDecoder {
 
     // สกัดวันที่ทำรายการ
     DateTime date = DateTime.now();
+    bool hasDate = false;
     if (referenceNo != null && referenceNo.length >= 8 && referenceNo.startsWith('202')) {
       final y = int.tryParse(referenceNo.substring(0, 4));
       final m = int.tryParse(referenceNo.substring(4, 6));
       final d = int.tryParse(referenceNo.substring(6, 8));
       if (y != null && m != null && d != null && m >= 1 && m <= 12 && d >= 1 && d <= 31) {
         date = DateTime(y, m, d);
+        hasDate = true;
       }
     }
 
     final isPaotang = lower.contains('paotang') || lower.contains('เป๋าตัง');
     final bankName = isPaotang ? 'ธนาคารกรุงไทย (เป๋าตัง)' : 'ธนาคารกรุงไทย (Krungthai NEXT)';
+
+    final prediction = SlipCategoryPredictor.predict(
+      fullText: qrText,
+      amount: amount,
+      transactionDate: date,
+    );
 
     return KrungthaiSlipData(
       amount: amount,
@@ -234,10 +245,13 @@ class KrungthaiQrDecoder {
       referenceNo: referenceNo,
       bankName: bankName,
       isKrungthai: true,
-      suggestedCategory: 'อาหาร/ของกิน',
-      suggestedCostNature: CostNature.variable,
-      suggestedType: TransactionType.expense,
+      suggestedCategory: prediction.category,
+      suggestedCostNature: prediction.costNature,
+      suggestedType: prediction.type,
       rawText: qrText,
+      hasParsedDateTime: hasDate,
+      predictionConfidence: prediction.confidence,
+      predictionReason: prediction.reason.isNotEmpty ? prediction.reason : 'สแกน QR Code',
     );
   }
 

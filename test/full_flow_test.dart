@@ -12,7 +12,10 @@ import 'package:money_tracker/app/widgets/liquid_glass_nav_dock.dart';
 
 void main() {
   testWidgets('Full navigation and interaction test', (WidgetTester tester) async {
-    await tester.pumpWidget(const MoneyTrackerApp());
+    tester.platformDispatcher.localeTestValue = const Locale('th', 'TH');
+    addTearDown(() => tester.platformDispatcher.clearLocaleTestValue());
+
+    await tester.pumpWidget(const MoneyTrackerApp(initialLocale: Locale('th', 'TH')));
     await tester.pumpAndSettle();
 
     // Verify Dashboard

@@ -454,6 +454,77 @@ X XXXX XXXX6 48 2
       expect(saved.amount, equals(139.00));
       expect(controller.transactions.first.amount, equals(139.00));
     });
+
+    test('18. Accurately extracts slip transaction time and ignores phone status bar clock', () {
+      // Mobile screenshot with phone clock at line 0 (09:41)
+      const screenshotText = '''
+09:41
+Krungthai
+กรุงไทย
+โอนเงินสำเร็จ
+รหัสอ้างอิง A308e920c27594e4c
+
+จาก
+นายพุทธดา ห * * *
+กรุงไทย
+XXX-X-XX167-8
+
+ไปยัง
+บจก. เอ็นเอฟ สตรีมมิ่ง
+พร้อมเพย์
+X XXXX XXXX6 48 2
+
+จำนวนเงิน 139.00 บาท
+ค่าธรรมเนียม 0.00 บาท
+วันที่ทำรายการ 02 ส.ค. 2569 - 22:02
+''';
+
+      final slip = KrungthaiSlipParser.parse(screenshotText);
+      expect(slip.hasParsedDateTime, isTrue);
+      expect(slip.transactionDate.year, equals(2026));
+      expect(slip.transactionDate.month, equals(8));
+      expect(slip.transactionDate.day, equals(2));
+      // Must NOT be 09:41 (the status bar), MUST be 22:02 (the slip's transaction time)
+      expect(slip.transactionDate.hour, equals(22));
+      expect(slip.transactionDate.minute, equals(2));
+    });
+
+    test('19. Extracts diverse real-world slip date and time formats', () {
+      // 1. Thai with "เวลา" and dot format (22.02 น.)
+      const textWithDot = 'โอนเงินสำเร็จ\n2 ส.ค. 69 เวลา 22.02 น.\nรหัสอ้างอิง A308';
+      final slip1 = KrungthaiSlipParser.parse(textWithDot);
+      expect(slip1.hasParsedDateTime, isTrue);
+      expect(slip1.transactionDate.year, equals(2026));
+      expect(slip1.transactionDate.month, equals(8));
+      expect(slip1.transactionDate.day, equals(2));
+      expect(slip1.transactionDate.hour, equals(22));
+      expect(slip1.transactionDate.minute, equals(2));
+
+      // 2. Multi-line date and time
+      const textMultiLine = 'วันที่ทำรายการ\n02 ส.ค. 2569\nเวลา 22:02 น.';
+      final slip2 = KrungthaiSlipParser.parse(textMultiLine);
+      expect(slip2.hasParsedDateTime, isTrue);
+      expect(slip2.transactionDate.hour, equals(22));
+      expect(slip2.transactionDate.minute, equals(2));
+
+      // 3. English month with second
+      const textEnglish = 'Transaction Successful\n02 Aug 2026 22:02:15';
+      final slip3 = KrungthaiSlipParser.parse(textEnglish);
+      expect(slip3.hasParsedDateTime, isTrue);
+      expect(slip3.transactionDate.hour, equals(22));
+      expect(slip3.transactionDate.minute, equals(2));
+      expect(slip3.transactionDate.second, equals(15));
+
+      // 4. Numeric Buddhist era format
+      const textNumeric = '02/08/2569 22:02';
+      final slip4 = KrungthaiSlipParser.parse(textNumeric);
+      expect(slip4.hasParsedDateTime, isTrue);
+      expect(slip4.transactionDate.year, equals(2026));
+      expect(slip4.transactionDate.month, equals(8));
+      expect(slip4.transactionDate.day, equals(2));
+      expect(slip4.transactionDate.hour, equals(22));
+      expect(slip4.transactionDate.minute, equals(2));
+    });
   });
 }
 

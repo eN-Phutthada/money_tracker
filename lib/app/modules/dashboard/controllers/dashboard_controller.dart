@@ -10,7 +10,7 @@ import '../../../data/services/storage_service.dart';
 import '../../../widgets/app_feedback.dart';
 
 /// GetX Reactive Controller สำหรับจัดการ State การเงินทั้งระบบ
-class DashboardController extends GetxController {
+class DashboardController extends GetxController with WidgetsBindingObserver {
   final StorageService _storageService = StorageService();
 
   // Reactive State
@@ -30,6 +30,7 @@ class DashboardController extends GetxController {
   final Rx<DateTime> selectedDate = DateTime.now().obs;
   final Rx<ThemeMode> themeMode = ThemeMode.system.obs;
   final RxBool isDarkMode = false.obs;
+  final RxString languageMode = 'system'.obs; // 'system', 'th', 'en'
   final RxString currentLanguage = 'th'.obs;
   final RxInt selectedChartIndex = 0.obs; // 0: Spline Area Chart, 1: Donut Chart
   final RxBool isSidebarCollapsed = false.obs;
@@ -48,6 +49,7 @@ class DashboardController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    WidgetsBinding.instance.addObserver(this);
     _loadData();
   }
 
@@ -105,8 +107,17 @@ class DashboardController extends GetxController {
 
   @override
   void onClose() {
+    WidgetsBinding.instance.removeObserver(this);
     keyboardFocusNode.dispose();
     super.onClose();
+  }
+
+  @override
+  void didChangeLocales(List<Locale>? locales) {
+    super.didChangeLocales(locales);
+    if (languageMode.value == 'system') {
+      _applySystemLocale();
+    }
   }
 
   Future<void> _loadData() async {
@@ -140,12 +151,14 @@ class DashboardController extends GetxController {
       }
 
       final savedLang = await _storageService.loadLanguage();
-      if (savedLang != null && (savedLang == 'en' || savedLang == 'th')) {
-        currentLanguage.value = savedLang;
-        _safeUpdateLocale(savedLang == 'en' ? const Locale('en', 'US') : const Locale('th', 'TH'));
+      if (savedLang == 'en' || savedLang == 'th') {
+        final lang = savedLang!;
+        languageMode.value = lang;
+        currentLanguage.value = lang;
+        _safeUpdateLocale(lang == 'en' ? const Locale('en', 'US') : const Locale('th', 'TH'));
       } else {
-        currentLanguage.value = 'th';
-        _safeUpdateLocale(const Locale('th', 'TH'));
+        languageMode.value = 'system';
+        _applySystemLocale();
       }
 
       if (!isInit) {
@@ -542,8 +555,21 @@ class DashboardController extends GetxController {
     }
   }
 
+  void _applySystemLocale() {
+    try {
+      final sysLang = WidgetsBinding.instance.platformDispatcher.locale.languageCode.toLowerCase();
+      final activeLang = sysLang == 'th' ? 'th' : 'en';
+      currentLanguage.value = activeLang;
+      _safeUpdateLocale(activeLang == 'en' ? const Locale('en', 'US') : const Locale('th', 'TH'));
+    } catch (_) {
+      currentLanguage.value = 'th';
+      _safeUpdateLocale(const Locale('th', 'TH'));
+    }
+  }
+
   void setLanguage(String langCode) {
     if (langCode != 'en' && langCode != 'th') return;
+    languageMode.value = langCode;
     currentLanguage.value = langCode;
     _safeUpdateLocale(langCode == 'en' ? const Locale('en', 'US') : const Locale('th', 'TH'));
     _storageService.saveLanguage(langCode);

@@ -16,6 +16,13 @@ class KrungthaiSlipData {
   final TransactionType suggestedType;
   final CostNature suggestedCostNature;
   final String rawText;
+  final bool hasParsedDateTime;
+
+  /// ความมั่นใจในการทำนายหมวดหมู่ 0.0–1.0 (จาก SlipCategoryPredictor)
+  final double predictionConfidence;
+
+  /// เหตุผลสั้นๆ ที่ระบบทำนายหมวดหมู่นี้ สำหรับแสดง UI
+  final String predictionReason;
 
   const KrungthaiSlipData({
     required this.amount,
@@ -32,7 +39,51 @@ class KrungthaiSlipData {
     this.suggestedType = TransactionType.expense,
     this.suggestedCostNature = CostNature.variable,
     this.rawText = '',
+    this.hasParsedDateTime = false,
+    this.predictionConfidence = 0.5,
+    this.predictionReason = '',
   });
+
+  /// สร้างสำเนาที่มีค่าบางฟิลด์ถูกแทนที่ (สำหรับ history-based enhancement)
+  KrungthaiSlipData copyWith({
+    double? amount,
+    DateTime? transactionDate,
+    String? senderName,
+    String? senderAccount,
+    String? receiverName,
+    String? receiverAccount,
+    String? referenceNo,
+    String? memo,
+    String? bankName,
+    bool? isKrungthai,
+    String? suggestedCategory,
+    TransactionType? suggestedType,
+    CostNature? suggestedCostNature,
+    String? rawText,
+    bool? hasParsedDateTime,
+    double? predictionConfidence,
+    String? predictionReason,
+  }) {
+    return KrungthaiSlipData(
+      amount: amount ?? this.amount,
+      transactionDate: transactionDate ?? this.transactionDate,
+      senderName: senderName ?? this.senderName,
+      senderAccount: senderAccount ?? this.senderAccount,
+      receiverName: receiverName ?? this.receiverName,
+      receiverAccount: receiverAccount ?? this.receiverAccount,
+      referenceNo: referenceNo ?? this.referenceNo,
+      memo: memo ?? this.memo,
+      bankName: bankName ?? this.bankName,
+      isKrungthai: isKrungthai ?? this.isKrungthai,
+      suggestedCategory: suggestedCategory ?? this.suggestedCategory,
+      suggestedType: suggestedType ?? this.suggestedType,
+      suggestedCostNature: suggestedCostNature ?? this.suggestedCostNature,
+      rawText: rawText ?? this.rawText,
+      hasParsedDateTime: hasParsedDateTime ?? this.hasParsedDateTime,
+      predictionConfidence: predictionConfidence ?? this.predictionConfidence,
+      predictionReason: predictionReason ?? this.predictionReason,
+    );
+  }
 
   /// ชื่อรายการเริ่มต้นที่กระชับและเข้าใจง่าย
   String get defaultTitle {
@@ -105,6 +156,9 @@ class KrungthaiSlipData {
       'suggestedType': suggestedType.name,
       'suggestedCostNature': suggestedCostNature.name,
       'rawText': rawText,
+      'hasParsedDateTime': hasParsedDateTime,
+      'predictionConfidence': predictionConfidence,
+      'predictionReason': predictionReason,
     };
   }
 
@@ -132,6 +186,9 @@ class KrungthaiSlipData {
         orElse: () => CostNature.variable,
       ),
       rawText: json['rawText'] as String? ?? '',
+      hasParsedDateTime: json['hasParsedDateTime'] as bool? ?? false,
+      predictionConfidence: (json['predictionConfidence'] as num?)?.toDouble() ?? 0.5,
+      predictionReason: json['predictionReason'] as String? ?? '',
     );
   }
 }

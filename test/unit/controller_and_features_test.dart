@@ -7,6 +7,7 @@ import 'package:money_tracker/app/modules/budget/controllers/budget_controller.d
 import 'package:money_tracker/app/modules/dashboard/controllers/dashboard_controller.dart';
 import 'package:money_tracker/app/translations/app_translations.dart';
 import 'package:money_tracker/app/widgets/app_feedback.dart';
+import 'package:money_tracker/main.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -281,6 +282,22 @@ void main() {
       await storage.saveLanguage('th');
       final loadedTh = await storage.loadLanguage();
       expect(loadedTh, 'th');
+
+      await storage.saveLanguage('system');
+      final loadedSys = await storage.loadLanguage();
+      expect(loadedSys, 'system');
+    });
+
+    test('resolveInitialLocale defaults to system locale when null or system', () {
+      expect(resolveInitialLocale('en'), const Locale('en', 'US'));
+      expect(resolveInitialLocale('th'), const Locale('th', 'TH'));
+
+      final sysLocale = resolveInitialLocale(null);
+      expect(sysLocale, isA<Locale>());
+      expect(['th', 'en'].contains(sysLocale.languageCode), isTrue);
+
+      final sysFromSaved = resolveInitialLocale('system');
+      expect(sysFromSaved, sysLocale);
     });
 
     test('DashboardController language switching and localized period titles', () {
@@ -320,6 +337,12 @@ void main() {
       expect(controller.isEnglish, isFalse);
       expect('budget_settings'.tr, 'ตั้งค่างบประมาณ');
       expect('all_transactions'.tr, 'รายการธุรกรรมทั้งหมด');
+
+      // Verify setLanguage ignores unknown codes (system is backend-only)
+      controller.setLanguage('system'); // should be ignored
+      expect(controller.currentLanguage.value, 'th'); // should still be 'th'
+      controller.setLanguage('unknown');              // should be ignored
+      expect(controller.currentLanguage.value, 'th');
     });
 
     test('AppFeedback API executes safely and dismisses without throwing', () {

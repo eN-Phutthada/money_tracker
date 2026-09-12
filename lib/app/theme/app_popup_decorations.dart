@@ -653,13 +653,14 @@ void showLanguagePickerDialog(BuildContext context) {
             // Options List
             Obx(() {
               final currentLang = dashboardController.currentLanguage.value;
+              final isEn = dashboardController.isEnglish;
 
               return Column(
                 children: [
                   _buildThemeOptionTile(
-                    title: 'ภาษาไทย',
-                    subtitle: 'แสดงผลเป็นภาษาไทย และปี พ.ศ.',
-                    badge: currentLang == 'th' ? 'ปัจจุบัน' : null,
+                    title: 'lang_thai'.tr,
+                    subtitle: 'lang_thai_desc'.tr,
+                    badge: currentLang == 'th' ? (isEn ? 'Active' : 'ปัจจุบัน') : null,
                     icon: Icons.flag_rounded,
                     iconColor: const Color(0xFFEF4444),
                     isSelected: currentLang == 'th',
@@ -671,9 +672,9 @@ void showLanguagePickerDialog(BuildContext context) {
                   ),
                   const SizedBox(height: 10),
                   _buildThemeOptionTile(
-                    title: 'English',
-                    subtitle: 'Display in English with Gregorian Year (CE)',
-                    badge: currentLang == 'en' ? 'Active' : null,
+                    title: 'lang_english'.tr,
+                    subtitle: 'lang_english_desc'.tr,
+                    badge: currentLang == 'en' ? (isEn ? 'Active' : 'ปัจจุบัน') : null,
                     icon: Icons.language_rounded,
                     iconColor: const Color(0xFF3B82F6),
                     isSelected: currentLang == 'en',
