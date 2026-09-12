@@ -119,6 +119,32 @@ class StorageService {
   }
 
   // ==========================================
+  // USER NAME PREFERENCE
+  // ==========================================
+  Future<File> _getUserNameFile() async {
+    final dir = await getStorageDirectory();
+    return File('${dir.path}/user_name.txt');
+  }
+
+  Future<String?> loadUserName() async {
+    try {
+      final file = await _getUserNameFile();
+      if (!await file.exists()) return null;
+      final name = await file.readAsString();
+      return name.trim().isEmpty ? null : name.trim();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> saveUserName(String name) async {
+    try {
+      final file = await _getUserNameFile();
+      await file.writeAsString(name.trim(), flush: true);
+    } catch (_) {}
+  }
+
+  // ==========================================
   // TRANSACTIONS
   // ==========================================
   Future<File> _getTransactionsFile() async {

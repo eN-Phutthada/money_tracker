@@ -32,6 +32,7 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
   final RxBool isDarkMode = false.obs;
   final RxString languageMode = 'system'.obs; // 'system', 'th', 'en'
   final RxString currentLanguage = 'th'.obs;
+  final RxString userName = ''.obs;
   final RxInt selectedChartIndex = 0.obs; // 0: Spline Area Chart, 1: Donut Chart
   final RxBool isSidebarCollapsed = false.obs;
   final RxBool isBalanceHidden = false.obs;
@@ -95,8 +96,11 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
     } catch (_) {}
 
     AppFeedback.showSuccess(
-      title: 'บันทึกสลิปที่ตรวจพบสำเร็จ',
-      message: 'บันทึกเรียบร้อย $count รายการ ยอดรวม ฿${NumberFormat('#,##0.00').format(totalAmount)}',
+      title: 'batch_save_success_title'.tr,
+      message: 'batch_save_success_msg'.trParams({
+        'count': '$count',
+        'amount': '฿${NumberFormat('#,##0.00').format(totalAmount)}',
+      }),
       amount: totalAmount,
     );
   }
@@ -161,12 +165,22 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
         _applySystemLocale();
       }
 
+      final savedUserName = await _storageService.loadUserName();
+      if (savedUserName != null && savedUserName.isNotEmpty) {
+        userName.value = savedUserName;
+      }
+
       if (!isInit) {
         await _storageService.saveTransactions(transactions);
         await _storageService.saveBudgetPlan(budgetPlan.value);
         await _storageService.setInitialized();
       }
     } catch (_) {}
+  }
+
+  void setUserName(String name) {
+    userName.value = name.trim();
+    _storageService.saveUserName(name.trim());
   }
 
   // ==========================================
@@ -422,8 +436,8 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
     await _storageService.clearAllData(keepInitialized: true);
     if (Get.context != null) {
       AppFeedback.showSuccess(
-        title: 'ล้างข้อมูลสำเร็จ',
-        message: 'ล้างรายการทั้งหมดเรียบร้อยแล้ว พร้อมสำหรับบันทึกรายการจริงของคุณ',
+        title: 'clear_all_data_title'.tr,
+        message: 'clear_all_data_desc'.tr,
       );
     }
   }

@@ -40,7 +40,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Verify initial locked security state
-    expect(find.text('Money Tracker Security'), findsOneWidget);
+    expect(find.text('pin_security_title'.tr), findsOneWidget);
     expect(find.text('กรุณาใส่รหัส PIN 4 หลัก'), findsOneWidget);
     expect(find.text('ระบบความปลอดภัยทำงาน'), findsOneWidget);
     expect(find.byIcon(Icons.lock_outline_rounded), findsOneWidget);

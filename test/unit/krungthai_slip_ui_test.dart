@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:money_tracker/app/data/models/krungthai_slip_model.dart';
 import 'package:money_tracker/app/data/models/transaction_model.dart';
+import 'package:money_tracker/app/data/services/krungthai_slip_service.dart';
 import 'package:money_tracker/app/modules/dashboard/controllers/dashboard_controller.dart';
 import 'package:money_tracker/app/modules/transactions/views/krungthai_slip_sheet.dart';
 import 'package:money_tracker/app/theme/app_theme.dart';
@@ -17,6 +18,7 @@ void main() {
     Get.addTranslations(AppTranslations().keys);
     Get.locale = const Locale('th', 'TH');
     Get.put(DashboardController());
+    KrungthaiSlipService().isInstantAutoSave.value = false;
   });
 
   tearDown(() {
@@ -41,24 +43,25 @@ void main() {
       await tester.pumpAndSettle();
 
       // Check header and branding
-      expect(find.text('อ่านสลิปกรุงไทย'), findsOneWidget);
-      expect(find.text('รองรับสลิป Krungthai NEXT และเป๋าตัง'), findsOneWidget);
+      expect(find.text('scan_krungthai_slip'.tr), findsOneWidget);
+      expect(find.text('slip_all_banks_supported'.tr), findsOneWidget);
 
-      // Check all 3 real scan methods (Sample demo removed)
-      expect(find.text('เลือกจากคลังภาพ'), findsOneWidget);
-      expect(find.text('ถ่ายภาพสลิป'), findsOneWidget);
-      expect(find.text('วางข้อความสลิป'), findsOneWidget);
+      // Check scan methods
+      expect(find.text('choose_from_gallery'.tr), findsOneWidget);
+      expect(find.text('take_slip_photo'.tr), findsOneWidget);
+      expect(find.text('paste_slip_text'.tr), findsNothing);
+      expect(find.text('auto_scan_folder_title'.tr), findsOneWidget);
       expect(find.text('ทดสอบด้วยสลิปตัวอย่าง (Sample Demo)'), findsNothing);
 
       // Check Mode A/B toggle switch
-      expect(find.text('โหมด A: ตรวจสอบก่อนบันทึก'), findsOneWidget);
+      expect(find.text('mode_a_preview'.tr), findsOneWidget);
       final switchFinder = find.byType(Switch);
       expect(switchFinder, findsOneWidget);
 
       // Toggle switch to Mode B
       await tester.tap(switchFinder);
       await tester.pumpAndSettle();
-      expect(find.text('โหมด B: บันทึกทันทีอัตโนมัติ'), findsOneWidget);
+      expect(find.text('mode_b_instant'.tr), findsOneWidget);
     });
 
     testWidgets('2. KrungthaiSlipSheet renders extracted slip data in Mode A for confirmation', (tester) async {
@@ -93,13 +96,13 @@ void main() {
 
       // Check extracted fields
       expect(find.text('Krungthai NEXT Verified'), findsOneWidget);
-      expect(find.text('ยอดเงินโอนสำเร็จ'), findsOneWidget);
+      expect(find.text('transfer_success_amount'.tr), findsOneWidget);
       expect(find.text('฿350.00'), findsOneWidget);
       expect(find.text('ร้านก๋วยเตี๋ยวเรือป้าเล็ก'), findsWidgets);
       expect(find.text('202609110006992211'), findsOneWidget);
 
       // Check save button
-      final saveBtn = find.text('บันทึกรายการโอนเงิน');
+      final saveBtn = find.text('save_slip_transaction'.tr);
       expect(saveBtn, findsOneWidget);
 
       // Ensure visible and tap save
@@ -161,8 +164,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // Check duplicate warning banner
-      expect(find.text('สลิปนี้อาจเคยถูกบันทึกไปแล้ว'), findsOneWidget);
-      expect(find.text('ตรวจพบซ้ำ'), findsOneWidget);
+      expect(find.text('duplicate_slip_warning'.tr), findsOneWidget);
+      expect(find.text('duplicate_badge'.tr), findsOneWidget);
       expect(find.textContaining('ร้านก๋วยเตี๋ยวเรือป้าเล็ก'), findsWidgets);
     });
 
@@ -192,11 +195,36 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify Scan Error Dialog elements
-      expect(find.text('ไม่พบข้อมูลสลิปโอนเงิน'), findsOneWidget);
-      expect(find.textContaining('รูปภาพที่เลือกไม่ใช่ภาพสลิป'), findsOneWidget);
+      expect(find.text('slip_not_found_title'.tr), findsOneWidget);
+      expect(find.textContaining('slip_not_found_desc'.tr), findsOneWidget);
       expect(find.byIcon(Icons.search_off_rounded), findsOneWidget);
-      expect(find.text('ยกเลิก'), findsOneWidget);
-      expect(find.text('วางข้อความ'), findsOneWidget);
+      expect(find.text('close'.tr), findsOneWidget);
+      expect(find.text('paste_slip_text'.tr), findsNothing);
+    });
+
+    testWidgets('5. English locale renders KrungthaiSlipScanModal and KrungthaiSlipSheet with 100% English translations', (tester) async {
+      Get.locale = const Locale('en', 'US');
+      await tester.binding.setSurfaceSize(const Size(430, 932));
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          theme: AppTheme.lightTheme,
+          locale: const Locale('en', 'US'),
+          translations: AppTranslations(),
+          home: const Scaffold(
+            body: KrungthaiSlipScanModal(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Check English modal titles
+      expect(find.text('Scan Transfer Slip'), findsOneWidget);
+      expect(find.text('Choose from Gallery'), findsOneWidget);
+      expect(find.text('Take Photo'), findsOneWidget);
+      expect(find.text('Paste Slip Text'), findsNothing);
+      expect(find.text('Auto-Scan Slips from Folder'), findsOneWidget);
+      expect(find.text('Mode A: Review Before Saving'), findsOneWidget);
     });
   });
 }

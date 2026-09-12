@@ -122,7 +122,7 @@ class KrungthaiSlipScanModal extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'รองรับสลิป Krungthai NEXT และเป๋าตัง',
+                      'slip_all_banks_supported'.tr,
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
@@ -145,7 +145,7 @@ class KrungthaiSlipScanModal extends StatelessWidget {
             context: context,
             icon: Icons.photo_library_rounded,
             title: 'choose_from_gallery'.tr,
-            subtitle: 'เลือกรูปสลิป 1 รูป หรือเลือกหลายรูปพร้อมกัน',
+            subtitle: 'choose_from_gallery_desc'.tr,
             color: const Color(0xFF00A3E0),
             isDark: isDark,
             onTap: () async {
@@ -166,7 +166,7 @@ class KrungthaiSlipScanModal extends StatelessWidget {
             context: context,
             icon: Icons.camera_alt_rounded,
             title: 'take_slip_photo'.tr,
-            subtitle: 'เปิดกล้องถ่ายภาพสลิปใบเสร็จจริง',
+            subtitle: 'take_slip_photo_desc'.tr,
             color: const Color(0xFF10B981),
             isDark: isDark,
             onTap: () async {
@@ -179,29 +179,14 @@ class KrungthaiSlipScanModal extends StatelessWidget {
           ),
           const SizedBox(height: 10),
 
-          // Option 3: Paste Text
-          _buildOptionTile(
-            context: context,
-            icon: Icons.content_paste_rounded,
-            title: 'paste_slip_text'.tr,
-            subtitle: 'วางข้อความสลิปหรือแจ้งเตือนจากธนาคาร',
-            color: const Color(0xFF8B5CF6),
-            isDark: isDark,
-            onTap: () {
-              Get.back();
-              showPasteTextDialog(Get.context ?? context);
-            },
-          ),
-          const SizedBox(height: 10),
-
-          // Option 4: Folder Auto-Scan Settings
+          // Option 3: Folder Auto-Scan Settings
           Obx(() => _buildOptionTile(
             context: context,
             icon: Icons.folder_special_rounded,
-            title: 'ตรวจจับสลิปอัตโนมัติจากโฟลเดอร์',
+            title: 'auto_scan_folder_title'.tr,
             subtitle: slipService.isFolderAutoScanEnabled.value
-                ? 'เปิดใช้งาน: ${slipService.targetFolderName.value}'
-                : 'ปิดอยู่ (แตะเพื่อเปิดและเลือกโฟลเดอร์เป้าหมาย)',
+                ? 'auto_scan_folder_enabled'.trParams({'folder': slipService.targetFolderName.value})
+                : 'auto_scan_folder_disabled'.tr,
             color: const Color(0xFFEC4899),
             isDark: isDark,
             onTap: () {
@@ -239,7 +224,7 @@ class KrungthaiSlipScanModal extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          isInstant ? 'โหมด B: บันทึกทันทีอัตโนมัติ' : 'โหมด A: ตรวจสอบก่อนบันทึก',
+                          isInstant ? 'mode_b_instant'.tr : 'mode_a_preview'.tr,
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
@@ -247,7 +232,7 @@ class KrungthaiSlipScanModal extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          isInstant ? 'บันทึกรายการลงระบบทันทีโดยไม่ต้องกดยืนยัน' : 'เปิดหน้าต่างพรีวิวเพื่อตรวจเช็กและแก้ไขหมวดหมู่',
+                          isInstant ? 'mode_b_instant_desc'.tr : 'mode_a_preview_desc'.tr,
                           style: TextStyle(
                             fontSize: 11,
                             color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
@@ -389,7 +374,7 @@ class KrungthaiSlipScanModal extends StatelessWidget {
               ),
               const SizedBox(height: 18),
               Text(
-                'กำลังอ่านข้อมูลสลิป...',
+                'reading_slip_data'.tr,
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
@@ -398,7 +383,7 @@ class KrungthaiSlipScanModal extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                'ถอดรหัส QR Code และข้อความสลิป',
+                'reading_slip_data_desc'.tr,
                 style: TextStyle(
                   fontSize: 12,
                   color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
@@ -480,7 +465,10 @@ class KrungthaiSlipScanModal extends StatelessWidget {
               ),
               const SizedBox(height: 18),
               Obx(() => Text(
-                    'กำลังอ่านสลิป ${progressRx.value}/$totalCount รูป',
+                    'processing_batch_count'.trParams({
+                      'current': '${progressRx.value}',
+                      'total': '$totalCount',
+                    }),
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
@@ -489,7 +477,7 @@ class KrungthaiSlipScanModal extends StatelessWidget {
                   )),
               const SizedBox(height: 6),
               Text(
-                'ถอดรหัส QR Code และข้อความสลิป',
+                'reading_slip_data_desc'.tr,
                 style: TextStyle(
                   fontSize: 11.5,
                   color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
@@ -540,8 +528,11 @@ class KrungthaiSlipScanModal extends StatelessWidget {
       final totalAmount = batchResult.validSlips.fold(0.0, (sum, s) => sum + s.amount);
 
       AppFeedback.showSuccess(
-        title: 'บันทึกสลิปเป็นชุดสำเร็จ',
-        message: 'บันทึก $totalSaved รายการ (฿${NumberFormat('#,##0.00').format(totalAmount)})${duplicateCount > 0 ? ' • พบซ้ำ $duplicateCount รายการ' : ''}',
+        title: 'batch_save_success_title'.tr,
+        message: 'batch_save_success_msg'.trParams({
+          'count': '$totalSaved',
+          'amount': '฿${NumberFormat('#,##0.00').format(totalAmount)}',
+        }) + (duplicateCount > 0 ? 'duplicate_found_msg'.trParams({'count': '$duplicateCount'}) : ''),
         amount: totalAmount,
       );
 
@@ -595,7 +586,7 @@ class KrungthaiSlipScanModal extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             Text(
-              'ไม่พบข้อมูลสลิปโอนเงิน',
+              'slip_not_found_title'.tr,
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
@@ -604,7 +595,7 @@ class KrungthaiSlipScanModal extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'รูปภาพที่เลือกไม่ใช่ภาพสลิป หรือไม่พบ QR Code / ข้อมูลธนาคารที่ชัดเจนในรูปนี้\n\nท่านสามารถถ่ายหรือเลือกรูปใหม่อีกครั้ง หรือใช้วิธีวางข้อความสลิปแทนได้ครับ',
+              'slip_not_found_desc'.tr,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 12.5,
@@ -613,115 +604,19 @@ class KrungthaiSlipScanModal extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-            Row(
-              children: [
-                Expanded(
-                  child: TextButton(
-                    onPressed: () => Get.back(),
-                    child: Text('cancel'.tr),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF00A3E0),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF00A3E0),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    onPressed: () {
-                      Get.back();
-                      showPasteTextDialog(activeContext);
-                    },
-                    child: const Text('วางข้อความ'),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  static void showPasteTextDialog(BuildContext context) {
-    final activeContext = (context.mounted ? context : Get.context) ?? context;
-    final textController = TextEditingController();
-    final isDark = Theme.of(activeContext).brightness == Brightness.dark;
-
-    Get.dialog(
-      AppGlassDialog(
-        maxWidth: 460,
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.paste_rounded, color: Color(0xFF00A3E0), size: 22),
-                const SizedBox(width: 10),
-                Text(
-                  'วางข้อความสลิปกรุงไทย',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: textController,
-              maxLines: 8,
-              style: TextStyle(
-                fontSize: 13,
-                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                onPressed: () => Get.back(),
+                child: Text('close'.tr),
               ),
-              decoration: InputDecoration(
-                hintText: 'วางข้อความสลิป เช่น:\nธนาคารกรุงไทย โอนเงินสำเร็จ\n11 ก.ย. 2569 12:35 น.\nจำนวนเงิน 350.00 บาท...',
-                hintStyle: TextStyle(
-                  fontSize: 12,
-                  color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                ),
-                filled: true,
-                fillColor: isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(
-                    color: isDark ? AppColors.darkBorder : AppColors.border,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton(
-                  onPressed: () => Get.back(),
-                  child: Text('cancel'.tr),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF00A3E0),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  onPressed: () {
-                    final text = textController.text.trim();
-                    if (text.isEmpty) return;
-                    Get.back();
-                    final slipData = KrungthaiSlipParser.parse(text);
-                    dispatchSlip(slipData, activeContext);
-                  },
-                  child: const Text('อ่านข้อมูลสลิป'),
-                ),
-              ],
             ),
           ],
         ),
@@ -767,7 +662,7 @@ class KrungthaiSlipScanModal extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'โฟลเดอร์ตรวจจับสลิปอัตโนมัติ',
+                              'folder_settings_title'.tr,
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w800,
@@ -776,7 +671,7 @@ class KrungthaiSlipScanModal extends StatelessWidget {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'ตรวจจับสลิปใหม่ทันทีเมื่อเปิดแอป',
+                              'folder_settings_desc'.tr,
                               style: TextStyle(
                                 fontSize: 11.5,
                                 color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
@@ -807,7 +702,7 @@ class KrungthaiSlipScanModal extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            'เปิดตรวจจับสลิปอัตโนมัติเมื่อเปิดแอป',
+                            'auto_scan_on_launch'.tr,
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
@@ -828,7 +723,7 @@ class KrungthaiSlipScanModal extends StatelessWidget {
 
                   const SizedBox(height: 16),
                   Text(
-                    'เลือกโฟลเดอร์หรืออัลบั้มสลิป:',
+                    'choose_folder_or_album'.tr,
                     style: TextStyle(
                       fontSize: 12.5,
                       fontWeight: FontWeight.w700,
@@ -917,7 +812,7 @@ class KrungthaiSlipScanModal extends StatelessWidget {
                       color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                     ),
                     decoration: InputDecoration(
-                      labelText: 'ที่อยู่โฟลเดอร์ (Folder Path)',
+                      labelText: 'custom_path'.tr,
                       labelStyle: TextStyle(
                         fontSize: 11.5,
                         color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
@@ -947,11 +842,11 @@ class KrungthaiSlipScanModal extends StatelessWidget {
                         }
                         Get.back();
                         AppFeedback.showSuccess(
-                          title: 'บันทึกการตั้งค่าโฟลเดอร์สำเร็จ',
-                          message: 'ตั้งค่าโฟลเดอร์ "${slipService.targetFolderName.value}" เรียบร้อยแล้ว',
+                          title: 'folder_settings_saved_title'.tr,
+                          message: 'folder_settings_saved_desc'.trParams({'folder': slipService.targetFolderName.value}),
                         );
                       },
-                      child: const Text('บันทึกการตั้งค่า'),
+                      child: Text('save_settings'.tr),
                     ),
                   ),
                 ],
@@ -1065,6 +960,20 @@ class _KrungthaiSlipSheetState extends State<KrungthaiSlipSheet> {
   void dispose() {
     _titleController.dispose();
     super.dispose();
+  }
+
+  Color _getBankColor(String bankName) {
+    if (bankName.contains('กสิกร')) return const Color(0xFF138F2D);
+    if (bankName.contains('ไทยพาณิชย์')) return const Color(0xFF4E2A84);
+    if (bankName.contains('กรุงเทพ')) return const Color(0xFF1E3F8A);
+    if (bankName.contains('กรุงศรี')) return const Color(0xFFED9121);
+    if (bankName.contains('ออมสิน')) return const Color(0xFFEB1985);
+    if (bankName.contains('ธ.ก.ส.')) return const Color(0xFF006837);
+    if (bankName.contains('ทหารไทย') || bankName.contains('ttb')) return const Color(0xFF002D63);
+    if (bankName.contains('เกียรตินาคิน')) return const Color(0xFF195589);
+    if (bankName.contains('ยูโอบี')) return const Color(0xFF003865);
+    if (bankName.contains('TrueMoney')) return const Color(0xFFFF8200);
+    return const Color(0xFF00A3E0); // Krungthai Cyan (Default)
   }
 
   List<String> get _categories => _currentCategories;
@@ -1183,13 +1092,13 @@ class _KrungthaiSlipSheetState extends State<KrungthaiSlipSheet> {
     String label;
     if (conf >= 0.70) {
       badgeColor = const Color(0xFF00C853);
-      label = 'แม่นยำสูง ${(conf * 100).round()}%';
+      label = 'confidence_high'.trParams({'percent': '${(conf * 100).round()}'});
     } else if (conf >= 0.40) {
       badgeColor = const Color(0xFFFF9800);
-      label = 'ปานกลาง ${(conf * 100).round()}%';
+      label = 'confidence_medium'.trParams({'percent': '${(conf * 100).round()}'});
     } else {
       badgeColor = const Color(0xFF00A3E0);
-      label = 'ค่าเริ่มต้น';
+      label = 'confidence_default'.tr;
     }
 
     return Container(
@@ -1247,7 +1156,7 @@ class _KrungthaiSlipSheetState extends State<KrungthaiSlipSheet> {
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  'ระบุจำนวนเงิน',
+                  'enter_amount'.tr,
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
@@ -1342,12 +1251,12 @@ class _KrungthaiSlipSheetState extends State<KrungthaiSlipSheet> {
                         Get.back();
                       } else {
                         AppFeedback.showError(
-                          title: 'ยอดเงินไม่ถูกต้อง',
-                          message: 'กรุณากรอกจำนวนเงินที่มากกว่า 0 บาท',
+                          title: 'invalid_amount'.tr,
+                          message: 'invalid_amount_desc'.tr,
                         );
                       }
                     },
-                    child: const Text('ตกลง'),
+                    child: Text('confirm'.tr),
                   ),
                 ),
               ],
@@ -1393,8 +1302,8 @@ class _KrungthaiSlipSheetState extends State<KrungthaiSlipSheet> {
         HapticFeedback.heavyImpact();
       } catch (_) {}
       AppFeedback.showError(
-        title: 'ยังไม่ได้ระบุยอดเงิน',
-        message: 'กรุณาแตะที่กล่องยอดเงินเพื่อระบุจำนวนเงินก่อนบันทึกครับ',
+        title: 'amount_empty_title'.tr,
+        message: 'amount_empty_desc'.tr,
       );
       _showEditAmountDialog();
       return;
@@ -1463,30 +1372,32 @@ class _KrungthaiSlipSheetState extends State<KrungthaiSlipSheet> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Krungthai Branding Header
+                  // Bank Branding Header
                   Row(
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF00A3E0).withValues(alpha: 0.14),
+                          color: _getBankColor(widget.slip.bankName).withValues(alpha: 0.14),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: const Color(0xFF00A3E0).withValues(alpha: 0.35),
+                            color: _getBankColor(widget.slip.bankName).withValues(alpha: 0.35),
                             width: 1,
                           ),
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.verified_rounded, size: 14, color: Color(0xFF00A3E0)),
-                            SizedBox(width: 5),
+                            Icon(Icons.verified_rounded, size: 14, color: _getBankColor(widget.slip.bankName)),
+                            const SizedBox(width: 5),
                             Text(
-                              'Krungthai NEXT Verified',
+                              widget.slip.isKrungthai
+                                  ? (widget.slip.bankName.contains('เป๋าตัง') ? 'เป๋าตัง Verified' : 'Krungthai NEXT Verified')
+                                  : '${widget.slip.bankName} Verified',
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
-                                color: Color(0xFF00A3E0),
+                                color: _getBankColor(widget.slip.bankName),
                               ),
                             ),
                           ],
@@ -1541,13 +1452,17 @@ class _KrungthaiSlipSheetState extends State<KrungthaiSlipSheet> {
                           children: [
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                Text(
-                                  'ยอดเงินโอนสำเร็จ',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: isDark ? const Color(0xFF7DD3FC) : const Color(0xFF0284C7),
+                                Flexible(
+                                  child: Text(
+                                    'transfer_success_amount'.tr,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: isDark ? const Color(0xFF7DD3FC) : const Color(0xFF0284C7),
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                                 const SizedBox(width: 8),
@@ -1557,14 +1472,14 @@ class _KrungthaiSlipSheetState extends State<KrungthaiSlipSheet> {
                                     color: const Color(0xFF00A3E0).withValues(alpha: 0.15),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
-                                  child: const Row(
+                                  child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Icon(Icons.edit_rounded, size: 11, color: Color(0xFF00A3E0)),
-                                      SizedBox(width: 3),
+                                      const Icon(Icons.edit_rounded, size: 11, color: Color(0xFF00A3E0)),
+                                      const SizedBox(width: 3),
                                       Text(
-                                        'แตะแก้ไข',
-                                        style: TextStyle(
+                                        'tap_to_edit'.tr,
+                                        style: const TextStyle(
                                           fontSize: 10,
                                           fontWeight: FontWeight.w700,
                                           color: Color(0xFF00A3E0),
@@ -1597,14 +1512,14 @@ class _KrungthaiSlipSheetState extends State<KrungthaiSlipSheet> {
                                     width: 1,
                                   ),
                                 ),
-                                child: const Row(
+                                child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(Icons.warning_amber_rounded, size: 14, color: Color(0xFFEF4444)),
-                                    SizedBox(width: 4),
+                                    const Icon(Icons.warning_amber_rounded, size: 14, color: Color(0xFFEF4444)),
+                                    const SizedBox(width: 4),
                                     Text(
-                                      'ไม่พบยอดเงินจากภาพ กรุณาแตะเพื่อระบุจำนวนเงิน',
-                                      style: TextStyle(
+                                      'amount_not_detected_hint'.tr,
+                                      style: const TextStyle(
                                         fontSize: 11,
                                         fontWeight: FontWeight.w700,
                                         color: Color(0xFFEF4444),
@@ -1685,10 +1600,10 @@ class _KrungthaiSlipSheetState extends State<KrungthaiSlipSheet> {
                             children: [
                               const Icon(Icons.warning_amber_rounded, size: 18, color: AppColors.deficitText),
                               const SizedBox(width: 8),
-                              const Expanded(
+                              Expanded(
                                 child: Text(
-                                  'สลิปนี้อาจเคยถูกบันทึกไปแล้ว',
-                                  style: TextStyle(
+                                  'duplicate_slip_warning'.tr,
+                                  style: const TextStyle(
                                     fontSize: 12.5,
                                     fontWeight: FontWeight.w700,
                                     color: AppColors.deficitText,
@@ -1701,9 +1616,9 @@ class _KrungthaiSlipSheetState extends State<KrungthaiSlipSheet> {
                                   color: AppColors.deficitText.withValues(alpha: 0.18),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
-                                child: const Text(
-                                  'ตรวจพบซ้ำ',
-                                  style: TextStyle(
+                                child: Text(
+                                  'duplicate_badge'.tr,
+                                  style: const TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.w600,
                                     color: AppColors.deficitText,
@@ -1716,7 +1631,11 @@ class _KrungthaiSlipSheetState extends State<KrungthaiSlipSheet> {
                           Padding(
                             padding: const EdgeInsets.only(left: 26),
                             child: Text(
-                              'พบรายการ "${duplicateItem.title}" บันทึกเมื่อ ${DateFormat('d MMM, HH:mm น.').format(duplicateItem.date)} ยอด ฿${currencyFormat.format(duplicateItem.amount)}\n(หากต้องการบันทึกอีกครั้ง สามารถกดยืนยันด้านล่างได้)',
+                              'duplicate_detail_hint'.trParams({
+                                'title': duplicateItem.title,
+                                'date': DateFormat('d MMM, HH:mm น.').format(duplicateItem.date),
+                                'amount': currencyFormat.format(duplicateItem.amount),
+                              }),
                               style: TextStyle(
                                 fontSize: 11,
                                 height: 1.35,
@@ -1744,14 +1663,15 @@ class _KrungthaiSlipSheetState extends State<KrungthaiSlipSheet> {
                     ),
                     child: Column(
                       children: [
+                        _buildDetailRow('bank'.tr, widget.slip.bankName, isDark),
                         if (widget.slip.receiverName != null)
-                          _buildDetailRow('ผู้รับเงิน', widget.slip.receiverName!, isDark),
+                          _buildDetailRow('receiver'.tr, widget.slip.receiverName!, isDark),
                         if (widget.slip.senderName != null)
-                          _buildDetailRow('ผู้โอนเงิน', widget.slip.senderName!, isDark),
+                          _buildDetailRow('sender'.tr, widget.slip.senderName!, isDark),
                         if (widget.slip.memo != null)
-                          _buildDetailRow('บันทึกช่วยจำ', widget.slip.memo!, isDark),
+                          _buildDetailRow('memo'.tr, widget.slip.memo!, isDark),
                         if (widget.slip.referenceNo != null)
-                          _buildDetailRow('รหัสอ้างอิง', widget.slip.referenceNo!, isDark),
+                          _buildDetailRow('reference_no'.tr, widget.slip.referenceNo!, isDark),
                       ],
                     ),
                   ),
@@ -1760,7 +1680,7 @@ class _KrungthaiSlipSheetState extends State<KrungthaiSlipSheet> {
 
                   // Transaction Type Selector
                   Text(
-                    'ประเภทธุรกรรม',
+                    'transaction_type'.tr,
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
@@ -1772,7 +1692,7 @@ class _KrungthaiSlipSheetState extends State<KrungthaiSlipSheet> {
                     children: [
                       Expanded(
                         child: _buildTypeOption(
-                          label: 'รายจ่าย',
+                          label: 'expense'.tr,
                           icon: Icons.arrow_upward_rounded,
                           type: TransactionType.expense,
                           activeColor: const Color(0xFFFF5252),
@@ -1782,7 +1702,7 @@ class _KrungthaiSlipSheetState extends State<KrungthaiSlipSheet> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: _buildTypeOption(
-                          label: 'รายรับ',
+                          label: 'income'.tr,
                           icon: Icons.arrow_downward_rounded,
                           type: TransactionType.income,
                           activeColor: const Color(0xFF00C853),
@@ -1792,7 +1712,7 @@ class _KrungthaiSlipSheetState extends State<KrungthaiSlipSheet> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: _buildTypeOption(
-                          label: 'เงินออม/DCA',
+                          label: 'savings_dca'.tr,
                           icon: Icons.savings_rounded,
                           type: TransactionType.savingsInvestment,
                           activeColor: const Color(0xFF00A3E0),
@@ -1806,7 +1726,7 @@ class _KrungthaiSlipSheetState extends State<KrungthaiSlipSheet> {
 
                   // Editable Title Field
                   Text(
-                    'ชื่อรายการธุรกรรม',
+                    'transaction_title_label'.tr,
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
@@ -1842,10 +1762,10 @@ class _KrungthaiSlipSheetState extends State<KrungthaiSlipSheet> {
                       Expanded(
                         child: Text(
                           _selectedType == TransactionType.income
-                              ? 'หมวดหมู่รายรับ'
+                              ? 'category_income'.tr
                               : _selectedType == TransactionType.savingsInvestment
-                                  ? 'หมวดหมู่เงินออม/ลงทุน'
-                                  : 'หมวดหมู่ค่าใช้จ่าย',
+                                  ? 'category_savings'.tr
+                                  : 'category_expense'.tr,
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
@@ -1869,7 +1789,7 @@ class _KrungthaiSlipSheetState extends State<KrungthaiSlipSheet> {
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
-                            'แนะนำจาก: ${widget.slip.predictionReason}',
+                            'recommended_from'.trParams({'reason': widget.slip.predictionReason}),
                             style: TextStyle(
                               fontSize: 11,
                               color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
@@ -1888,7 +1808,7 @@ class _KrungthaiSlipSheetState extends State<KrungthaiSlipSheet> {
                     children: _categories.map((cat) {
                       final isSelected = _selectedCategory == cat;
                       return ChoiceChip(
-                        label: Text(cat),
+                        label: Text(cat.tr),
                         selected: isSelected,
                         selectedColor: const Color(0xFF00A3E0).withValues(alpha: 0.18),
                         side: BorderSide(
@@ -1921,21 +1841,21 @@ class _KrungthaiSlipSheetState extends State<KrungthaiSlipSheet> {
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         Text(
-                          'ลักษณะค่าใช้จ่าย: ',
+                          '${'cost_nature'.tr}: ',
                           style: TextStyle(
                             fontSize: 12,
                             color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
                           ),
                         ),
                         ChoiceChip(
-                          label: const Text('ค่าใช้จ่ายผันแปร'),
+                          label: Text('variable_cost'.tr),
                           selected: _selectedCostNature == CostNature.variable,
                           onSelected: (val) {
                             if (val) setState(() => _selectedCostNature = CostNature.variable);
                           },
                         ),
                         ChoiceChip(
-                          label: const Text('ค่าใช้จ่ายคงที่'),
+                          label: Text('fixed_cost'.tr),
                           selected: _selectedCostNature == CostNature.fixed,
                           onSelected: (val) {
                             if (val) setState(() => _selectedCostNature = CostNature.fixed);
@@ -1965,9 +1885,9 @@ class _KrungthaiSlipSheetState extends State<KrungthaiSlipSheet> {
                               height: 20,
                               child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                             )
-                          : const Text(
-                              'บันทึกรายการโอนเงิน',
-                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+                          : Text(
+                              'save_slip_transaction'.tr,
+                              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
                             ),
                     ),
                   ),

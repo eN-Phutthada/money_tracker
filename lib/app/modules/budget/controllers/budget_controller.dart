@@ -145,8 +145,13 @@ class BudgetController extends GetxController {
     if (Get.context != null) {
       final currencyFmt = NumberFormat.currency(locale: 'th_TH', symbol: '฿', decimalDigits: 0);
       AppFeedback.showSuccess(
-        title: 'ใช้$templateName สำเร็จ',
-        message: 'คำนวณจากรายรับ ${currencyFmt.format(income)} (คงที่ ${(fixedPct * 100).toInt()}%, จิปาถะ ${(varPct * 100).toInt()}%, เงินออม ${(savingsPct * 100).toInt()}%)',
+        title: 'applied_template_success'.trParams({'template': templateName.tr}),
+        message: 'applied_template_desc'.trParams({
+          'income': currencyFmt.format(income),
+          'fixed': '${(fixedPct * 100).toInt()}',
+          'variable': '${(varPct * 100).toInt()}',
+          'savings': '${(savingsPct * 100).toInt()}',
+        }),
       );
     }
   }

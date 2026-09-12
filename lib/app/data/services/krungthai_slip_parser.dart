@@ -11,9 +11,69 @@ class KrungthaiSlipParser {
         lower.contains('krungthai') ||
         lower.contains('ktb') ||
         lower.contains('006') ||
-        lower.contains('เป๋าตัง') ||
-        lower.contains('โอนเงินสำเร็จ') ||
-        lower.contains('transfer successful');
+        lower.contains('เป๋าตัง');
+  }
+
+  /// ตรวจสอบว่าเป็นข้อความสลิปโอนเงินของธนาคารใดๆ ในไทยหรือไม่
+  static bool isValidBankSlip(String text) {
+    final lower = text.toLowerCase();
+    return isKrungthaiSlip(text) ||
+        lower.contains('กสิกร') ||
+        lower.contains('k plus') ||
+        lower.contains('kbank') ||
+        lower.contains('ไทยพาณิชย์') ||
+        lower.contains('scb') ||
+        lower.contains('กรุงเทพ') ||
+        lower.contains('bangkok bank') ||
+        lower.contains('กรุงศรี') ||
+        lower.contains('krungsri') ||
+        lower.contains('kma') ||
+        lower.contains('ทหารไทยธนชาต') ||
+        lower.contains('ttb') ||
+        lower.contains('ออมสิน') ||
+        lower.contains('mymo') ||
+        lower.contains('ธ.ก.ส.') ||
+        lower.contains('baac') ||
+        lower.contains('truemoney') ||
+        lower.contains('ทรูมันนี่') ||
+        lower.contains('โอนเงิน') ||
+        lower.contains('สำเร็จ') ||
+        lower.contains('transfer') ||
+        lower.contains('successful');
+  }
+
+  /// ตรวจจับชื่อธนาคารจากข้อความสลิป (รองรับทุกธนาคาร โดยมีกรุงไทย NEXT เป็นหลัก)
+  static String detectBankName(String fullText) {
+    final lower = fullText.toLowerCase();
+    if (lower.contains('k plus') || lower.contains('กสิกร') || lower.contains('kbank') || lower.contains('kasikorn')) {
+      return 'ธนาคารกสิกรไทย (K PLUS)';
+    }
+    if (lower.contains('scb') || lower.contains('ไทยพาณิชย์') || lower.contains('แม่มณี') || lower.contains('siam commercial')) {
+      return 'ธนาคารไทยพาณิชย์ (SCB EASY)';
+    }
+    if (lower.contains('bangkok bank') || lower.contains('กรุงเทพ') || lower.contains('bualuang')) {
+      return 'ธนาคารกรุงเทพ (Bualuang mBanking)';
+    }
+    if (lower.contains('krungsri') || lower.contains('กรุงศรี') || lower.contains('kma') || lower.contains('ayudhya')) {
+      return 'ธนาคารกรุงศรีอยุธยา (KMA)';
+    }
+    if (lower.contains('ttb') || lower.contains('ทหารไทยธนชาต') || lower.contains('tmb') || lower.contains('thanachart')) {
+      return 'ทีเอ็มบีธนชาต (ttb touch)';
+    }
+    if (lower.contains('mymo') || lower.contains('ออมสิน') || lower.contains('gsb') || lower.contains('government savings')) {
+      return 'ธนาคารออมสิน (MyMo)';
+    }
+    if (lower.contains('baac') || lower.contains('ธ.ก.ส.') || lower.contains('ธกส') || lower.contains('agricultural')) {
+      return 'ธ.ก.ส. (BAAC Mobile)';
+    }
+    if (lower.contains('truemoney') || lower.contains('ทรูมันนี่') || lower.contains('true money')) {
+      return 'ทรูมันนี่ (TrueMoney Wallet)';
+    }
+    if (lower.contains('เป๋าตัง') || lower.contains('paotang')) {
+      return 'ธนาคารกรุงไทย (เป๋าตัง)';
+    }
+    // ค่าเริ่มต้นเป็นกรุงไทย NEXT (หลัก)
+    return 'ธนาคารกรุงไทย (Krungthai NEXT)';
   }
 
   /// แปลงข้อความสลิปเป็น `KrungthaiSlipData`
@@ -21,7 +81,8 @@ class KrungthaiSlipParser {
     final normalized = rawText.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
     final lines = normalized.split('\n').map((l) => l.trim()).where((l) => l.isNotEmpty).toList();
 
-    final isKrungthai = isKrungthaiSlip(normalized);
+    final bankName = detectBankName(normalized);
+    final isKrungthai = isKrungthaiSlip(normalized) || bankName.contains('กรุงไทย');
     final amount = _extractAmount(normalized, lines);
     final parsedDate = _extractDateTime(normalized, lines);
     final date = parsedDate ?? DateTime.now();
@@ -31,13 +92,6 @@ class KrungthaiSlipParser {
     final receiver = _extractReceiver(lines);
     final receiverAccount = _extractReceiverAccount(lines);
     final memo = _extractMemo(lines);
-
-    String bankName = 'ธนาคารกรุงไทย';
-    if (normalized.toLowerCase().contains('next')) {
-      bankName = 'ธนาคารกรุงไทย (Krungthai NEXT)';
-    } else if (normalized.toLowerCase().contains('เป๋าตัง')) {
-      bankName = 'ธนาคารกรุงไทย (เป๋าตัง)';
-    }
 
     final prediction = SlipCategoryPredictor.predict(
       memo: memo,
@@ -196,7 +250,7 @@ class KrungthaiSlipParser {
     // ตัวอย่าง: "วันที่ทำรายการ 02 ส.ค. 2569 - 22:02", "2 ส.ค. 69 เวลา 22.02 น.", "02 สิงหาคม 2569 / 22:02:30"
     final thaiMonthPattern = thaiMonths.keys.map(RegExp.escape).join('|');
     final compoundThaiRegex = RegExp(
-      '(\\d{1,2})\\s*($thaiMonthPattern)\\s*(\\d{2,4})\\s*(?:[-–,\\s/]+|(?:[-–,\\s/]*เวลา\\s*[:：]?\\s*))(\\d{1,2})[:.](\\d{2})(?:[:.](\\d{2}))?\\s*(?:น\\.|น)?',
+      '(\\d{1,2})\\s*($thaiMonthPattern)\\s*(\\d{2,4})\\s*(?:[-–—,\\s/|•@·]+|(?:[-–—,\\s/|•@·]*เวลา\\s*[:：]?\\s*))(\\d{1,2})[:.](\\d{2})(?:[:.](\\d{2}))?\\s*(?:น\\.|น)?',
       caseSensitive: false,
     );
 
@@ -218,7 +272,7 @@ class KrungthaiSlipParser {
     // 2. ตรวจหาคู่ "วันที่แบบอังกฤษ + เวลา"
     // ตัวอย่าง: "02 Aug 2026 22:02:15", "2 Sep 2026, 22.02"
     final compoundEngRegex = RegExp(
-      r'(\d{1,2})\s*(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s*(\d{2,4})\s*[-–,\s/]+\s*(\d{1,2})[:.](\d{2})(?:[:.](\d{2}))?',
+      r'(\d{1,2})\s*(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s*(\d{2,4})\s*[-–—,\s/|•@·]+\s*(\d{1,2})[:.](\d{2})(?:[:.](\d{2}))?',
       caseSensitive: false,
     );
     final engMatch = compoundEngRegex.firstMatch(fullText);
@@ -239,7 +293,7 @@ class KrungthaiSlipParser {
     // 3. ตรวจหาคู่ "วันที่แบบตัวเลข + เวลา"
     // ตัวอย่าง: "02/08/2569 22:02", "02/08/2026 - 22.02"
     final compoundNumRegex = RegExp(
-      r'(\d{1,2})[/.-](\d{1,2})[/.-](\d{2,4})\s*[-–,\s/]+\s*(\d{1,2})[:.](\d{2})(?:[:.](\d{2}))?',
+      r'(\d{1,2})[/.-](\d{1,2})[/.-](\d{2,4})\s*[-–—,\s/|•@·]+\s*(\d{1,2})[:.](\d{2})(?:[:.](\d{2}))?',
     );
     final numMatch = compoundNumRegex.firstMatch(fullText);
     if (numMatch != null) {
@@ -312,6 +366,16 @@ class KrungthaiSlipParser {
       }
     }
 
+    // 4.1.1 หากยังไม่พบวันที่ ลองค้นหาจากรหัสอ้างอิง (เช่น 20260915...)
+    if (day == null || month == null || year == null) {
+      final refDateMatch = RegExp(r'\b(202\d)(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\d{6,}\b').firstMatch(fullText);
+      if (refDateMatch != null) {
+        year = int.tryParse(refDateMatch.group(1)!);
+        month = int.tryParse(refDateMatch.group(2)!);
+        day = int.tryParse(refDateMatch.group(3)!);
+      }
+    }
+
     // 4.2 สกัดเวลาที่เกี่ยวข้องกับบรรทัดวันที่
     final timeContextRegex = RegExp(r'(?:เวลา|Time)?\s*[:：]?\s*(\d{1,2})[:.](\d{2})(?:[:.](\d{2}))?\s*(?:น\.|น)?');
 
@@ -328,6 +392,17 @@ class KrungthaiSlipParser {
       if (hour == null) {
         for (int step = 1; step <= 2 && (dateLineIndex + step) < lines.length; step++) {
           final cand = lines[dateLineIndex + step];
+          if (cand.contains('บาท') ||
+              cand.contains('บ.') ||
+              cand.toLowerCase().contains('thb') ||
+              cand.contains('จำนวน') ||
+              cand.contains('จํานวน') ||
+              cand.contains('ค่าธรรมเนียม') ||
+              cand.toLowerCase().contains('fee') ||
+              cand.toLowerCase().contains('amount') ||
+              cand.toLowerCase().contains('total')) {
+            continue;
+          }
           final mNext = timeContextRegex.firstMatch(cand);
           if (mNext != null && mNext.group(1) != null && mNext.group(2) != null) {
             hour = int.tryParse(mNext.group(1)!);
@@ -359,11 +434,24 @@ class KrungthaiSlipParser {
     }
 
     // 4.4 Fallback ท้ายสุด: หาเวลาใดๆ ในสลิป (เริ่มจากบรรทัดที่ 1 ลงไป เพื่อข้าม status bar)
+    // ข้ามบรรทัดที่มีสกุลเงิน บาท / บ. / THB หรือคีย์เวิร์ดจำนวนเงิน/ค่าธรรมเนียม เพื่อไม่ให้ตีเลขเงินทศนิยมเป็นเวลา
     if (hour == null) {
       final fallbackTimeRegex = RegExp(r'(\d{1,2})[:.](\d{2})(?:[:.](\d{2}))?');
       final startIndex = lines.length > 1 ? 1 : 0;
       for (int i = startIndex; i < lines.length; i++) {
-        final m = fallbackTimeRegex.firstMatch(lines[i]);
+        final line = lines[i];
+        if (line.contains('บาท') ||
+            line.contains('บ.') ||
+            line.toLowerCase().contains('thb') ||
+            line.contains('จำนวน') ||
+            line.contains('จํานวน') ||
+            line.contains('ค่าธรรมเนียม') ||
+            line.toLowerCase().contains('fee') ||
+            line.toLowerCase().contains('amount') ||
+            line.toLowerCase().contains('total')) {
+          continue;
+        }
+        final m = fallbackTimeRegex.firstMatch(line);
         if (m != null) {
           final h = int.tryParse(m.group(1)!);
           final min = int.tryParse(m.group(2)!);
@@ -384,6 +472,16 @@ class KrungthaiSlipParser {
         day,
         hour ?? 0,
         minute ?? 0,
+        second ?? 0,
+      );
+    } else if (hour != null && minute != null) {
+      final now = DateTime.now();
+      return DateTime(
+        now.year,
+        now.month,
+        now.day,
+        hour,
+        minute,
         second ?? 0,
       );
     }
@@ -517,8 +615,8 @@ class KrungthaiSlipParser {
 
   static String _cleanName(String raw) {
     return raw
-        .replaceAll('ธ.กรุงไทย', '')
-        .replaceAll('พร้อมเพย์', '')
+        .replaceAll(RegExp(r'ธ\.(?:กรุงไทย|กสิกรไทย|ไทยพาณิชย์|กรุงเทพ|กรุงศรีอยุธยา|กรุงศรี|ออมสิน|ก\.ส\.|ทหารไทยธนชาต)', caseSensitive: false), '')
+        .replaceAll(RegExp(r'(?:PromptPay|พร้อมเพย์)', caseSensitive: false), '')
         .replaceAll(RegExp(r'xxx[-x0-9]+', caseSensitive: false), '')
         .trim();
   }

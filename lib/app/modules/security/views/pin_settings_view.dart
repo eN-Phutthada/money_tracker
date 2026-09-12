@@ -33,16 +33,16 @@ class PinSettingsView extends GetView<SecurityController> {
               children: [
                 AppPopupHeader(
                   title: isSuccess
-                      ? 'ตั้งรหัส PIN สำเร็จ!'
+                      ? 'pin_set_success_dialog_title'.tr
                       : (isConfirmStep
-                            ? 'ยืนยันรหัส PIN 4 หลัก'
-                            : 'ตั้งรหัส PIN 4 หลักใหม่'),
+                            ? 'confirm_pin_4_digits'.tr
+                            : 'set_new_pin_4_digits'.tr),
                   subtitle: isSuccess
-                      ? 'บันทึกรหัส PIN ใหม่เรียบร้อยแล้ว'
+                      ? 'pin_set_success_dialog_subtitle'.tr
                       : (dialogError ??
                             (isConfirmStep
-                                ? 'กรอกรหัสเดิมอีกครั้งเพื่อยืนยัน'
-                                : 'กรอกตัวเลข 4 หลักเพื่อตั้งรหัสผ่าน')),
+                                ? 'enter_same_pin_confirm'.tr
+                                : 'enter_4_digits_to_set'.tr)),
                   icon: isSuccess
                       ? Icons.check_circle_rounded
                       : (isConfirmStep
@@ -58,81 +58,107 @@ class PinSettingsView extends GetView<SecurityController> {
                 const SizedBox(height: 24),
 
                 // Step Indicator Pills
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color:
-                            (!isConfirmStep
-                                    ? AppColors.primary
-                                    : AppColors.textSecondary)
-                                .withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
                           color:
                               (!isConfirmStep
                                       ? AppColors.primary
                                       : AppColors.textSecondary)
-                                  .withValues(alpha: 0.3),
-                          width: 0.8,
+                                  .withValues(alpha: !isConfirmStep ? 0.16 : 0.08),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color:
+                                (!isConfirmStep
+                                        ? AppColors.primary
+                                        : AppColors.textSecondary)
+                                    .withValues(alpha: !isConfirmStep ? 0.45 : 0.20),
+                            width: 1,
+                          ),
                         ),
-                      ),
-                      child: Text(
-                        'STEP 1: กำหนดรหัส',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          color: !isConfirmStep
-                              ? AppColors.primary
-                              : AppColors.textSecondary,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    const Icon(
-                      Icons.arrow_forward_rounded,
-                      size: 12,
-                      color: AppColors.textSecondary,
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color:
-                            (isConfirmStep
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              !isConfirmStep ? Icons.edit_rounded : Icons.check_circle_rounded,
+                              size: 11,
+                              color: !isConfirmStep ? AppColors.primary : AppColors.textSecondary,
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              'pin_step_1'.tr,
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w700,
+                                color: !isConfirmStep
                                     ? AppColors.primary
-                                    : AppColors.textSecondary)
-                                .withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
+                                    : AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Icon(
+                        Icons.arrow_forward_rounded,
+                        size: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
                           color:
                               (isConfirmStep
                                       ? AppColors.primary
                                       : AppColors.textSecondary)
-                                  .withValues(alpha: 0.3),
-                          width: 0.8,
+                                  .withValues(alpha: isConfirmStep ? 0.16 : 0.08),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color:
+                                (isConfirmStep
+                                        ? AppColors.primary
+                                        : AppColors.textSecondary)
+                                    .withValues(alpha: isConfirmStep ? 0.45 : 0.20),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              isConfirmStep ? Icons.verified_user_rounded : Icons.lock_outline_rounded,
+                              size: 11,
+                              color: isConfirmStep ? AppColors.primary : AppColors.textSecondary,
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              'pin_step_2'.tr,
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w700,
+                                color: isConfirmStep
+                                    ? AppColors.primary
+                                    : AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      child: Text(
-                        'STEP 2: ยืนยันรหัส',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          color: isConfirmStep
-                              ? AppColors.primary
-                              : AppColors.textSecondary,
-                        ),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 20),
 
@@ -241,13 +267,13 @@ class PinSettingsView extends GetView<SecurityController> {
                                 await controller.setPin(firstPin);
                                 if (Get.isDialogOpen ?? false) Get.back();
                                 AppFeedback.showSuccess(
-                                  title: 'สำเร็จ',
-                                  message: 'ตั้งค่ารหัส PIN เรียบร้อยแล้ว',
+                                  title: 'pin_set_success_title'.tr,
+                                  message: 'pin_set_success_msg'.tr,
                                 );
                               },
                             );
                           } else {
-                            dialogError = 'รหัสไม่ตรงกัน โปรดลองใหม่อีกครั้ง';
+                            dialogError = 'pin_mismatch'.tr;
                             confirmPin = '';
                           }
                         }
@@ -268,7 +294,7 @@ class PinSettingsView extends GetView<SecurityController> {
                     ),
                   ),
                   child: Text(
-                    'ยกเลิก',
+                    'cancel'.tr,
                     style: TextStyle(
                       color: isDark
                           ? AppColors.darkTextSecondary
@@ -285,6 +311,17 @@ class PinSettingsView extends GetView<SecurityController> {
       barrierDismissible: false,
     );
   }
+
+  static const Map<String, String> _miniNumpadSubtitles = {
+    '2': 'ABC',
+    '3': 'DEF',
+    '4': 'GHI',
+    '5': 'JKL',
+    '6': 'MNO',
+    '7': 'PQRS',
+    '8': 'TUV',
+    '9': 'WXYZ',
+  };
 
   List<Widget> _buildMiniNumpad({
     required bool isDark,
@@ -303,45 +340,124 @@ class PinSettingsView extends GetView<SecurityController> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: row.map((key) {
-            if (key.isEmpty) return const SizedBox(width: 56, height: 46);
+            if (key.isEmpty) return const SizedBox(width: 60, height: 50);
 
-            return InkWell(
-              onTap: () => onKey(key),
-              borderRadius: BorderRadius.circular(14),
-              child: Container(
-                width: 56,
-                height: 46,
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? AppColors.darkSurfaceSecondary
-                      : AppColors.surfaceSecondary,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
+            if (key == '⌫') {
+              return InkWell(
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  onKey(key);
+                },
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  width: 60,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: isDark
+                          ? [
+                              const Color(0xFF1E283D).withValues(alpha: 0.55),
+                              const Color(0xFF141C2B).withValues(alpha: 0.65),
+                            ]
+                          : [
+                              Colors.white.withValues(alpha: 0.85),
+                              const Color(0xFFE2E8F0).withValues(alpha: 0.70),
+                            ],
+                    ),
+                    border: Border.all(
+                      color: isDark
+                          ? AppColors.darkBorder.withValues(alpha: 0.60)
+                          : AppColors.border.withValues(alpha: 0.70),
+                      width: 1,
+                    ),
+                  ),
+                  alignment: Alignment.center,
+                  child: Icon(
+                    Icons.backspace_outlined,
+                    size: 19,
                     color: isDark
-                        ? AppColors.darkBorder.withValues(alpha: 0.5)
-                        : AppColors.border.withValues(alpha: 0.5),
-                    width: 0.8,
+                        ? AppColors.darkTextPrimary
+                        : AppColors.textPrimary,
                   ),
                 ),
-                alignment: Alignment.center,
-                child: key == '⌫'
-                    ? Icon(
-                        Icons.backspace_outlined,
-                        size: 18,
+              );
+            }
+
+            final subtitle = _miniNumpadSubtitles[key] ?? '';
+            return InkWell(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                onKey(key);
+              },
+              borderRadius: BorderRadius.circular(16),
+              splashColor: AppColors.primary.withValues(alpha: 0.15),
+              highlightColor: AppColors.primary.withValues(alpha: 0.08),
+              child: Container(
+                width: 60,
+                height: 50,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: isDark
+                        ? [
+                            const Color(0xFF1E283D).withValues(alpha: 0.85),
+                            const Color(0xFF121826).withValues(alpha: 0.90),
+                          ]
+                        : [
+                            Colors.white.withValues(alpha: 0.95),
+                            const Color(0xFFF1F5F9).withValues(alpha: 0.90),
+                          ],
+                  ),
+                  border: Border.all(
+                    color: isDark
+                        ? const Color(0xFF2E3D60).withValues(alpha: 0.65)
+                        : const Color(0xFFCBD5E1).withValues(alpha: 0.80),
+                    width: 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.04),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1.5),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      key,
+                      style: TextStyle(
+                        fontSize: subtitle.isNotEmpty ? 17 : 19,
+                        fontWeight: FontWeight.w700,
+                        height: 1.0,
                         color: isDark
                             ? AppColors.darkTextPrimary
                             : AppColors.textPrimary,
-                      )
-                    : Text(
-                        key,
+                      ),
+                    ),
+                    if (subtitle.isNotEmpty) ...[
+                      const SizedBox(height: 1.5),
+                      Text(
+                        subtitle,
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: 7.5,
                           fontWeight: FontWeight.w700,
+                          letterSpacing: 0.8,
+                          height: 1.0,
                           color: isDark
-                              ? AppColors.darkTextPrimary
-                              : AppColors.textPrimary,
+                              ? AppColors.darkTextSecondary.withValues(alpha: 0.75)
+                              : AppColors.textSecondary.withValues(alpha: 0.85),
                         ),
                       ),
+                    ],
+                  ],
+                ),
               ),
             );
           }).toList(),
@@ -356,7 +472,7 @@ class PinSettingsView extends GetView<SecurityController> {
       final availability = await controller.checkBiometricAvailability();
       if (!availability.isAvailable) {
         AppFeedback.showWarning(
-          title: 'ชีวมิติไม่พร้อมใช้งาน',
+          title: 'biometric_unavailable'.tr,
           message: availability.message ?? 'biometric_not_supported'.tr,
         );
         return;
@@ -370,12 +486,12 @@ class PinSettingsView extends GetView<SecurityController> {
         await controller.setBiometricsEnabled(true);
         AppFeedback.showSuccess(
           title: 'biometric_verified'.tr,
-          message: 'เปิดใช้งานการยืนยันตัวตนด้วยชีวมิติสำเร็จ',
+          message: 'biometric_enabled_msg'.tr,
         );
       } else {
         if (result.failureReason != BiometricAuthFailureReason.canceled) {
           AppFeedback.showWarning(
-            title: 'ไม่สามารถเปิดใช้งานได้',
+            title: 'biometric_cannot_enable'.tr,
             message: result.errorMessage ?? 'biometric_failed'.tr,
           );
         }
@@ -383,8 +499,8 @@ class PinSettingsView extends GetView<SecurityController> {
     } else {
       await controller.setBiometricsEnabled(false);
       AppFeedback.showInfo(
-        title: 'ปิดใช้งาน',
-        message: 'ปิดใช้งานการยืนยันตัวตนด้วยชีวมิติแล้ว',
+        title: 'biometric_disabled_title'.tr,
+        message: 'biometric_disabled_msg'.tr,
       );
     }
   }
@@ -541,8 +657,8 @@ class PinSettingsView extends GetView<SecurityController> {
                                   Flexible(
                                     child: Text(
                                       enabled
-                                          ? 'PIN Security Active'
-                                          : 'PIN Security Disabled',
+                                          ? 'pin_security_active'.tr
+                                          : 'pin_security_disabled'.tr,
                                       style: const TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w800,
@@ -565,7 +681,7 @@ class PinSettingsView extends GetView<SecurityController> {
                                       borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: Text(
-                                      enabled ? 'PROTECTED' : 'OPEN',
+                                      enabled ? 'pin_badge_protected'.tr : 'pin_badge_open'.tr,
                                       style: TextStyle(
                                         fontSize: 9,
                                         fontWeight: FontWeight.w800,
@@ -581,8 +697,8 @@ class PinSettingsView extends GetView<SecurityController> {
                               const SizedBox(height: 4),
                               Text(
                                 enabled
-                                    ? 'แอปจะขอยืนยันรหัส PIN ทุกครั้งที่เปิดใช้งาน'
-                                    : 'เข้าใช้งานได้โดยตรงโดยไม่ต้องกรอกรหัสผ่าน',
+                                    ? 'pin_active_desc'.tr
+                                    : 'pin_disabled_desc'.tr,
                                 style: const TextStyle(
                                   fontSize: 12,
                                   color: AppColors.textSecondary,
@@ -613,16 +729,16 @@ class PinSettingsView extends GetView<SecurityController> {
                       children: [
                         Obx(() {
                           return SwitchListTile(
-                            title: const Text(
-                              'ล็อกแอปด้วยรหัส PIN',
-                              style: TextStyle(
+                            title: Text(
+                              'lock_app_with_pin'.tr,
+                              style: const TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
-                            subtitle: const Text(
-                              'ต้องกรอกรหัส 4 หลักเพื่อเปิดแอป',
-                              style: TextStyle(
+                            subtitle: Text(
+                              'lock_app_with_pin_desc'.tr,
+                              style: const TextStyle(
                                 fontSize: 11,
                                 color: AppColors.textSecondary,
                               ),
@@ -664,16 +780,16 @@ class PinSettingsView extends GetView<SecurityController> {
                                     size: 20,
                                   ),
                                 ),
-                                title: const Text(
-                                  'เปลี่ยนรหัส PIN',
-                                  style: TextStyle(
+                                title: Text(
+                                  'change_pin'.tr,
+                                  style: const TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
-                                subtitle: const Text(
-                                  'อัปเดตรหัส PIN 4 หลักใหม่สำหรับการเข้าถึง',
-                                  style: TextStyle(
+                                subtitle: Text(
+                                  'change_pin_desc'.tr,
+                                  style: const TextStyle(
                                     fontSize: 11,
                                     color: AppColors.textSecondary,
                                   ),
@@ -701,10 +817,10 @@ class PinSettingsView extends GetView<SecurityController> {
                                 return SwitchListTile(
                                   title: Row(
                                     children: [
-                                      const Flexible(
+                                      Flexible(
                                         child: Text(
-                                          'ปลดล็อกด้วยสแกนนิ้ว / ใบหน้า',
-                                          style: TextStyle(
+                                          'biometric_unlock_title'.tr,
+                                          style: const TextStyle(
                                             fontSize: 13,
                                             fontWeight: FontWeight.w700,
                                           ),
@@ -792,7 +908,7 @@ class PinSettingsView extends GetView<SecurityController> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'ข้อมูลความปลอดภัยระดับฮาร์ดแวร์',
+                              'hardware_security_title'.tr,
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
@@ -802,9 +918,9 @@ class PinSettingsView extends GetView<SecurityController> {
                               ),
                             ),
                             const SizedBox(height: 3),
-                            const Text(
-                              'รหัส PIN และสถานะความปลอดภัยจะถูกเข้ารหัสและจัดเก็บบนอุปกรณ์ของคุณเท่านั้น ปลอดภัยจากการเข้าถึงโดยไม่ได้รับอนุญาต',
-                              style: TextStyle(
+                            Text(
+                              'hardware_security_desc'.tr,
+                              style: const TextStyle(
                                 fontSize: 11,
                                 color: AppColors.textSecondary,
                                 height: 1.4,
@@ -842,7 +958,7 @@ class PinSettingsView extends GetView<SecurityController> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'หากลืมรหัส PIN ต้องทำอย่างไร?',
+                              'forgot_pin_faq_title'.tr,
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
@@ -852,9 +968,9 @@ class PinSettingsView extends GetView<SecurityController> {
                               ),
                             ),
                             const SizedBox(height: 3),
-                            const Text(
-                              'คุณสามารถปลดล็อกได้ด้วยการสแกนลายนิ้วมือ/ใบหน้า หรือกดปุ่ม "ลืมรหัส PIN หรือไม่?" ที่หน้าจอล็อกเพื่อยืนยันรีเซ็ตรหัสผ่าน โดยข้อมูลธุรกรรมและงบประมาณทั้งหมดจะไม่สูญหาย',
-                              style: TextStyle(
+                            Text(
+                              'forgot_pin_faq_desc'.tr,
+                              style: const TextStyle(
                                 fontSize: 11,
                                 color: AppColors.textSecondary,
                                 height: 1.4,

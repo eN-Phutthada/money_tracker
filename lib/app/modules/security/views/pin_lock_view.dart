@@ -284,7 +284,7 @@ class _PinLockViewState extends State<PinLockView> with TickerProviderStateMixin
       if (result.failureReason != BiometricAuthFailureReason.canceled &&
           result.failureReason != null) {
         AppFeedback.showWarning(
-          title: 'ชีวมิติไม่สำเร็จ',
+          title: 'biometric_auth_failed_title'.tr,
           message: result.errorMessage ?? 'biometric_failed'.tr,
         );
       }
@@ -730,7 +730,7 @@ class _PinLockViewState extends State<PinLockView> with TickerProviderStateMixin
       children: [
         AppPopupHeader(
           title: 'recovery_confirm_reset'.tr,
-          subtitle: 'ปลดล็อกและตั้งค่าความปลอดภัยใหม่',
+          subtitle: 'recovery_confirm_reset_subtitle'.tr,
           icon: Icons.lock_open_rounded,
           iconColor: const Color(0xFF10B981),
           onClose: _closeRecovery,
@@ -1089,27 +1089,34 @@ class _PinLockViewState extends State<PinLockView> with TickerProviderStateMixin
                                                       ],
                                                     ),
                                                     alignment: Alignment.center,
-                                                    child: AnimatedBuilder(
-                                                      animation: _successAnimationController,
-                                                      builder: (context, child) {
-                                                        return RotationTransition(
-                                                          turns: _checkIconRotation,
-                                                          child: child,
-                                                        );
-                                                      },
-                                                      child: AnimatedSwitcher(
-                                                        duration: const Duration(milliseconds: 280),
-                                                        transitionBuilder: (child, anim) => ScaleTransition(
-                                                          scale: CurvedAnimation(parent: anim, curve: Curves.elasticOut),
-                                                          child: child,
-                                                        ),
-                                                        child: Icon(
-                                                          _isSuccess ? Icons.check_rounded : Icons.lock_outline_rounded,
-                                                          key: ValueKey(_isSuccess),
-                                                          color: _isSuccess ? Colors.white : AppColors.primary,
-                                                          size: _isSuccess ? (isCompact ? 28 : 34) : (isCompact ? 24 : 28),
-                                                        ),
+                                                    child: AnimatedSwitcher(
+                                                      duration: const Duration(milliseconds: 280),
+                                                      transitionBuilder: (child, anim) => ScaleTransition(
+                                                        scale: CurvedAnimation(parent: anim, curve: Curves.elasticOut),
+                                                        child: child,
                                                       ),
+                                                      child: _isSuccess
+                                                          ? AnimatedBuilder(
+                                                              animation: _successAnimationController,
+                                                              builder: (context, child) {
+                                                                return RotationTransition(
+                                                                  turns: _checkIconRotation,
+                                                                  child: child,
+                                                                );
+                                                              },
+                                                              child: Icon(
+                                                                Icons.check_rounded,
+                                                                key: const ValueKey(true),
+                                                                color: Colors.white,
+                                                                size: isCompact ? 28 : 34,
+                                                              ),
+                                                            )
+                                                          : Icon(
+                                                              Icons.lock_outline_rounded,
+                                                              key: const ValueKey(false),
+                                                              color: AppColors.primary,
+                                                              size: isCompact ? 24 : 28,
+                                                            ),
                                                     ),
                                                   ),
                                                 ),
@@ -1226,7 +1233,7 @@ class _PinLockViewState extends State<PinLockView> with TickerProviderStateMixin
                                                   key: const ValueKey('normal_state'),
                                                   children: [
                                                     Text(
-                                                      'Money Tracker Security',
+                                                      'pin_security_title'.tr,
                                                       style: TextStyle(
                                                         fontSize: isCompact ? 16 : 18,
                                                         fontWeight: FontWeight.w800,
@@ -1486,6 +1493,19 @@ class _PinLockViewState extends State<PinLockView> with TickerProviderStateMixin
     );
   }
 
+  static const Map<String, String> _numpadSubtitles = {
+    '1': '',
+    '2': 'ABC',
+    '3': 'DEF',
+    '4': 'GHI',
+    '5': 'JKL',
+    '6': 'MNO',
+    '7': 'PQRS',
+    '8': 'TUV',
+    '9': 'WXYZ',
+    '0': '',
+  };
+
   Widget _buildNumpad(bool isDark, {double keySize = 62.0, double verticalPadding = 3.0}) {
     final rows = [
       ['1', '2', '3'],
@@ -1508,145 +1528,39 @@ class _PinLockViewState extends State<PinLockView> with TickerProviderStateMixin
               if (key.isEmpty) return SizedBox(width: keySize, height: keySize);
 
               if (key == 'BIO') {
-                return InkWell(
-                  onTap: _authenticateWithBiometrics,
-                  borderRadius: BorderRadius.circular(keySize / 2),
-                  child: SizedBox(
-                    width: keySize,
-                    height: keySize,
-                    child: LiquidGlassLens(
-                      style: LiquidGlassStyle(
-                        shape: LiquidGlassShape.squircle(
-                          cornerRadius: keySize / 2,
-                          borderWidth: 1.0,
-                          lightIntensity: 1.25,
-                          lightDirection: 60,
-                          borderType: const OpticalBorder(
-                            borderSaturation: 1.3,
-                            ambientIntensity: 1.15,
-                            borderSolidity: 0.25,
-                          ),
-                        ),
-                        appearance: LiquidGlassAppearance(
-                          color: AppColors.primary.withValues(alpha: isDark ? 0.16 : 0.10),
-                          blur: const LiquidGlassBlur(sigmaX: 10, sigmaY: 10),
-                        ),
-                        refraction: const LiquidGlassRefraction(
-                          distortion: 0.05,
-                          distortionWidth: 14,
-                          chromaticAberration: 0.002,
-                        ),
-                      ),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: AppColors.primary.withValues(alpha: 0.28),
-                            width: 1,
-                          ),
-                        ),
-                        alignment: Alignment.center,
-                        child: Icon(
-                          Icons.fingerprint_rounded,
-                          size: keySize * 0.42,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    ),
+                return _LiquidGlassPinButton(
+                  icon: Icon(
+                    Icons.fingerprint_rounded,
+                    size: keySize * 0.44,
+                    color: AppColors.primary,
                   ),
+                  onTap: _authenticateWithBiometrics,
+                  keySize: keySize,
+                  isDark: isDark,
+                  isAccent: true,
                 );
               }
 
               if (key == '⌫') {
-                return InkWell(
-                  onTap: () => _onKeyPress(key),
-                  borderRadius: BorderRadius.circular(keySize / 2),
-                  child: SizedBox(
-                    width: keySize,
-                    height: keySize,
-                    child: LiquidGlassLens(
-                      style: LiquidGlassStyle(
-                        shape: LiquidGlassShape.squircle(
-                          cornerRadius: keySize / 2,
-                          borderWidth: 1.0,
-                          lightIntensity: 1.25,
-                          lightDirection: 60,
-                          borderType: const OpticalBorder(
-                            borderSaturation: 1.3,
-                            ambientIntensity: 1.15,
-                            borderSolidity: 0.25,
-                          ),
-                        ),
-                        appearance: LiquidGlassAppearance(
-                          color: isDark
-                              ? AppColors.darkSurfaceSecondary.withValues(alpha: 0.45)
-                              : Colors.white.withValues(alpha: 0.55),
-                          blur: const LiquidGlassBlur(sigmaX: 10, sigmaY: 10),
-                        ),
-                        refraction: const LiquidGlassRefraction(
-                          distortion: 0.05,
-                          distortionWidth: 14,
-                          chromaticAberration: 0.002,
-                        ),
-                      ),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: isDark ? AppColors.darkBorder.withValues(alpha: 0.55) : AppColors.border.withValues(alpha: 0.65),
-                            width: 1,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.03),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        alignment: Alignment.center,
-                        child: Icon(
-                          Icons.backspace_outlined,
-                          size: keySize * 0.30,
-                          color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                        ),
-                      ),
-                    ),
+                return _LiquidGlassPinButton(
+                  icon: Icon(
+                    Icons.backspace_outlined,
+                    size: keySize * 0.32,
+                    color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                   ),
+                  onTap: () => _onKeyPress(key),
+                  keySize: keySize,
+                  isDark: isDark,
                 );
               }
 
-              return InkWell(
+              final subtitle = _numpadSubtitles[key] ?? '';
+              return _LiquidGlassPinButton(
+                label: key,
+                subtitle: subtitle,
                 onTap: () => _onKeyPress(key),
-                borderRadius: BorderRadius.circular(keySize / 2),
-                child: Container(
-                  width: keySize,
-                  height: keySize,
-                  decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkSurfaceSecondary.withValues(alpha: 0.85) : AppColors.surfaceSecondary,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: isDark ? AppColors.darkBorder.withValues(alpha: 0.55) : AppColors.border.withValues(alpha: 0.65),
-                      width: 1,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.03),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    key,
-                    style: TextStyle(
-                      fontSize: keySize * 0.32,
-                      fontWeight: FontWeight.w700,
-                      color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                    ),
-                  ),
-                ),
+                keySize: keySize,
+                isDark: isDark,
               );
             }).toList(),
           ),
@@ -1655,3 +1569,178 @@ class _PinLockViewState extends State<PinLockView> with TickerProviderStateMixin
     );
   }
 }
+
+/// FinTech Liquid Glass PIN Keypad Button with tactile press animation and glowing refraction
+class _LiquidGlassPinButton extends StatefulWidget {
+  final String? label;
+  final String? subtitle;
+  final Widget? icon;
+  final VoidCallback onTap;
+  final double keySize;
+  final bool isDark;
+  final bool isAccent;
+
+  const _LiquidGlassPinButton({
+    this.label,
+    this.subtitle,
+    this.icon,
+    required this.onTap,
+    required this.keySize,
+    required this.isDark,
+    this.isAccent = false,
+  });
+
+  @override
+  State<_LiquidGlassPinButton> createState() => _LiquidGlassPinButtonState();
+}
+
+class _LiquidGlassPinButtonState extends State<_LiquidGlassPinButton> {
+  bool _isPressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasSubtitle = widget.subtitle != null && widget.subtitle!.isNotEmpty;
+    final isAccent = widget.isAccent;
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapUp: (_) => setState(() => _isPressed = false),
+      onTapCancel: () => setState(() => _isPressed = false),
+      onTap: widget.onTap,
+      child: AnimatedScale(
+        scale: _isPressed ? 0.90 : 1.0,
+        duration: const Duration(milliseconds: 100),
+        curve: _isPressed ? Curves.easeInOutQuad : Curves.easeOutBack,
+        child: SizedBox(
+          width: widget.keySize,
+          height: widget.keySize,
+          child: LiquidGlassLens(
+            style: LiquidGlassStyle(
+              shape: LiquidGlassShape.squircle(
+                cornerRadius: widget.keySize / 2,
+                borderWidth: _isPressed ? 1.5 : (isAccent ? 1.3 : 1.1),
+                lightIntensity: _isPressed ? 1.45 : (isAccent ? 1.35 : 1.25),
+                lightDirection: 60,
+                borderType: OpticalBorder(
+                  borderSaturation: _isPressed ? 1.5 : 1.3,
+                  ambientIntensity: _isPressed ? 1.3 : 1.15,
+                  borderSolidity: 0.25,
+                ),
+              ),
+              appearance: LiquidGlassAppearance(
+                color: _isPressed
+                    ? (widget.isDark
+                        ? AppColors.primary.withValues(alpha: 0.28)
+                        : AppColors.primary.withValues(alpha: 0.18))
+                    : (isAccent
+                        ? AppColors.primary.withValues(alpha: widget.isDark ? 0.22 : 0.14)
+                        : (widget.isDark
+                            ? const Color(0xFF1B2438).withValues(alpha: 0.50)
+                            : Colors.white.withValues(alpha: 0.65))),
+                blur: const LiquidGlassBlur(sigmaX: 12, sigmaY: 12),
+              ),
+              refraction: LiquidGlassRefraction(
+                distortion: _isPressed ? 0.08 : 0.05,
+                distortionWidth: 16,
+                chromaticAberration: 0.002,
+              ),
+            ),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 120),
+              width: widget.keySize,
+              height: widget.keySize,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: _isPressed
+                      ? [
+                          AppColors.primary.withValues(alpha: widget.isDark ? 0.35 : 0.22),
+                          AppColors.accent.withValues(alpha: widget.isDark ? 0.22 : 0.12),
+                        ]
+                      : (isAccent
+                          ? [
+                              AppColors.primary.withValues(alpha: widget.isDark ? 0.26 : 0.18),
+                              AppColors.primaryDark.withValues(alpha: widget.isDark ? 0.14 : 0.08),
+                            ]
+                          : [
+                              widget.isDark
+                                  ? const Color(0xFF243049).withValues(alpha: 0.40)
+                                  : Colors.white.withValues(alpha: 0.65),
+                              widget.isDark
+                                  ? const Color(0xFF131A29).withValues(alpha: 0.60)
+                                  : const Color(0xFFF1F5F9).withValues(alpha: 0.45),
+                            ]),
+                ),
+                border: Border.all(
+                  color: _isPressed
+                      ? AppColors.primary.withValues(alpha: 0.75)
+                      : (isAccent
+                          ? AppColors.primary.withValues(alpha: widget.isDark ? 0.50 : 0.40)
+                          : (widget.isDark
+                              ? const Color(0xFF334466).withValues(alpha: 0.50)
+                              : Colors.white.withValues(alpha: 0.85))),
+                  width: _isPressed ? 1.5 : (isAccent ? 1.3 : 1.1),
+                ),
+                boxShadow: [
+                  if (_isPressed)
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: widget.isDark ? 0.40 : 0.25),
+                      blurRadius: 14,
+                      spreadRadius: 1.5,
+                    )
+                  else if (isAccent)
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: widget.isDark ? 0.25 : 0.15),
+                      blurRadius: 10,
+                      spreadRadius: 1,
+                    )
+                  else
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: widget.isDark ? 0.22 : 0.04),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                ],
+              ),
+              alignment: Alignment.center,
+              child: widget.icon ??
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        widget.label ?? '',
+                        style: TextStyle(
+                          fontSize: hasSubtitle ? (widget.keySize * 0.33) : (widget.keySize * 0.38),
+                          fontWeight: FontWeight.w700,
+                          height: 1.0,
+                          color: widget.isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                        ),
+                      ),
+                      if (hasSubtitle) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          widget.subtitle!,
+                          style: TextStyle(
+                            fontSize: widget.keySize * 0.13,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.2,
+                            height: 1.0,
+                            color: widget.isDark
+                                ? AppColors.darkTextSecondary.withValues(alpha: 0.8)
+                                : AppColors.textSecondary.withValues(alpha: 0.9),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+

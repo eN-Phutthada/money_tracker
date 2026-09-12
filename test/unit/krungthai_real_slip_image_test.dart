@@ -54,6 +54,13 @@ void main() {
       expect(slip.amount, equals(350.00));
       expect(slip.referenceNo, equals('202609110006992211'));
       expect(slip.bankName, equals('ธนาคารกรุงไทย (Krungthai NEXT)'));
+      expect(slip.transactionDate.year, equals(2026));
+      expect(slip.transactionDate.month, equals(9));
+      expect(slip.transactionDate.day, equals(11));
+      expect(slip.transactionDate.hour, equals(12));
+      expect(slip.transactionDate.minute, equals(35));
+      expect(slip.transactionDate.second, equals(10));
+      expect(slip.hasParsedDateTime, isTrue);
 
       // Cleanup
       file.parent.deleteSync(recursive: true);

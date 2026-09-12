@@ -215,14 +215,14 @@ class KrungthaiSlipService {
     }
   }
 
-  /// ตัวเลือกโฟลเดอร์สลิปแนะนำยอดนิยมสำหรับผู้ใช้
+  /// ตัวเลือกโฟลเดอร์สลิปแนะนำยอดนิยมสำหรับผู้ใช้ (เน้นกรุงไทยเป็นหลัก พร้อมรองรับธนาคารอื่น)
   static List<Map<String, String>> getRecommendedFolderPresets() {
     return [
       {
         'id': 'ktb_next',
-        'name': 'Krungthai NEXT',
+        'name': 'Krungthai NEXT (หลัก)',
         'defaultPath': '/storage/emulated/0/Pictures/Krungthai NEXT',
-        'subtitle': 'โฟลเดอร์สลิปอัตโนมัติจากแอป Krungthai NEXT',
+        'subtitle': 'โฟลเดอร์สลิปอัตโนมัติจากแอป Krungthai NEXT (แนะนำ)',
       },
       {
         'id': 'paotang',
@@ -231,10 +231,22 @@ class KrungthaiSlipService {
         'subtitle': 'โฟลเดอร์สลิปอัตโนมัติจากแอปเป๋าตัง G-Wallet',
       },
       {
+        'id': 'kplus',
+        'name': 'K PLUS (กสิกรไทย)',
+        'defaultPath': '/storage/emulated/0/Pictures/K PLUS',
+        'subtitle': 'โฟลเดอร์สลิปอัตโนมัติจากแอป K PLUS',
+      },
+      {
+        'id': 'scbeasy',
+        'name': 'SCB EASY (ไทยพาณิชย์)',
+        'defaultPath': '/storage/emulated/0/Pictures/SCB EASY',
+        'subtitle': 'โฟลเดอร์สลิปอัตโนมัติจากแอป SCB EASY',
+      },
+      {
         'id': 'screenshots',
         'name': 'ภาพหน้าจอ (Screenshots)',
         'defaultPath': '/storage/emulated/0/DCIM/Screenshots',
-        'subtitle': 'อัลบั้มภาพบันทึกหน้าจอสำหรับผู้ที่ชอบแคปภาพสลิป',
+        'subtitle': 'อัลบั้มภาพบันทึกหน้าจอสำหรับผู้ที่แคปภาพสลิปทุกธนาคาร',
       },
     ];
   }
@@ -270,6 +282,11 @@ class KrungthaiSlipService {
     try {
       final bytes = await file.readAsBytes();
 
+      DateTime? fileModTime;
+      try {
+        fileModTime = await file.lastModified();
+      } catch (_) {}
+
       // 1. ลองถอดรหัส QR Code บนสลิปด้วย Pure Dart Engine
       String? qrString;
       try {
@@ -295,57 +312,94 @@ class KrungthaiSlipService {
       KrungthaiSlipData? result;
       // 3. ผสานข้อมูล (Data Fusion) เพื่อความแม่นยำสูงสุด
       if (qrSlip != null && ocrSlip != null) {
+        final qr = qrSlip;
+        final ocr = ocrSlip;
+
         // ให้ความสำคัญกับยอดเงินจาก OCR ก่อน เพราะพิมพ์ชัดเจนบนสลิปจริง (QR ของ BOT มักไม่มี Tag 54 ยอดเงิน)
-        final finalAmount = (ocrSlip.amount > 0)
-            ? ocrSlip.amount
-            : (qrSlip.amount > 0 ? qrSlip.amount : 0.0);
-        final finalRef = qrSlip.referenceNo ?? ocrSlip.referenceNo;
-        // กำหนดวันและเวลาทำรายการ:
-        // ให้ความสำคัญสูงสุดกับ OCR เป็นอันดับแรก เพราะอ่านวันและเวลา (ชั่วโมง:นาที) ที่ระบุบนสลิปจริง
-        // ขณะที่ QR Code ของ BOT จะไม่มีเวลา (Hour:Minute) และในหลายกรณีไม่มีวันที่
-        DateTime finalDate;
-        bool hasDateTime = false;
-        if (ocrSlip.hasParsedDateTime) {
-          finalDate = ocrSlip.transactionDate;
-          hasDateTime = true;
-        } else if (qrSlip.hasParsedDateTime) {
-          finalDate = qrSlip.transactionDate;
-          hasDateTime = true;
-        } else {
-          finalDate = ocrSlip.transactionDate;
-        }
+        final finalAmount = (ocr.amount > 0)
+            ? ocr.amount
+            : (qr.amount > 0 ? qr.amount : 0.0);
+        final finalRef = qr.referenceNo ?? ocr.referenceNo;
+        final finalDate = resolveAccurateDateTime(
+          qrSlip: qr,
+          ocrSlip: ocr,
+          fileModTime: fileModTime,
+        );
+        final hasDateTime = ocr.hasParsedDateTime ||
+            qr.hasParsedDateTime ||
+            fileModTime != null;
 
         result = KrungthaiSlipData(
           amount: finalAmount,
           transactionDate: finalDate,
-          senderName: ocrSlip.senderName ?? qrSlip.senderName,
-          senderAccount: ocrSlip.senderAccount ?? qrSlip.senderAccount,
-          receiverName: ocrSlip.receiverName ?? qrSlip.receiverName,
-          receiverAccount: ocrSlip.receiverAccount ?? qrSlip.receiverAccount,
+          senderName: ocr.senderName ?? qr.senderName,
+          senderAccount: ocr.senderAccount ?? qr.senderAccount,
+          receiverName: ocr.receiverName ?? qr.receiverName,
+          receiverAccount: ocr.receiverAccount ?? qr.receiverAccount,
           referenceNo: finalRef,
-          memo: ocrSlip.memo ?? qrSlip.memo,
-          bankName:
-              qrSlip.bankName.contains('NEXT') ||
-                  qrSlip.bankName.contains('เป๋าตัง')
-              ? qrSlip.bankName
-              : ocrSlip.bankName,
-          isKrungthai: true,
-          suggestedCategory: ocrSlip.suggestedCategory,
-          suggestedType: ocrSlip.suggestedType,
-          suggestedCostNature: ocrSlip.suggestedCostNature,
+          memo: ocr.memo ?? qr.memo,
+          bankName: (() {
+            if (!qr.isKrungthai &&
+                qr.bankName != 'ธนาคารกรุงไทย (Krungthai NEXT)') {
+              return qr.bankName;
+            }
+            if (!ocr.isKrungthai &&
+                ocr.bankName != 'ธนาคารกรุงไทย (Krungthai NEXT)') {
+              return ocr.bankName;
+            }
+            if (qr.bankName.contains('NEXT') ||
+                qr.bankName.contains('เป๋าตัง')) {
+              return qr.bankName;
+            }
+            return ocr.bankName;
+          })(),
+          isKrungthai: (qr.isKrungthai || ocr.isKrungthai) &&
+              !ocr.bankName.contains('กสิกร') &&
+              !ocr.bankName.contains('ไทยพาณิชย์') &&
+              !ocr.bankName.contains('กรุงเทพ') &&
+              !ocr.bankName.contains('กรุงศรี') &&
+              !ocr.bankName.contains('ทหารไทย') &&
+              !ocr.bankName.contains('ออมสิน') &&
+              !ocr.bankName.contains('ธ.ก.ส.') &&
+              !ocr.bankName.contains('เกียรตินาคิน') &&
+              !ocr.bankName.contains('ยูโอบี') &&
+              !ocr.bankName.contains('ทิสโก้') &&
+              !ocr.bankName.contains('ซีไอเอ็มบี') &&
+              !ocr.bankName.contains('TrueMoney') &&
+              !qr.bankName.contains('กสิกร') &&
+              !qr.bankName.contains('ไทยพาณิชย์') &&
+              !qr.bankName.contains('กรุงเทพ') &&
+              !qr.bankName.contains('กรุงศรี'),
+          suggestedCategory: ocr.suggestedCategory,
+          suggestedType: ocr.suggestedType,
+          suggestedCostNature: ocr.suggestedCostNature,
           rawText:
-              '${qrSlip.rawText}\n\n-- OCR Extracted Text --\n${ocrSlip.rawText}',
+              '${qr.rawText}\n\n-- OCR Extracted Text --\n${ocr.rawText}',
           hasParsedDateTime: hasDateTime,
-          predictionConfidence: ocrSlip.predictionConfidence,
-          predictionReason: ocrSlip.predictionReason,
+          predictionConfidence: ocr.predictionConfidence,
+          predictionReason: ocr.predictionReason,
         );
       } else if (qrSlip != null) {
         // หากพบเฉพาะ QR Code
-        result = qrSlip;
+        final finalDate = resolveAccurateDateTime(
+          qrSlip: qrSlip,
+          fileModTime: fileModTime,
+        );
+        result = qrSlip.copyWith(
+          transactionDate: finalDate,
+          hasParsedDateTime: qrSlip.hasParsedDateTime || fileModTime != null,
+        );
       } else if (ocrSlip != null &&
           (ocrSlip.isKrungthai || ocrSlip.amount > 0)) {
         // หากพบเฉพาะ OCR Text และมีข้อมูลที่เชื่อถือได้
-        result = ocrSlip;
+        final finalDate = resolveAccurateDateTime(
+          ocrSlip: ocrSlip,
+          fileModTime: fileModTime,
+        );
+        result = ocrSlip.copyWith(
+          transactionDate: finalDate,
+          hasParsedDateTime: ocrSlip.hasParsedDateTime || fileModTime != null,
+        );
       }
 
       if (result != null) {
@@ -356,6 +410,72 @@ class KrungthaiSlipService {
     } catch (_) {
       return null;
     }
+  }
+
+  /// ผสานวันและเวลาจาก QR, OCR และเวลาไฟล์ภาพอย่างแม่นยำ (Time & Date Fusion Engine)
+  static DateTime resolveAccurateDateTime({
+    KrungthaiSlipData? qrSlip,
+    KrungthaiSlipData? ocrSlip,
+    DateTime? fileModTime,
+  }) {
+    // 1. ตรวจสอบว่าแต่ละแหล่งข้อมูลมีเวลาที่เจาะจง (ไม่ใช่ 00:00:00) หรือไม่
+    final ocrHasTime = ocrSlip != null &&
+        ocrSlip.hasParsedDateTime &&
+        (ocrSlip.transactionDate.hour != 0 ||
+            ocrSlip.transactionDate.minute != 0 ||
+            ocrSlip.transactionDate.second != 0);
+
+    final qrHasTime = qrSlip != null &&
+        qrSlip.hasParsedDateTime &&
+        (qrSlip.transactionDate.hour != 0 ||
+            qrSlip.transactionDate.minute != 0 ||
+            qrSlip.transactionDate.second != 0);
+
+    // 2. เลือกวันที่ (ปี, เดือน, วัน)
+    int year;
+    int month;
+    int day;
+
+    if (ocrSlip != null && ocrSlip.hasParsedDateTime) {
+      year = ocrSlip.transactionDate.year;
+      month = ocrSlip.transactionDate.month;
+      day = ocrSlip.transactionDate.day;
+    } else if (qrSlip != null && qrSlip.hasParsedDateTime) {
+      year = qrSlip.transactionDate.year;
+      month = qrSlip.transactionDate.month;
+      day = qrSlip.transactionDate.day;
+    } else if (fileModTime != null) {
+      year = fileModTime.year;
+      month = fileModTime.month;
+      day = fileModTime.day;
+    } else {
+      final now = DateTime.now();
+      year = now.year;
+      month = now.month;
+      day = now.day;
+    }
+
+    // 3. เลือกเวลา (ชั่วโมง, นาที, วินาที)
+    int hour = 0;
+    int minute = 0;
+    int second = 0;
+
+    if (ocrHasTime) {
+      hour = ocrSlip.transactionDate.hour;
+      minute = ocrSlip.transactionDate.minute;
+      second = ocrSlip.transactionDate.second;
+    } else if (qrHasTime) {
+      hour = qrSlip.transactionDate.hour;
+      minute = qrSlip.transactionDate.minute;
+      second = qrSlip.transactionDate.second;
+    } else if (fileModTime != null) {
+      // หาก OCR/QR ไม่มีเวลา แต่มีเวลาของไฟล์ภาพ ให้ใช้เวลาของไฟล์ภาพ
+      hour = fileModTime.hour;
+      minute = fileModTime.minute;
+      second = fileModTime.second;
+    }
+
+    return DateTime(year, month, day, hour, minute, second);
   }
 
   /// นำประวัติรายการธุรกรรมในระบบมาช่วยเพิ่มความแม่นยำในการทำนายหมวดหมู่ (History-Based Learning)
@@ -423,8 +543,8 @@ class KrungthaiSlipService {
       } catch (_) {}
 
       AppFeedback.showSuccess(
-        title: 'บันทึกสลิปกรุงไทยสำเร็จ',
-        message: '${transactionItem.title} (${transactionItem.categoryName})',
+        title: 'slip_saved_success'.tr,
+        message: '${transactionItem.title} (${transactionItem.categoryName.tr})',
         amount: transactionItem.amount,
         transactionType: transactionItem.type,
       );

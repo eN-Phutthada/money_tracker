@@ -93,7 +93,7 @@ class KrungthaiSlipData {
     if (receiverName != null && receiverName!.trim().isNotEmpty) {
       return 'โอนให้ ${receiverName!.trim()}';
     }
-    return 'โอนเงินกรุงไทย';
+    return isKrungthai ? 'โอนเงินกรุงไทย' : 'โอนเงิน ($bankName)';
   }
 
   /// บันทึกประกอบรายการที่มีรหัสอ้างอิงธุรกรรมกำกับ
@@ -108,7 +108,7 @@ class KrungthaiSlipData {
     if (referenceNo != null && referenceNo!.trim().isNotEmpty) {
       parts.add('รหัสอ้างอิง: ${referenceNo!.trim()}');
     }
-    parts.add('สลิป: ธนาคารกรุงไทย');
+    parts.add('สลิป: $bankName');
     return parts.join(' | ');
   }
 
@@ -126,10 +126,12 @@ class KrungthaiSlipData {
         ? (customCostNature ?? suggestedCostNature)
         : CostNature.notApplicable;
 
+    final idPrefix = isKrungthai ? 'ktb' : 'slip';
+
     return TransactionItem(
       id: referenceNo != null && referenceNo!.isNotEmpty
-          ? 'ktb_${referenceNo!}'
-          : 'ktb_${DateTime.now().millisecondsSinceEpoch}',
+          ? '${idPrefix}_${referenceNo!}'
+          : '${idPrefix}_${DateTime.now().millisecondsSinceEpoch}',
       title: customTitle ?? defaultTitle,
       amount: customAmount ?? amount,
       type: type,

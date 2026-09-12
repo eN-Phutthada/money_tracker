@@ -159,8 +159,11 @@ class _KrungthaiBatchSlipSheetState extends State<KrungthaiBatchSlipSheet> {
       Get.back(); // ปิด BottomSheet
 
       AppFeedback.showSuccess(
-        title: 'บันทึกสลิปเป็นชุดสำเร็จ',
-        message: 'บันทึกเรียบร้อย $savedCount รายการ ยอดรวม ฿${currencyFormat.format(totalAmount)}',
+        title: 'batch_save_success_title'.tr,
+        message: 'batch_save_success_msg'.trParams({
+          'count': '$savedCount',
+          'amount': '฿${currencyFormat.format(totalAmount)}',
+        }),
         amount: totalAmount,
       );
     } catch (_) {
@@ -225,7 +228,7 @@ class _KrungthaiBatchSlipSheetState extends State<KrungthaiBatchSlipSheet> {
                         children: [
                           Flexible(
                             child: Text(
-                              'ตรวจสอบสลิปแบบกลุ่ม',
+                              'batch_review_title'.tr,
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w800,
@@ -242,7 +245,7 @@ class _KrungthaiBatchSlipSheetState extends State<KrungthaiBatchSlipSheet> {
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
-                              '${_items.length} รายการ',
+                              'item_count_label'.trParams({'count': '${_items.length}'}),
                               style: const TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
@@ -254,7 +257,7 @@ class _KrungthaiBatchSlipSheetState extends State<KrungthaiBatchSlipSheet> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'เลือกและตรวจเช็กหมวดหมู่ก่อนบันทึกยอดรวม',
+                        'batch_review_desc'.tr,
                         style: TextStyle(
                           fontSize: 11.5,
                           color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
@@ -305,7 +308,10 @@ class _KrungthaiBatchSlipSheetState extends State<KrungthaiBatchSlipSheet> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'เลือก $_selectedCount จาก ${_items.length} รายการ',
+                        'batch_selected_summary'.trParams({
+                          'selected': '$_selectedCount',
+                          'total': '${_items.length}',
+                        }),
                         style: TextStyle(
                           fontSize: 11.5,
                           color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
@@ -339,7 +345,7 @@ class _KrungthaiBatchSlipSheetState extends State<KrungthaiBatchSlipSheet> {
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                         )
                       : Text(
-                          'บันทึกที่เลือก ($_selectedCount)',
+                          'save_selected_count'.trParams({'count': '$_selectedCount'}),
                           style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5),
                         ),
                 ),
@@ -403,7 +409,7 @@ class _KrungthaiBatchSlipSheetState extends State<KrungthaiBatchSlipSheet> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      DateFormat('d MMM yyyy, HH:mm น.').format(item.slip.transactionDate),
+                      '${item.slip.bankName} • ${DateFormat('d MMM yyyy, HH:mm น.').format(item.slip.transactionDate)}',
                       style: TextStyle(
                         fontSize: 11,
                         color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
@@ -437,9 +443,9 @@ class _KrungthaiBatchSlipSheetState extends State<KrungthaiBatchSlipSheet> {
                       color: AppColors.deficitText.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(6),
                     ),
-                    child: const Text(
-                      'ตรวจพบซ้ำ',
-                      style: TextStyle(
+                    child: Text(
+                      'duplicate_badge'.tr,
+                      style: const TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
                         color: AppColors.deficitText,
@@ -467,7 +473,7 @@ class _KrungthaiBatchSlipSheetState extends State<KrungthaiBatchSlipSheet> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          item.category,
+                          item.category.tr,
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
@@ -504,7 +510,7 @@ class _KrungthaiBatchSlipSheetState extends State<KrungthaiBatchSlipSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'เลือกหมวดหมู่',
+              'select_category'.tr,
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w800,
@@ -518,7 +524,7 @@ class _KrungthaiBatchSlipSheetState extends State<KrungthaiBatchSlipSheet> {
               children: _availableCategories.map((cat) {
                 final isSelected = item.category == cat;
                 return ChoiceChip(
-                  label: Text(cat),
+                  label: Text(cat.tr),
                   selected: isSelected,
                   selectedColor: const Color(0xFF00A3E0).withValues(alpha: 0.22),
                   onSelected: (selected) {

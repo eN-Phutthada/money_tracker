@@ -35,7 +35,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Money Tracker Security'), findsOneWidget);
+      expect(find.text('pin_security_title'.tr), findsOneWidget);
       expect(find.text('1'), findsOneWidget);
       expect(find.byIcon(Icons.close_rounded), findsOneWidget);
     });

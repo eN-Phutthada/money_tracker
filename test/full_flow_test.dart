@@ -115,7 +115,7 @@ void main() {
     secController.lock();
     await tester.pumpAndSettle();
 
-    expect(find.text('Money Tracker Security'), findsOneWidget);
+    expect(find.text('pin_security_title'.tr), findsOneWidget);
 
     // Enter PIN: 1, 2, 3, 4
     await tester.tap(find.text('1'));
