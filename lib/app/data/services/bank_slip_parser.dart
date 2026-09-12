@@ -114,7 +114,10 @@ class BankSlipParser {
   }
 
   /// แปลงข้อความสลิปเป็น `BankSlipData`
-  static BankSlipData parse(String rawText) {
+  static BankSlipData parse(
+    String rawText, {
+    String? userProfileName,
+  }) {
     // 1. แปลงเลขไทยเป็นเลขอารบิก
     const thaiDigits = ['๐', '๑', '๒', '๓', '๔', '๕', '๖', '๗', '๘', '๙'];
     const arabicDigits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
@@ -146,8 +149,10 @@ class BankSlipParser {
     final bankName = detectBankName(normalized);
     final isKrungthai = isKrungthaiSlip(normalized) || bankName.contains('กรุงไทย');
     final amount = _extractAmount(normalized, lines);
-    final parsedDate = _extractDateTime(normalized, lines);
-    final date = parsedDate ?? DateTime.now();
+    final dateResult = _extractDateTime(normalized, lines);
+    final date = dateResult?.dateTime ?? DateTime.now();
+    final hasParsedDateTime = dateResult != null;
+    final hasParsedTime = dateResult?.hasTime ?? false;
     final refNo = _extractReferenceNumber(normalized, lines);
     final sender = _extractSender(lines);
     final senderAccount = _extractSenderAccount(lines);
@@ -158,6 +163,8 @@ class BankSlipParser {
     final prediction = SlipCategoryPredictor.predict(
       memo: memo,
       receiverName: receiver,
+      senderName: sender,
+      userProfileName: userProfileName,
       fullText: normalized,
       amount: amount,
       transactionDate: date,
@@ -178,7 +185,8 @@ class BankSlipParser {
       suggestedType: prediction.type,
       suggestedCostNature: prediction.costNature,
       rawText: rawText,
-      hasParsedDateTime: parsedDate != null,
+      hasParsedDateTime: hasParsedDateTime,
+      hasParsedTime: hasParsedTime,
       predictionConfidence: prediction.confidence,
       predictionReason: prediction.reason,
     );
@@ -280,30 +288,32 @@ class BankSlipParser {
 
   /// สกัดวันและเวลา (Date & Time) จากข้อความสลิป
   /// พร้อมอัลกอริทึม Multi-Tier Recognition ป้องกันการสกัดเวลาผิด (เช่น เวลาบน Status Bar ของมือถือ)
-  static DateTime? _extractDateTime(String fullText, List<String> lines) {
+  static _ExtractedDateTime? _extractDateTime(String fullText, List<String> lines) {
     int? day, month, year, hour, minute, second;
+    bool hasExplicitTime = false;
 
     int parseYear(int raw) {
       if (raw >= 2500) return raw - 543;
       if (raw >= 60 && raw <= 99) return (2500 + raw) - 543;
-      if (raw >= 2000) return raw;
+      if (raw >= 2000 && raw < 2100) return raw;
+      if (raw >= 20 && raw < 60) return 2000 + raw;
       return 2000 + raw;
     }
 
-    // ตรวจสอบเดือนภาษาไทย (ครอบคลุมทั้งแบบมีจุด ไม่มีจุด และชื่อเต็ม)
+    // ตรวจสอบเดือนภาษาไทย (ครอบคลุมทั้งแบบมีจุด ไม่มีจุด มีเว้นวรรค จุลภาค และความผิดเพี้ยนจากโมบาย OCR)
     final thaiMonths = {
-      'มกราคม': 1, 'ม.ค.': 1, 'ม.ค': 1, 'มค': 1,
-      'กุมภาพันธ์': 2, 'ก.พ.': 2, 'ก.พ': 2, 'กพ': 2,
-      'มีนาคม': 3, 'มี.ค.': 3, 'มี.ค': 3, 'มีค': 3,
-      'เมษายน': 4, 'เม.ย.': 4, 'เม.ย': 4, 'เมย': 4,
-      'พฤษภาคม': 5, 'พ.ค.': 5, 'พ.ค': 5, 'พค': 5,
-      'มิถุนายน': 6, 'มิ.ย.': 6, 'มิ.ย': 6, 'มิย': 6,
-      'กรกฎาคม': 7, 'ก.ค.': 7, 'ก.ค': 7, 'กค': 7,
-      'สิงหาคม': 8, 'ส.ค.': 8, 'ส.ค': 8, 'สค': 8,
-      'กันยายน': 9, 'ก.ย.': 9, 'ก.ย': 9, 'กย': 9,
-      'ตุลาคม': 10, 'ต.ค.': 10, 'ต.ค': 10, 'ตค': 10,
-      'พฤศจิกายน': 11, 'พ.ย.': 11, 'พ.ย': 11, 'พย': 11,
-      'ธันวาคม': 12, 'ธ.ค.': 12, 'ธ.ค': 12, 'ธค': 12,
+      'มกราคม': 1, 'ม.ค.': 1, 'ม.ค': 1, 'มค': 1, 'ม. ค.': 1, 'ม. ค': 1, 'ม,ค,': 1, 'ม,ค': 1, 'ม ค': 1, 'u.a.': 1, 'u.a': 1, 'w.a.': 1,
+      'กุมภาพันธ์': 2, 'ก.พ.': 2, 'ก.พ': 2, 'กพ': 2, 'ก. พ.': 2, 'ก. พ': 2, 'ก,พ,': 2, 'ก,พ': 2, 'ก พ': 2, 'n.w.': 2, 'n.w': 2,
+      'มีนาคม': 3, 'มี.ค.': 3, 'มี.ค': 3, 'มีค': 3, 'มี. ค.': 3, 'มี. ค': 3, 'มี,ค,': 3, 'มี,ค': 3, 'มี ค': 3,
+      'เมษายน': 4, 'เม.ย.': 4, 'เม.ย': 4, 'เมย': 4, 'เม. ย.': 4, 'เม. ย': 4, 'เม,ย,': 4, 'เม,ย': 4, 'เม ย': 4, 'iu.d.': 4, 'iu.e.': 4,
+      'พฤษภาคม': 5, 'พ.ค.': 5, 'พ.ค': 5, 'พค': 5, 'พ. ค.': 5, 'พ. ค': 5, 'พ,ค,': 5, 'พ,ค': 5, 'พ ค': 5, 'w.ค.': 5, 'w.c.': 5,
+      'มิถุนายน': 6, 'มิ.ย.': 6, 'มิ.ย': 6, 'มิย': 6, 'มิ. ย.': 6, 'มิ. ย': 6, 'มิ,ย,': 6, 'มิ,ย': 6, 'มิ ย': 6, 'u.d.': 6, 'u.e.': 6,
+      'กรกฎาคม': 7, 'ก.ค.': 7, 'ก.ค': 7, 'กค': 7, 'ก. ค.': 7, 'ก. ค': 7, 'ก,ค,': 7, 'ก,ค': 7, 'ก ค': 7, 'n.a.': 7, 'n.a': 7,
+      'สิงหาคม': 8, 'ส.ค.': 8, 'ส.ค': 8, 'สค': 8, 'ส. ค.': 8, 'ส. ค': 8, 'ส,ค,': 8, 'ส,ค': 8, 'ส ค': 8, 'a.ค.': 8, 'a.a.': 8, 'a.a': 8,
+      'กันยายน': 9, 'ก.ย.': 9, 'ก.ย': 9, 'กย': 9, 'ก. ย.': 9, 'ก. ย': 9, 'ก,ย,': 9, 'ก,ย': 9, 'ก ย': 9, 'n.ย.': 9, 'n.e.': 9, 'n.d.': 9, 'n.d': 9, 'n.u.': 9, 'n.u': 9, 'ภ.ย.': 9, 'ค.ย.': 9,
+      'ตุลาคม': 10, 'ต.ค.': 10, 'ต.ค': 10, 'ตค': 10, 'ต. ค.': 10, 'ต. ค': 10, 'ต,ค,': 10, 'ต,ค': 10, 'ต ค': 10, 'm.a.': 10, 'm.a': 10,
+      'พฤศจิกายน': 11, 'พ.ย.': 11, 'พ.ย': 11, 'พย': 11, 'พ. ย.': 11, 'พ. ย': 11, 'พ,ย,': 11, 'พ,ย': 11, 'พ ย': 11, 'w.d.': 11, 'w.d': 11, 'w.e.': 11,
+      'ธันวาคม': 12, 'ธ.ค.': 12, 'ธ.ค': 12, 'ธค': 12, 'ธ. ค.': 12, 'ธ. ค': 12, 'ธ,ค,': 12, 'ธ,ค': 12, 'ธ ค': 12, 's.a.': 12, 's.a': 12,
     };
 
     final engMonths = {
@@ -315,80 +325,208 @@ class BankSlipParser {
         .map(RegExp.escape)
         .join('|');
 
+    // ตัวช่วยสกัดส่วนของเวลาพร้อมรองรับ AM/PM และตัดยอดเงินที่สับสนออก
+    ({int hour, int minute, int second})? parseTimeParts(
+      String hStr,
+      String mStr,
+      String? sStr, {
+      String? period,
+      bool isDot = false,
+      bool hasTimeWordOrUnit = false,
+    }) {
+      var h = int.tryParse(hStr);
+      final m = int.tryParse(mStr);
+      final s = sStr != null ? int.tryParse(sStr) ?? 0 : 0;
+
+      if (h == null || m == null) return null;
+      if (m < 0 || m > 59 || s < 0 || s > 59) return null;
+
+      // หากคั่นด้วยจุด เช่น 10.50 ต้องมีคำว่า เวลา หรือ น. หรือ am/pm กำกับ เพื่อไม่ให้สับสนกับยอดเงิน
+      if (isDot && !hasTimeWordOrUnit) {
+        return null;
+      }
+
+      final p = period?.toLowerCase().replaceAll('.', '').trim();
+      if (p == 'pm' || p == 'p') {
+        if (h < 12) h += 12;
+      } else if (p == 'am' || p == 'a') {
+        if (h == 12) h = 0;
+      }
+
+      if (h < 0 || h > 23) return null;
+      return (hour: h, minute: m, second: s);
+    }
+
     // 1. ตรวจหาคู่ "วันที่แบบไทย + เวลา" ในบรรทัดเดียวกัน (Compound Thai Date-Time)
-    // ตัวอย่าง: "วันที่ทำรายการ 02 ส.ค. 2569 - 22:02", "2 ส.ค. 69 เวลา 22.02 น.", "02 สิงหาคม 2569 / 22:02:30", "12 ก.ย. 69 15:45:00 น."
+    // ตัวอย่าง: "วันที่ทำรายการ 02 ส.ค. 2569 - 22:02", "2 ส.ค. 69 เวลา 22.02 น.", "02 สิงหาคม 2569 / 22:02:30", "12 ก.ย. 69 15:45:00 น.", "12 ก.ย. 69 14.35 น."
     final compoundThaiRegex = RegExp(
-      '(?:วันที่(?:ทำรายการ)?\\s*[:：]?\\s*)?(\\d{1,2})\\s*($thaiMonthPattern)\\s*(\\d{2,4})?\\s*(?:[-–—,\\s/|•@·]+|(?:[-–—,\\s/|•@·]*(?:เวลา|เมื่อเวลา|Time)?\\s*[:：]?\\s*))(\\d{1,2})[:.](\\d{2})(?:[:.](\\d{2}))?\\s*(?:น\\.|น)?',
+      r'(?:(?:วันที่(?:ทำรายการ)?|เมื่อวันที่|วันและเวลา(?:ทำรายการ)?|วัน-เวลา(?:ที่ทำรายการ)?|วัน/เวลา(?:ที่ทำรายการ)?|วันเวลา(?:ที่ทำรายการ)?|Date)\s*[:：]?\s*)?([0-2]?\d|3[01])\s*(' +
+          thaiMonthPattern +
+          r')\s*(25\d{2}|20\d{2}|[5-9]\d|[2-3]\d)?\s*(?:[-–—,\s/|•@·]+|(?:[-–—,\s/|•@·]*(?:เวลา|เมื่อเวลา|Time)?\s*[:：]?\s*))(\d{1,2})\s*([:.;])\s*(\d{2})(?:\s*[:.;]\s*(\d{2}))?\s*(น\.|น|hrs?|am|pm|a\.m\.|p\.m\.)?',
       caseSensitive: false,
     );
 
     final compoundMatch = compoundThaiRegex.firstMatch(fullText);
     if (compoundMatch != null) {
-      day = int.tryParse(compoundMatch.group(1)!);
-      month = thaiMonths[compoundMatch.group(2)!];
-      final rawYear = compoundMatch.group(3) != null ? int.tryParse(compoundMatch.group(3)!) : null;
-      if (rawYear != null) {
-        year = parseYear(rawYear);
-      } else {
-        year = DateTime.now().year;
-      }
-      hour = int.tryParse(compoundMatch.group(4)!);
-      minute = int.tryParse(compoundMatch.group(5)!);
-      second = compoundMatch.group(6) != null ? int.tryParse(compoundMatch.group(6)!) : 0;
+      final matchEnd = compoundMatch.end;
+      final remainder = fullText.substring(matchEnd).trimLeft();
+      final isAmountSuffix = remainder.startsWith('บาท') ||
+          remainder.startsWith('บ.') ||
+          remainder.toLowerCase().startsWith('thb');
 
-      if (day != null && month != null && hour != null && minute != null) {
-        if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
-          return DateTime(year, month, day, hour, minute, second ?? 0);
+      if (!isAmountSuffix) {
+        final d = int.tryParse(compoundMatch.group(1)!);
+        final mo = thaiMonths[compoundMatch.group(2)!];
+        final rawYear = compoundMatch.group(3) != null ? int.tryParse(compoundMatch.group(3)!) : null;
+        final y = rawYear != null ? parseYear(rawYear) : DateTime.now().year;
+
+        final sep = compoundMatch.group(5)!;
+        final sStr = compoundMatch.group(7);
+        final unit = compoundMatch.group(8);
+        final isDot = sep == '.';
+        // ตัวเลขเวลาที่ตามหลังวันที่ภาษาไทยโดยตรง และไม่ได้ลงท้ายด้วยบาท จัดเป็นเวลาที่ถูกต้องแน่นอน
+        const hasUnit = true;
+
+        final t = parseTimeParts(
+          compoundMatch.group(4)!,
+          compoundMatch.group(6)!,
+          sStr,
+          period: unit,
+          isDot: isDot,
+          hasTimeWordOrUnit: hasUnit,
+        );
+
+        if (d != null && mo != null && t != null) {
+          return _ExtractedDateTime(
+            DateTime(y, mo, d, t.hour, t.minute, t.second),
+            hasTime: true,
+          );
         }
       }
     }
 
     // 2. ตรวจหาคู่ "วันที่แบบอังกฤษ + เวลา"
-    // ตัวอย่าง: "02 Aug 2026 22:02:15", "2 Sep 2026, 22.02"
+    // ตัวอย่าง: "02 Aug 2026 22:02:15", "2 Sep 2026, 22.02", "10 Sep 2026 02:30 PM"
     final compoundEngRegex = RegExp(
-      r'(?:Date\s*[:：]?\s*)?(\d{1,2})\s*(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s*(\d{2,4})?\s*[-–—,\s/|•@·]+\s*(?:(?:Time|เวลา)\s*[:：]?\s*)?(\d{1,2})[:.](\d{2})(?:[:.](\d{2}))?',
+      r'(?:Date\s*[:：]?\s*)?([0-2]?\d|3[01])\s*(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s*(20\d{2}|25\d{2}|\d{2})?\s*[-–—,\s/|•@·]+\s*(?:(?:Time|เวลา)\s*[:：]?\s*)?([01]?\d|2[0-3])\s*([:.;])\s*([0-5]\d)(?:\s*[:.;]\s*([0-5]\d))?\s*(am|pm|a\.m\.|p\.m\.)?',
       caseSensitive: false,
     );
     final engMatch = compoundEngRegex.firstMatch(fullText);
     if (engMatch != null) {
-      day = int.tryParse(engMatch.group(1)!);
-      month = engMonths[engMatch.group(2)!.toLowerCase()];
-      final rawYear = engMatch.group(3) != null ? int.tryParse(engMatch.group(3)!) : null;
-      if (rawYear != null) {
-        year = parseYear(rawYear);
-      } else {
-        year = DateTime.now().year;
-      }
-      hour = int.tryParse(engMatch.group(4)!);
-      minute = int.tryParse(engMatch.group(5)!);
-      second = engMatch.group(6) != null ? int.tryParse(engMatch.group(6)!) : 0;
+      final matchEnd = engMatch.end;
+      final remainder = fullText.substring(matchEnd).trimLeft();
+      final isAmountSuffix = remainder.startsWith('บาท') ||
+          remainder.startsWith('บ.') ||
+          remainder.toLowerCase().startsWith('thb');
 
-      if (day != null && month != null && hour != null && minute != null) {
-        if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
-          return DateTime(year, month, day, hour, minute, second ?? 0);
+      if (!isAmountSuffix) {
+        final d = int.tryParse(engMatch.group(1)!);
+        final mo = engMonths[engMatch.group(2)!.toLowerCase()];
+        final rawYear = engMatch.group(3) != null ? int.tryParse(engMatch.group(3)!) : null;
+        final y = rawYear != null ? parseYear(rawYear) : DateTime.now().year;
+
+        final t = parseTimeParts(
+          engMatch.group(4)!,
+          engMatch.group(6)!,
+          engMatch.group(7),
+          period: engMatch.group(8),
+          isDot: engMatch.group(5) == '.',
+          hasTimeWordOrUnit: true,
+        );
+
+        if (d != null && mo != null && t != null) {
+          return _ExtractedDateTime(
+            DateTime(y, mo, d, t.hour, t.minute, t.second),
+            hasTime: true,
+          );
         }
       }
     }
 
-    // 3. ตรวจหาคู่ "วันที่แบบตัวเลข + เวลา"
-    // ตัวอย่าง: "02/08/2569 22:02", "02/08/2026 - 22.02"
+    // 3. ตรวจหาคู่ "วันที่แบบตัวเลข + เวลา" (รองรับทั้ง DD/MM/YYYY และ ISO YYYY-MM-DD)
+    // ตัวอย่าง: "02/08/2569 22:02", "2026-09-12 14:35:10", "02-08-2026 - 22.02"
     final compoundNumRegex = RegExp(
-      r'(?:วันที่\s*[:：]?\s*)?(\d{1,2})[/.-](\d{1,2})[/.-](\d{2,4})\s*[-–—,\s/|•@·]+\s*(?:(?:เวลา|Time)\s*[:：]?\s*)?(\d{1,2})[:.](\d{2})(?:[:.](\d{2}))?\s*(?:น\.|น)?',
+      r'(?:(?:วันที่|Date)\s*[:：]?\s*)?(?:([0-2]?\d|3[01])[/.-](0?[1-9]|1[0-2])[/.-](20\d{2}|25\d{2}|\d{2})|(20\d{2}|25\d{2})[/.-](0?[1-9]|1[0-2])[/.-]([0-2]?\d|3[01]))\s*[-–—,\s/|•@·]+\s*(?:(?:เวลา|Time)\s*[:：]?\s*)?([01]?\d|2[0-3])\s*([:.;])\s*([0-5]\d)(?:\s*[:.;]\s*([0-5]\d))?\s*(น\.|น|am|pm|a\.m\.|p\.m\.)?',
+      caseSensitive: false,
     );
     final numMatch = compoundNumRegex.firstMatch(fullText);
     if (numMatch != null) {
-      day = int.tryParse(numMatch.group(1)!);
-      month = int.tryParse(numMatch.group(2)!);
-      final rawYear = int.tryParse(numMatch.group(3)!);
-      if (rawYear != null) year = parseYear(rawYear);
-      hour = int.tryParse(numMatch.group(4)!);
-      minute = int.tryParse(numMatch.group(5)!);
-      second = numMatch.group(6) != null ? int.tryParse(numMatch.group(6)!) : 0;
+      final matchEnd = numMatch.end;
+      final remainder = fullText.substring(matchEnd).trimLeft();
+      final isAmountSuffix = remainder.startsWith('บาท') ||
+          remainder.startsWith('บ.') ||
+          remainder.toLowerCase().startsWith('thb');
 
-      if (day != null && month != null && year != null && hour != null && minute != null) {
-        if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
-          return DateTime(year, month, day, hour, minute, second ?? 0);
+      if (!isAmountSuffix) {
+        int? d, mo, y;
+        if (numMatch.group(1) != null) {
+          d = int.tryParse(numMatch.group(1)!);
+          mo = int.tryParse(numMatch.group(2)!);
+          final rawYear = int.tryParse(numMatch.group(3)!);
+          if (rawYear != null) y = parseYear(rawYear);
+        } else if (numMatch.group(4) != null) {
+          final rawYear = int.tryParse(numMatch.group(4)!);
+          if (rawYear != null) y = parseYear(rawYear);
+          mo = int.tryParse(numMatch.group(5)!);
+          d = int.tryParse(numMatch.group(6)!);
         }
+
+        final sep = numMatch.group(8)!;
+        final unit = numMatch.group(11);
+        final isDot = sep == '.';
+        final hasUnit = (unit != null && unit.isNotEmpty) || numMatch.group(0)!.contains('เวลา');
+
+        final t = parseTimeParts(
+          numMatch.group(7)!,
+          numMatch.group(9)!,
+          numMatch.group(10),
+          period: unit,
+          isDot: isDot,
+          hasTimeWordOrUnit: hasUnit,
+        );
+
+        if (d != null && mo != null && y != null && t != null) {
+          return _ExtractedDateTime(
+            DateTime(y, mo, d, t.hour, t.minute, t.second),
+            hasTime: true,
+          );
+        }
+      }
+    }
+
+    // 3.5 ตรวจหาคู่ "วันที่ (ปี พ.ศ. ชัดเจน 256x/257x) + เวลา" กรณี OCR อ่านชื่อเดือนผิดเพี้ยนหรือไม่พบชื่อเดือน
+    // เช่น "12 ... 2569 - 15:28" หรือ "11 2569 - 20:00"
+    final fuzzyThaiYearRegex = RegExp(
+      r'(?:(?:วันที่(?:ทำรายการ)?|เมื่อวันที่|Date)\s*[:：]?\s*)?([0-2]?\d|3[01])\s*[^\d\w\r\n]{0,10}\s*(25[6-7]\d)\s*[-–—,\s/|•@·]+\s*(?:(?:เวลา|Time)\s*[:：]?\s*)?([01]?\d|2[0-3])\s*([:.;])\s*([0-5]\d)(?:\s*[:.;]\s*([0-5]\d))?\s*(น\.|น|am|pm)?',
+      caseSensitive: false,
+    );
+    final fuzzyMatch = fuzzyThaiYearRegex.firstMatch(fullText);
+    if (fuzzyMatch != null) {
+      final d = int.tryParse(fuzzyMatch.group(1)!);
+      final rawYear = int.tryParse(fuzzyMatch.group(2)!);
+      final y = rawYear != null ? rawYear - 543 : DateTime.now().year;
+
+      // พยายามค้นหาเดือนจากรหัสอ้างอิง เช่น 202609... หรือ 014256709...
+      int mo = DateTime.now().month;
+      final refMonthMatch = RegExp(r'(?:202\d|25[6-7]\d)(0[1-9]|1[0-2])').firstMatch(fullText);
+      if (refMonthMatch != null) {
+        mo = int.tryParse(refMonthMatch.group(1)!) ?? mo;
+      }
+
+      final t = parseTimeParts(
+        fuzzyMatch.group(3)!,
+        fuzzyMatch.group(5)!,
+        fuzzyMatch.group(6),
+        period: fuzzyMatch.group(7),
+        isDot: fuzzyMatch.group(4) == '.',
+        hasTimeWordOrUnit: true,
+      );
+
+      if (d != null && t != null) {
+        return _ExtractedDateTime(
+          DateTime(y, mo, d, t.hour, t.minute, t.second),
+          hasTime: true,
+        );
       }
     }
 
@@ -396,7 +534,9 @@ class BankSlipParser {
     // 4.1 ค้นหาบรรทัดวันที่
     int? dateLineIndex;
     final thaiDateOnlyRegex = RegExp(
-      '(?:วันที่(?:ทำรายการ)?\\s*[:：]?\\s*)?(\\d{1,2})\\s*($thaiMonthPattern)\\s*(\\d{2,4})?',
+      r'(?:(?:วันที่(?:ทำรายการ)?|เมื่อวันที่|Date)\s*[:：]?\s*)?([0-2]?\d|3[01])\s*(' +
+          thaiMonthPattern +
+          r')\s*(25\d{2}|20\d{2}|[5-9]\d|[2-3]\d)?',
       caseSensitive: false,
     );
 
@@ -419,7 +559,7 @@ class BankSlipParser {
 
     if (dateLineIndex == null) {
       final engDateOnlyRegex = RegExp(
-        r'(?:Date\s*[:：]?\s*)?(\d{1,2})\s*(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s*(\d{2,4})?',
+        r'(?:Date\s*[:：]?\s*)?([0-2]?\d|3[01])\s*(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s*(20\d{2}|25\d{2}|\d{2})?',
         caseSensitive: false,
       );
       for (int i = 0; i < lines.length; i++) {
@@ -441,114 +581,200 @@ class BankSlipParser {
     }
 
     if (dateLineIndex == null) {
-      final numDateOnlyRegex = RegExp(r'(?:วันที่\s*[:：]?\s*)?(\d{1,2})[/.-](\d{1,2})[/.-](\d{2,4})');
+      final numDateOnlyRegex = RegExp(
+        r'(?:(?:วันที่|Date)\s*[:：]?\s*)?(?:([0-2]?\d|3[01])[/.-](0?[1-9]|1[0-2])[/.-](20\d{2}|25\d{2}|\d{2})|(20\d{2}|25\d{2})[/.-](0?[1-9]|1[0-2])[/.-]([0-2]?\d|3[01]))',
+        caseSensitive: false,
+      );
       for (int i = 0; i < lines.length; i++) {
         final line = lines[i];
+        final lineLower = line.toLowerCase();
+        // ข้ามบรรทัดที่เป็นเบอร์พร้อมเพย์ บัญชี หรือเลขประจำตัวประชาชน
+        if (lineLower.contains('พร้อมเพย์') ||
+            lineLower.contains('promptpay') ||
+            RegExp(r'^(?:0[689]\d[\s\-]?\d{3}[\s\-]?\d{4}|[0-9]\s*[-–—]\s*[0-9]{4}\s*[-–—])').hasMatch(line)) {
+          continue;
+        }
         final m = numDateOnlyRegex.firstMatch(line);
         if (m != null) {
-          day = int.tryParse(m.group(1)!);
-          month = int.tryParse(m.group(2)!);
-          final rawYear = int.tryParse(m.group(3)!);
-          if (rawYear != null) year = parseYear(rawYear);
+          if (m.group(1) != null) {
+            day = int.tryParse(m.group(1)!);
+            month = int.tryParse(m.group(2)!);
+            final rawYear = int.tryParse(m.group(3)!);
+            if (rawYear != null) year = parseYear(rawYear);
+          } else if (m.group(4) != null) {
+            final rawYear = int.tryParse(m.group(4)!);
+            if (rawYear != null) year = parseYear(rawYear);
+            month = int.tryParse(m.group(5)!);
+            day = int.tryParse(m.group(6)!);
+          }
           dateLineIndex = i;
           break;
         }
       }
     }
 
-    // 4.1.1 หากยังไม่พบวันที่ ลองค้นหาจากรหัสอ้างอิง (เช่น 20260915...)
+    // 4.1.1 ค้นหาวันที่และเวลาจากรหัสอ้างอิง (Fallback เมื่อไม่พบบรรทัดวันที่ เช่น K PLUS 01425670912143500B1234 หรือ 20260912143522...)
     if (day == null || month == null || year == null) {
-      final refDateMatch = RegExp(r'\b(202\d)(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\d{6,}\b').firstMatch(fullText);
-      if (refDateMatch != null) {
-        year = int.tryParse(refDateMatch.group(1)!);
-        month = int.tryParse(refDateMatch.group(2)!);
-        day = int.tryParse(refDateMatch.group(3)!);
+      // 1) รูปแบบ ค.ศ. (202x): YYYYMMDD ตามด้วย HHMMSS หรือรหัสอื่น
+      final refCeMatch = RegExp(
+        r'(?:[A-Za-z0-9]{0,6})?(202\d)(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])(?:([01]\d|2[0-3])([0-5]\d)([0-5]\d)?)?',
+      ).firstMatch(fullText);
+
+      if (refCeMatch != null) {
+        year = int.tryParse(refCeMatch.group(1)!);
+        month = int.tryParse(refCeMatch.group(2)!);
+        day = int.tryParse(refCeMatch.group(3)!);
+        if (refCeMatch.group(4) != null && refCeMatch.group(5) != null) {
+          hour = int.tryParse(refCeMatch.group(4)!);
+          minute = int.tryParse(refCeMatch.group(5)!);
+          if (refCeMatch.group(6) != null) {
+            second = int.tryParse(refCeMatch.group(6)!);
+          }
+          hasExplicitTime = true;
+        }
+      }
+
+      // 2) รูปแบบ พ.ศ. (256x หรือ 257x): เช่น K PLUS 01425670912143500... หรือ 25690912143522...
+      if (day == null || month == null || year == null) {
+        final refBeMatch = RegExp(
+          r'(?:[A-Za-z0-9]{0,6})?(25[6-7]\d)(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])(?:([01]\d|2[0-3])([0-5]\d)([0-5]\d)?)?',
+        ).firstMatch(fullText);
+
+        if (refBeMatch != null) {
+          final rawY = int.tryParse(refBeMatch.group(1)!);
+          if (rawY != null) year = rawY - 543;
+          month = int.tryParse(refBeMatch.group(2)!);
+          day = int.tryParse(refBeMatch.group(3)!);
+          if (refBeMatch.group(4) != null && refBeMatch.group(5) != null) {
+            hour = int.tryParse(refBeMatch.group(4)!);
+            minute = int.tryParse(refBeMatch.group(5)!);
+            if (refBeMatch.group(6) != null) {
+              second = int.tryParse(refBeMatch.group(6)!);
+            }
+            hasExplicitTime = true;
+          }
+        }
       }
     }
 
-    // 4.2 สกัดเวลา: ตรวจสอบอย่างละเอียด
-    bool setTimeIfValid(int? h, int? m, int? s) {
-      if (h != null && m != null && h >= 0 && h <= 23 && m >= 0 && m <= 59) {
-        hour = h;
-        minute = m;
-        second = s ?? 0;
-        return true;
-      }
-      return false;
-    }
-
-    // A. ค้นหาเวลาที่มีคำนำหน้า "เวลา" หรือลงท้าย "น." หรือใช้โคลอน (:)
+    // 4.2 สกัดเวลาแบบ Multi-Tier Priority Scoring
+    // ป้องกันการสับสนระหว่างเวลาจริง กับนาฬิกา Status Bar หรือยอดเงิน
     final explicitTimeRegex = RegExp(
-      r'(?:เวลา|Time|เมื่อเวลา)\s*[:：]?\s*([01]?\d|2[0-3])[:.]([0-5]\d)(?:[:.]([0-5]\d))?|([01]?\d|2[0-3])\.([0-5]\d)(?:\.([0-5]\d))?\s*น\.?|\b([01]?\d|2[0-3]):([0-5]\d)(?::([0-5]\d))?\b',
+      r'(?:(?:เวลา|Time|เมื่อเวลา)\s*[:：]?\s*)?([01]?\d|2[0-3])\s*([:.;])\s*([0-5]\d)(?:\s*[:.;]\s*([0-5]\d))?\s*(น\.|น|am|pm|a\.m\.|p\.m\.)?',
       caseSensitive: false,
     );
 
-    // ตรวจสอบแถวใกล้เคียงกับแถววันที่ก่อน (dateLineIndex - 1, dateLineIndex, dateLineIndex + 1, dateLineIndex + 2)
-    if (dateLineIndex != null) {
-      final checkIndices = [
-        dateLineIndex,
-        if (dateLineIndex + 1 < lines.length) dateLineIndex + 1,
-        if (dateLineIndex - 1 >= 0) dateLineIndex - 1,
-        if (dateLineIndex + 2 < lines.length) dateLineIndex + 2,
-      ];
-      for (final idx in checkIndices) {
-        final cand = lines[idx];
-        if (cand.contains('บาท') || cand.contains('บ.') || cand.toLowerCase().contains('thb') || cand.contains('จำนวนเงิน') || cand.contains('ยอดเงิน') || cand.contains('ค่าธรรมเนียม')) {
-          if (!cand.contains('เวลา') && !cand.contains('น.')) continue;
+    int bestScore = -999;
+    ({int hour, int minute, int second})? bestTime;
+
+    for (int i = 0; i < lines.length; i++) {
+      final line = lines[i];
+      final lineLower = line.toLowerCase();
+
+      // ข้ามบรรทัดที่มีข้อความเกี่ยวกับเงิน/ค่าธรรมเนียม ที่ไม่มีคำบอกเวลา
+      final isMoneyLine = line.contains('บาท') ||
+          line.contains('บ.') ||
+          lineLower.contains('thb') ||
+          line.contains('ค่าธรรมเนียม') ||
+          lineLower.contains('fee') ||
+          line.contains('ยอดเงิน') ||
+          line.contains('จำนวนเงิน') ||
+          lineLower.contains('amount');
+
+      if (isMoneyLine) {
+        final hasExplicitTimeWord = line.contains('เวลา') ||
+            lineLower.contains('time') ||
+            line.contains('น.') ||
+            RegExp(r'\s+น\b').hasMatch(line);
+        if (!hasExplicitTimeWord) {
+          continue;
         }
-        final m = explicitTimeRegex.firstMatch(cand);
-        if (m != null) {
-          final hStr = m.group(1) ?? m.group(4) ?? m.group(7);
-          final mStr = m.group(2) ?? m.group(5) ?? m.group(8);
-          final sStr = m.group(3) ?? m.group(6) ?? m.group(9);
-          if (setTimeIfValid(int.tryParse(hStr ?? ''), int.tryParse(mStr ?? ''), int.tryParse(sStr ?? ''))) {
-            break;
+      }
+
+      final matches = explicitTimeRegex.allMatches(line);
+      for (final m in matches) {
+        final sep = m.group(2)!;
+        final unit = m.group(5);
+        final isDot = sep == '.';
+        final hasTimeWord = line.contains('เวลา') || lineLower.contains('time');
+        final isNearDate = !isMoneyLine && dateLineIndex != null && (i - dateLineIndex).abs() <= 1;
+        // หากมีคำระบุเวลา หรือมีหน่วย น./am/pm หรือตัวเลขจุดอยู่ติดกับบรรทัดวันที่ ถือเป็นเวลาแน่นอน
+        final hasTimeWordOrUnit = (unit != null && unit.isNotEmpty) || hasTimeWord || (isDot && isNearDate);
+
+        final t = parseTimeParts(
+          m.group(1)!,
+          m.group(3)!,
+          m.group(4),
+          period: unit,
+          isDot: isDot,
+          hasTimeWordOrUnit: hasTimeWordOrUnit,
+        );
+        if (t == null) continue;
+
+        int score = 0;
+        if (hasTimeWord) score += 100;
+        if (unit != null && unit.isNotEmpty) score += 80;
+
+        // ให้คะแนนความใกล้ชิดกับบรรทัดวันที่
+        if (dateLineIndex != null) {
+          final diff = (i - dateLineIndex).abs();
+          if (diff == 0) {
+            score += 60;
+          } else if (diff == 1) {
+            score += 50;
+          } else if (diff == 2) {
+            score += 35;
+          } else if (diff <= 4) {
+            score += 20;
           }
+        }
+
+        // หักคะแนนกรณีอยู่บน 2 บรรทัดแรกของสลิป และไม่มีคำระบุเวลา (เลี่ยง Phone Status Bar)
+        if (i <= 1 && !hasTimeWordOrUnit) {
+          score -= 70;
+        }
+
+        if (score > bestScore) {
+          bestScore = score;
+          bestTime = t;
         }
       }
     }
 
-    // หากยังไม่พบเวลา สแกนทุกบรรทัดตั้งแต่บรรทัดที่ 1 (ข้ามบรรทัด 0 เพื่อเลี่ยง status bar ของมือถือ)
-    if (hour == null) {
-      final startIndex = lines.length > 1 ? 1 : 0;
-      for (int i = startIndex; i < lines.length; i++) {
-        final line = lines[i];
-        if (line.contains('บาท') || line.contains('บ.') || line.toLowerCase().contains('thb') || line.contains('จำนวน') || line.contains('จํานวน') || line.contains('ค่าธรรมเนียม') || line.toLowerCase().contains('fee') || line.toLowerCase().contains('amount')) {
-          if (!line.contains('เวลา') && !line.contains('น.')) continue;
-        }
-        final m = explicitTimeRegex.firstMatch(line);
-        if (m != null) {
-          final hStr = m.group(1) ?? m.group(4) ?? m.group(7);
-          final mStr = m.group(2) ?? m.group(5) ?? m.group(8);
-          final sStr = m.group(3) ?? m.group(6) ?? m.group(9);
-          if (setTimeIfValid(int.tryParse(hStr ?? ''), int.tryParse(mStr ?? ''), int.tryParse(sStr ?? ''))) {
-            break;
-          }
-        }
-      }
+    if (bestTime != null && bestScore > 0) {
+      hour = bestTime.hour;
+      minute = bestTime.minute;
+      second = bestTime.second;
+      hasExplicitTime = true;
     }
 
     final h = hour;
     final m = minute;
 
     if (day != null && month != null && year != null) {
-      return DateTime(
-        year,
-        month,
-        day,
-        h ?? 0,
-        m ?? 0,
-        second ?? 0,
+      return _ExtractedDateTime(
+        DateTime(
+          year,
+          month,
+          day,
+          h ?? 0,
+          m ?? 0,
+          second ?? 0,
+        ),
+        hasTime: hasExplicitTime,
       );
     } else if (h != null && m != null) {
       final now = DateTime.now();
-      return DateTime(
-        now.year,
-        now.month,
-        now.day,
-        h,
-        m,
-        second ?? 0,
+      return _ExtractedDateTime(
+        DateTime(
+          now.year,
+          now.month,
+          now.day,
+          h,
+          m,
+          second ?? 0,
+        ),
+        hasTime: true,
       );
     }
 
@@ -688,6 +914,35 @@ class BankSlipParser {
         }
       }
     }
+
+    // สกัดผู้โอนจากสลิปพร้อมเพย์ P2P ที่ไม่มีคำว่า "จาก" (เช่น K PLUS)
+    int promptPayIdx = -1;
+    for (int i = 0; i < lines.length; i++) {
+      final l = lines[i].toLowerCase();
+      if (l.contains('พร้อมเพย์') || l.contains('promptpay')) {
+        promptPayIdx = i;
+        break;
+      }
+    }
+    if (promptPayIdx > 0) {
+      for (int prevIdx = 0; prevIdx < promptPayIdx; prevIdx++) {
+        final candidate = lines[prevIdx].trim();
+        if (_isBankOrChannelOrNoise(candidate)) continue;
+        if (candidate.contains('โอนเงิน') ||
+            candidate.contains('สำเร็จ') ||
+            candidate.toLowerCase().contains('k plus') ||
+            candidate.toLowerCase().contains('kbank') ||
+            RegExp(r'(?:[0-2]?\d|3[01])\s*(?:ม\.ค|ก\.พ|มี\.ค|เม\.ย|พ\.ค|มิ\.ย|ก\.ค|ส\.ค|ก\.ย|ต\.ค|พ\.ย|ธ\.ค|\d{2})').hasMatch(candidate) ||
+            RegExp(r'\d{1,2}[:.]\d{2}').hasMatch(candidate)) {
+          continue;
+        }
+        final cleanedCandidate = _cleanName(candidate);
+        if (cleanedCandidate.length >= 2 && !_isBankOrChannelOrNoise(cleanedCandidate)) {
+          return cleanedCandidate;
+        }
+      }
+    }
+
     return null;
   }
 
@@ -718,6 +973,11 @@ class BankSlipParser {
       'โอนให้',
       'โอนไปยัง',
       'ผู้รับ',
+      'ชำระเงินให้',
+      'ชำระให้',
+      'จ่ายให้',
+      'payment to',
+      'pay to',
       'to',
       'receiver',
       'payee',
@@ -756,13 +1016,39 @@ class BankSlipParser {
         }
       }
 
-      // ตรวจหารูปแบบชื่อร้านค้า เช่น "ร้าน ...", "บจก. ...", "บริษัท ..."
-      final merchantMatch = RegExp(r'^(?:ร้าน|บจก\.|บริษัท|หจก\.)\s*[^\s]+.*$').firstMatch(line.trim());
+      // ตรวจหารูปแบบชื่อร้านค้า เช่น "ร้าน ...", "บจก. ...", "บริษัท ...", "Payment to ..."
+      final merchantMatch = RegExp(
+        r'^(?:ร้าน|บจก\.|บริษัท|หจก\.|Payment\s+to\s+|Pay\s+to\s+)\s*[^\s]+.*$',
+        caseSensitive: false,
+      ).firstMatch(line.trim());
       if (merchantMatch != null) {
-        final name = _cleanName(merchantMatch.group(0)!);
+        final rawMerchant = merchantMatch.group(0)!
+            .replaceFirst(RegExp(r'^(?:Payment\s+to\s+|Pay\s+to\s+)', caseSensitive: false), '')
+            .trim();
+        final name = _cleanName(rawMerchant);
         if (name.length >= 3 && !_isBankOrChannelOrNoise(name)) return name;
       }
     }
+
+    // สกัดผู้รับเงินจากสลิปพร้อมเพย์ P2P ที่ไม่มีคำว่า "ไปยัง" (เช่น K PLUS / SCB)
+    for (int i = 0; i < lines.length; i++) {
+      final lineLower = lines[i].toLowerCase().trim();
+      if (lineLower == 'พร้อมเพย์' ||
+          lineLower == 'promptpay' ||
+          lineLower.startsWith('พร้อมเพย์ ') ||
+          lineLower.startsWith('promptpay ') ||
+          lineLower.startsWith('พร้อมเพย์:')) {
+        for (int nextIdx = i + 1; nextIdx <= i + 3 && nextIdx < lines.length; nextIdx++) {
+          final candidate = lines[nextIdx].trim();
+          if (_isBankOrChannelOrNoise(candidate)) continue;
+          final cleanedCandidate = _cleanName(candidate);
+          if (cleanedCandidate.length >= 2 && !_isBankOrChannelOrNoise(cleanedCandidate)) {
+            return cleanedCandidate;
+          }
+        }
+      }
+    }
+
     return null;
   }
 
@@ -775,26 +1061,92 @@ class BankSlipParser {
         for (int j = i + 1; j <= i + 4 && j < lines.length; j++) {
           final l = lines[j].trim();
           if (l.contains('บาท') || l.toLowerCase().contains('thb') || l.contains('ค่าธรรมเนียม')) continue;
-          if (RegExp(r'[xX0-9\s\-*]{8,24}').hasMatch(l)) {
-            return l;
+          final stripped = l.replaceFirst(
+            RegExp(r'^(?:ไปยัง|to|เข้าบัญชี|ผู้รับเงิน|พร้อมเพย์|promptpay)\s*[:：]?\s*', caseSensitive: false),
+            '',
+          ).trim();
+          if (RegExp(r'^[xX0-9\s\-*]{8,24}$').hasMatch(stripped)) {
+            return stripped;
+          }
+          final match = RegExp(r'[xX0-9*]{1,}[-xX*0-9\s]{7,}').firstMatch(stripped);
+          if (match != null) {
+            return match.group(0)!.trim();
           }
         }
       }
     }
+
+    // สกัดเลขพร้อมเพย์ผู้รับจากสลิปที่ไม่มีคำว่า "ไปยัง" (เช่น K PLUS)
+    for (int i = 0; i < lines.length; i++) {
+      final lineLower = lines[i].toLowerCase();
+      if (lineLower.contains('พร้อมเพย์') || lineLower.contains('promptpay')) {
+        for (int j = i; j <= i + 2 && j < lines.length; j++) {
+          final l = lines[j].trim();
+          if (l.contains('บาท') || l.toLowerCase().contains('thb') || l.contains('ค่าธรรมเนียม')) continue;
+          final stripped = l.replaceFirst(
+            RegExp(r'^(?:พร้อมเพย์|promptpay)\s*[:：]?\s*', caseSensitive: false),
+            '',
+          ).trim();
+          if (RegExp(r'^[xX0-9\s\-*]{8,24}$').hasMatch(stripped)) {
+            return stripped;
+          }
+          final match = RegExp(r'[xX0-9*]{1,}[-xX*0-9\s]{7,}').firstMatch(stripped);
+          if (match != null) {
+            return match.group(0)!.trim();
+          }
+        }
+      }
+    }
+
     return null;
   }
 
   /// สกัดบันทึกช่วยจำ (Memo / Note)
   static String? _extractMemo(List<String> lines) {
+    final memoKeywords = [
+      'บันทึกช่วยจำ',
+      'บันทึก:',
+      'บันทึก',
+      'ข้อความถึงผู้รับ:',
+      'ข้อความ:',
+      'ข้อความ',
+      'หมายเหตุ:',
+      'หมายเหตุ',
+      'รายละเอียด:',
+      'คำอธิบาย:',
+      'memo:',
+      'memo',
+      'note:',
+      'note',
+      'message:',
+      'description:',
+    ];
+
     for (int i = 0; i < lines.length; i++) {
       final line = lines[i];
-      if (line.contains('บันทึกช่วยจำ') || line.contains('บันทึก:') || line.startsWith('บันทึก ') || line.toLowerCase().startsWith('memo:') || line.toLowerCase().startsWith('note:')) {
-        final inline = line.replaceFirst(RegExp(r'^(?:บันทึกช่วยจำ|บันทึก|memo|note)\s*[:：]?\s*', caseSensitive: false), '').trim();
-        if (inline.isNotEmpty && !inline.contains('QR') && !inline.contains('สแกน')) return inline;
-        if (i + 1 < lines.length) {
-          final candidate = lines[i + 1].trim();
-          if (candidate.isNotEmpty && !candidate.contains('QR') && !candidate.contains('สแกน')) {
-            return candidate;
+      final lineLower = line.toLowerCase();
+      for (final kw in memoKeywords) {
+        if (lineLower.contains(kw)) {
+          final inline = line.replaceFirst(
+            RegExp('^(?:$kw)\\s*[:：]?\\s*', caseSensitive: false),
+            '',
+          ).trim();
+          if (inline.isNotEmpty &&
+              !inline.contains('QR') &&
+              !inline.contains('สแกน') &&
+              !inline.contains('สำเร็จ') &&
+              !inline.contains('บาท')) {
+            return inline;
+          }
+          if (i + 1 < lines.length) {
+            final candidate = lines[i + 1].trim();
+            if (candidate.isNotEmpty &&
+                !candidate.contains('QR') &&
+                !candidate.contains('สแกน') &&
+                !candidate.contains('สำเร็จ') &&
+                !candidate.contains('บาท')) {
+              return candidate;
+            }
           }
         }
       }
@@ -807,7 +1159,11 @@ class BankSlipParser {
         .replaceAll(RegExp(r'ธ\.(?:กรุงไทย|กสิกรไทย|ไทยพาณิชย์|กรุงเทพ|กรุงศรีอยุธยา|กรุงศรี|ออมสิน|ก\.ส\.|ทหารไทยธนชาต|เกียรตินาคิน|ยูโอบี|ซีไอเอ็มบี|ทิสโก้|แลนด์ แอนด์ เฮ้าส์)', caseSensitive: false), '')
         .replaceAll(RegExp(r'ธนาคาร(?:กรุงไทย|กสิกรไทย|ไทยพาณิชย์|กรุงเทพ|กรุงศรีอยุธยา|กรุงศรี|ออมสิน|เพื่อการเกษตรและสหกรณ์การเกษตร|ทหารไทยธนชาต|เกียรตินาคินภัทร|เกียรตินาคิน|ยูโอบี|ซีไอเอ็มบีไทย|ซีไอเอ็มบี|ทิสโก้|แลนด์ แอนด์ เฮ้าส์)', caseSensitive: false), '')
         .replaceAll(RegExp(r'(?:PromptPay|พร้อมเพย์)', caseSensitive: false), '')
-        .replaceAll(RegExp(r'[xX*]{3,}[-xX*0-9]+', caseSensitive: false), '')
+        .replaceAll(RegExp(r'(?:0[689]\d[-–—\s]?\d{3}[-–—\s]?\d{4})'), '')
+        .replaceAll(RegExp(r'[xX*]{2,}[-xX*0-9\s]+', caseSensitive: false), '')
+        .replaceAll(RegExp(r'\b\d{3}[-–—\s]?\d[-–—\s]?\d{5}[-–—\s]?\d\b'), '')
+        .replaceAll(RegExp(r'^[–—\-•:：\s]+|[–—\-•:：\s]+$'), '')
+        .replaceAll(RegExp(r'\s{2,}'), ' ')
         .trim();
   }
 
@@ -838,6 +1194,12 @@ class BankSlipParser {
   }
 }
 
+/// ผลลัพธ์การสกัดวันและเวลาพร้อมสถานะความชัดเจนของเวลา
+class _ExtractedDateTime {
+  final DateTime dateTime;
+  final bool hasTime;
+  const _ExtractedDateTime(this.dateTime, {required this.hasTime});
+}
 
 /// Typedef สำหรับความเข้ากันได้ย้อนหลัง 100%
 typedef KrungthaiSlipParser = BankSlipParser;

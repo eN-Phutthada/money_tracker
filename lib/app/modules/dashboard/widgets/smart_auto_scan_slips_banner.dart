@@ -23,7 +23,7 @@ class SmartAutoScanSlipsBanner extends GetView<DashboardController> {
 
       final count = slips.length;
       final totalAmount = slips.fold(0.0, (sum, s) => sum + s.amount);
-      final firstTitle = slips.first.receiverName ?? slips.first.suggestedCategory;
+      final firstTitle = slips.first.defaultTitle;
 
       return AnimatedSize(
         duration: const Duration(milliseconds: 320),

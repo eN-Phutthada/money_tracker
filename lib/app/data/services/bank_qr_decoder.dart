@@ -160,11 +160,11 @@ class BankQrDecoder {
   };
 
   /// ถอดรหัสข้อความ QR Code สลิปเป็นโมเดลข้อมูล BankSlipData (Alias สำหรับ parsePromptPaySlipQr)
-  static BankSlipData? decodeSlipQr(String qrText) =>
-      parsePromptPaySlipQr(qrText);
+  static BankSlipData? decodeSlipQr(String qrText, {String? userProfileName}) =>
+      parsePromptPaySlipQr(qrText, userProfileName: userProfileName);
 
   /// วิเคราะห์ข้อมูลจากข้อความ QR Code สลิปธนาคาร (รองรับทุกธนาคารในไทย โดยมีกรุงไทยเป็นหลัก)
-  static BankSlipData? parsePromptPaySlipQr(String qrText) {
+  static BankSlipData? parsePromptPaySlipQr(String qrText, {String? userProfileName}) {
     if (qrText.trim().isEmpty) return null;
 
     final trimmed = qrText.trim();
@@ -196,13 +196,20 @@ class BankQrDecoder {
 
         DateTime date = DateTime.now();
         bool hasDate = false;
-        final dateStr = uri.queryParameters['date'] ?? uri.queryParameters['dateTime'];
+        bool hasTime = false;
+        String? dateStr = uri.queryParameters['date'] ??
+            uri.queryParameters['dateTime'] ??
+            uri.queryParameters['datetime'];
         final timeStr = uri.queryParameters['time'];
+        if (dateStr == null && timeStr != null && (timeStr.contains('T') || timeStr.contains('-'))) {
+          dateStr = timeStr;
+        }
         if (dateStr != null) {
           final isoParsed = DateTime.tryParse(dateStr);
           if (isoParsed != null) {
-            date = isoParsed;
+            date = isoParsed.toLocal();
             hasDate = true;
+            hasTime = dateStr.contains('T') || dateStr.contains(' ') || dateStr.contains(':');
           } else if (dateStr.length >= 8) {
             final y = int.tryParse(dateStr.substring(0, 4)) ?? date.year;
             final m = int.tryParse(dateStr.substring(4, 6)) ?? date.month;
@@ -214,18 +221,23 @@ class BankQrDecoder {
               h = int.tryParse(dateStr.substring(8, 10)) ?? 0;
               min = int.tryParse(dateStr.substring(10, 12)) ?? 0;
               s = int.tryParse(dateStr.substring(12, 14)) ?? 0;
+              hasTime = true;
             } else if (dateStr.length >= 12) {
               h = int.tryParse(dateStr.substring(8, 10)) ?? 0;
               min = int.tryParse(dateStr.substring(10, 12)) ?? 0;
-            } else if (timeStr != null) {
+              hasTime = true;
+            }
+            if (timeStr != null) {
               final cleanTime = timeStr.replaceAll(':', '').replaceAll('.', '');
               if (cleanTime.length >= 6) {
-                h = int.tryParse(cleanTime.substring(0, 2)) ?? 0;
-                min = int.tryParse(cleanTime.substring(2, 4)) ?? 0;
-                s = int.tryParse(cleanTime.substring(4, 6)) ?? 0;
+                h = int.tryParse(cleanTime.substring(0, 2)) ?? h;
+                min = int.tryParse(cleanTime.substring(2, 4)) ?? min;
+                s = int.tryParse(cleanTime.substring(4, 6)) ?? s;
+                hasTime = true;
               } else if (cleanTime.length >= 4) {
-                h = int.tryParse(cleanTime.substring(0, 2)) ?? 0;
-                min = int.tryParse(cleanTime.substring(2, 4)) ?? 0;
+                h = int.tryParse(cleanTime.substring(0, 2)) ?? h;
+                min = int.tryParse(cleanTime.substring(2, 4)) ?? min;
+                hasTime = true;
               }
             }
             date = DateTime(y, m, d, h, min, s);
@@ -286,6 +298,7 @@ class BankQrDecoder {
 
         final prediction = SlipCategoryPredictor.predict(
           receiverName: receiverName,
+          userProfileName: userProfileName,
           fullText: '${uri.path} ${receiverName ?? ''}',
           amount: amount,
           transactionDate: date,
@@ -300,6 +313,7 @@ class BankQrDecoder {
           isKrungthai: isKtb,
           rawText: qrText,
           hasParsedDateTime: hasDate,
+          hasParsedTime: hasTime,
           suggestedCategory: prediction.category,
           suggestedCostNature: prediction.costNature,
           suggestedType: prediction.type,
@@ -326,17 +340,22 @@ class BankQrDecoder {
       subTlv = _parseTlv(tlv['00']!);
     }
 
-    // สกัดยอดเงิน (Tag 54)
+    // สกัดยอดเงิน (Tag 54 ตามมาตรฐาน EMVCo)
     double amount = 0.0;
     if (tlv.containsKey('54')) {
       amount = double.tryParse(tlv['54']!) ?? 0.0;
+    } else if (subTlv != null && subTlv.containsKey('54')) {
+      amount = double.tryParse(subTlv['54']!) ?? 0.0;
     }
 
-    // หากไม่พบใน Tag 54 ลองหาจากรูปแบบ regex ในข้อความ
+    // หากไม่พบใน TLV ให้ค้นหา Tag 54 ที่ตามด้วย Tag 58 (Country), Tag 53 (Currency) หรือ Tag 63 (CRC)
     if (amount <= 0) {
-      final amtMatch = RegExp(r'54\d{2}([0-9]+(?:\.[0-9]{2})?)').firstMatch(trimmed);
+      final amtMatch = RegExp(r'54(0[1-9]|1[0-2])([0-9]+(?:\.[0-9]{2})?)(?=5802|5303|6304|$)').firstMatch(trimmed);
       if (amtMatch != null) {
-        amount = double.tryParse(amtMatch.group(1)!) ?? 0.0;
+        final val = double.tryParse(amtMatch.group(2)!) ?? 0.0;
+        if (val > 0 && val < 10000000) {
+          amount = val;
+        }
       }
     }
 
@@ -379,15 +398,17 @@ class BankQrDecoder {
       }
     }
 
-    // สกัดวันที่และเวลาทำรายการตามมาตรฐาน BOT Slip Verification (Tag 00, Sub-Tag 02)
+    // สกัดวันที่และเวลาทำรายการตามมาตรฐาน BOT Slip Verification (Tag 00/30/31, Sub-Tag 02 หรือ 04)
     DateTime date = DateTime.now();
     bool hasDate = false;
+    bool hasTime = false;
 
-    if (subTlv != null && subTlv.containsKey('02') && subTlv['02']!.isNotEmpty) {
-      final sub02 = subTlv['02']!;
-      // รูปแบบมาตรฐาน BOT PromptPay: DD HH MM SS YYYY MM DD ... เช่น 11123510202609110006992211
+    void tryExtractDateFromRef(String ref) {
+      if (hasDate && hasTime) return;
+
+      // 0. รูปแบบมาตรฐาน BOT PromptPay: DD HH MM SS YYYY MM DD ... เช่น 11123510202609110006992211
       final botPattern = RegExp(r'^(\d{2})(\d{2})(\d{2})(\d{2})(202\d)(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])');
-      final botMatch = botPattern.firstMatch(sub02);
+      final botMatch = botPattern.firstMatch(ref);
       if (botMatch != null) {
         final h = int.tryParse(botMatch.group(2)!);
         final min = int.tryParse(botMatch.group(3)!);
@@ -399,37 +420,97 @@ class BankQrDecoder {
           if (h >= 0 && h <= 23 && min >= 0 && min <= 59 && s >= 0 && s <= 59) {
             date = DateTime(y, m, d, h, min, s);
             hasDate = true;
+            hasTime = true;
+            return;
           }
         }
       }
 
-      // รูปแบบ YYYYMMDDHHMMSS เช่น 20260911123510...
+      // 1. รูปแบบ ค.ศ. (202x) มีทั้งวันและเวลา เช่น [bankCode]YYYYMMDDHHMMSS หรือ 20260912143522...
+      final ceMatchWithTime = RegExp(
+        r'(?:004|014|002|011|025|030|006|01)?(202\d)(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])([01]\d|2[0-3])([0-5]\d)([0-5]\d)?',
+      ).firstMatch(ref);
+      if (ceMatchWithTime != null) {
+        final y = int.tryParse(ceMatchWithTime.group(1)!);
+        final m = int.tryParse(ceMatchWithTime.group(2)!);
+        final d = int.tryParse(ceMatchWithTime.group(3)!);
+        final h = int.tryParse(ceMatchWithTime.group(4)!);
+        final min = int.tryParse(ceMatchWithTime.group(5)!);
+        final s = ceMatchWithTime.group(6) != null ? int.tryParse(ceMatchWithTime.group(6)!) ?? 0 : 0;
+        if (y != null && m != null && d != null && h != null && min != null) {
+          date = DateTime(y, m, d, h, min, s);
+          hasDate = true;
+          hasTime = true;
+          return;
+        }
+      }
+
+      // 2. รูปแบบ พ.ศ. (256x หรือ 257x) เช่น K PLUS 01425670912143500... หรือ 01425690912143522...
+      final beMatchWithTime = RegExp(
+        r'(?:004|014|002|011|025|030|006|01)?(25[6-7]\d)(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])([01]\d|2[0-3])([0-5]\d)([0-5]\d)?',
+      ).firstMatch(ref);
+      if (beMatchWithTime != null) {
+        final rawY = int.tryParse(beMatchWithTime.group(1)!);
+        final m = int.tryParse(beMatchWithTime.group(2)!);
+        final d = int.tryParse(beMatchWithTime.group(3)!);
+        final h = int.tryParse(beMatchWithTime.group(4)!);
+        final min = int.tryParse(beMatchWithTime.group(5)!);
+        final s = beMatchWithTime.group(6) != null ? int.tryParse(beMatchWithTime.group(6)!) ?? 0 : 0;
+        if (rawY != null && m != null && d != null && h != null && min != null) {
+          date = DateTime(rawY - 543, m, d, h, min, s);
+          hasDate = true;
+          hasTime = true;
+          return;
+        }
+      }
+
+      // 3. รูปแบบเฉพาะวันที่ (YYYYMMDD หรือ 256xMMDD) เช่น Krungthai NEXT 202609120006...
       if (!hasDate) {
-        final ymdHms = RegExp(r'^(202\d)(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])([01]\d|2[0-3])([0-5]\d)([0-5]\d)').firstMatch(sub02);
-        if (ymdHms != null) {
-          final y = int.tryParse(ymdHms.group(1)!);
-          final m = int.tryParse(ymdHms.group(2)!);
-          final d = int.tryParse(ymdHms.group(3)!);
-          final h = int.tryParse(ymdHms.group(4)!);
-          final min = int.tryParse(ymdHms.group(5)!);
-          final s = int.tryParse(ymdHms.group(6)!);
-          if (y != null && m != null && d != null && h != null && min != null && s != null) {
-            date = DateTime(y, m, d, h, min, s);
+        final ceDateOnly = RegExp(
+          r'(?:004|014|002|011|025|030|006|01)?(202\d)(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])',
+        ).firstMatch(ref);
+        if (ceDateOnly != null) {
+          final y = int.tryParse(ceDateOnly.group(1)!);
+          final m = int.tryParse(ceDateOnly.group(2)!);
+          final d = int.tryParse(ceDateOnly.group(3)!);
+          if (y != null && m != null && d != null) {
+            date = DateTime(y, m, d);
             hasDate = true;
+            hasTime = false;
+            return;
+          }
+        }
+
+        final beDateOnly = RegExp(
+          r'(?:004|014|002|011|025|030|006|01)?(25[6-7]\d)(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])',
+        ).firstMatch(ref);
+        if (beDateOnly != null) {
+          final rawY = int.tryParse(beDateOnly.group(1)!);
+          final m = int.tryParse(beDateOnly.group(2)!);
+          final d = int.tryParse(beDateOnly.group(3)!);
+          if (rawY != null && m != null && d != null) {
+            date = DateTime(rawY - 543, m, d);
+            hasDate = true;
+            hasTime = false;
+            return;
           }
         }
       }
     }
 
-    // กรณีรหัสอ้างอิงเริ่มต้นด้วยปี ค.ศ. 202x (YYYYMMDD) แต่ไม่มีเวลา
-    if (!hasDate && referenceNo != null && referenceNo.length >= 8 && referenceNo.startsWith('202')) {
-      final y = int.tryParse(referenceNo.substring(0, 4));
-      final m = int.tryParse(referenceNo.substring(4, 6));
-      final d = int.tryParse(referenceNo.substring(6, 8));
-      if (y != null && m != null && d != null && m >= 1 && m <= 12 && d >= 1 && d <= 31) {
-        date = DateTime(y, m, d);
-        hasDate = true;
+    // ตรวจสอบจาก Sub-Tag 04 (EMVCo Timestamp) หรือ Sub-Tag 02
+    if (subTlv != null) {
+      if (subTlv.containsKey('04') && subTlv['04']!.isNotEmpty) {
+        tryExtractDateFromRef(subTlv['04']!);
       }
+      if (subTlv.containsKey('02') && subTlv['02']!.isNotEmpty) {
+        tryExtractDateFromRef(subTlv['02']!);
+      }
+    }
+
+    // ตรวจสอบเพิ่มเติมจาก referenceNo
+    if (referenceNo != null && referenceNo.isNotEmpty) {
+      tryExtractDateFromRef(referenceNo);
     }
 
     // ตรวจจับชื่อธนาคารจาก Sub-Tag 01 (Sending Bank Code) หรือ Sub-Tag 02
@@ -468,6 +549,7 @@ class BankQrDecoder {
 
     final prediction = SlipCategoryPredictor.predict(
       receiverName: receiverName,
+      userProfileName: userProfileName,
       fullText: '$qrText ${receiverName ?? ''}',
       amount: amount,
       transactionDate: date,
@@ -485,6 +567,7 @@ class BankQrDecoder {
       suggestedType: prediction.type,
       rawText: qrText,
       hasParsedDateTime: hasDate,
+      hasParsedTime: hasTime,
       predictionConfidence: prediction.confidence,
       predictionReason: prediction.reason.isNotEmpty ? prediction.reason : 'สแกน QR Code',
     );

@@ -24,3 +24,7 @@
 # Mobile Scanner
 -keep class com.google.zxing.** { *; }
 -dontwarn com.google.zxing.**
+
+# Tesseract OCR
+-keep class com.googlecode.tesseract.android.** { *; }
+-dontwarn com.googlecode.tesseract.android.**

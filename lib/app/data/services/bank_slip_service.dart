@@ -287,6 +287,12 @@ class BankSlipService {
         fileModTime = await file.lastModified();
       } catch (_) {}
 
+      String? userProfileName;
+      if (Get.isRegistered<DashboardController>()) {
+        final u = Get.find<DashboardController>().userName.value;
+        if (u.isNotEmpty) userProfileName = u;
+      }
+
       // 1. ลองถอดรหัส QR Code บนสลิปด้วย Pure Dart Engine
       String? qrString;
       try {
@@ -295,7 +301,7 @@ class BankSlipService {
 
       BankSlipData? qrSlip;
       if (qrString != null) {
-        qrSlip = BankQrDecoder.parsePromptPaySlipQr(qrString);
+        qrSlip = BankQrDecoder.parsePromptPaySlipQr(qrString, userProfileName: userProfileName);
       }
 
       // 2. ลองอ่านข้อความผ่าน Mobile On-Device OCR
@@ -306,7 +312,7 @@ class BankSlipService {
 
       BankSlipData? ocrSlip;
       if (ocrText != null && ocrText.trim().isNotEmpty) {
-        ocrSlip = BankSlipParser.parse(ocrText);
+        ocrSlip = BankSlipParser.parse(ocrText, userProfileName: userProfileName);
       }
 
       BankSlipData? result;
@@ -376,6 +382,10 @@ class BankSlipService {
           rawText:
               '${qr.rawText}\n\n-- OCR Extracted Text --\n${ocr.rawText}',
           hasParsedDateTime: hasDateTime,
+          hasParsedTime: ocr.hasParsedTime ||
+              qr.hasParsedTime ||
+              finalDate.hour != 0 ||
+              finalDate.minute != 0,
           predictionConfidence: ocr.predictionConfidence,
           predictionReason: ocr.predictionReason,
         );
@@ -388,6 +398,9 @@ class BankSlipService {
         result = qrSlip.copyWith(
           transactionDate: finalDate,
           hasParsedDateTime: qrSlip.hasParsedDateTime || fileModTime != null,
+          hasParsedTime: qrSlip.hasParsedTime ||
+              finalDate.hour != 0 ||
+              finalDate.minute != 0,
         );
       } else if (ocrSlip != null &&
           (ocrSlip.isKrungthai || ocrSlip.amount > 0)) {
@@ -399,6 +412,9 @@ class BankSlipService {
         result = ocrSlip.copyWith(
           transactionDate: finalDate,
           hasParsedDateTime: ocrSlip.hasParsedDateTime || fileModTime != null,
+          hasParsedTime: ocrSlip.hasParsedTime ||
+              finalDate.hour != 0 ||
+              finalDate.minute != 0,
         );
       }
 
@@ -419,16 +435,18 @@ class BankSlipService {
     BankSlipData? ocrSlip,
     DateTime? fileModTime,
   }) {
-    // 1. ตรวจสอบว่าแต่ละแหล่งข้อมูลมีเวลาที่เจาะจง (ไม่ใช่ 00:00:00) หรือไม่
+    // 1. ตรวจสอบว่าแต่ละแหล่งข้อมูลมีเวลาที่เจาะจง (ผ่าน hasParsedTime หรือไม่ใช่ 00:00:00) หรือไม่
     final ocrHasTime = ocrSlip != null &&
         ocrSlip.hasParsedDateTime &&
-        (ocrSlip.transactionDate.hour != 0 ||
+        (ocrSlip.hasParsedTime ||
+            ocrSlip.transactionDate.hour != 0 ||
             ocrSlip.transactionDate.minute != 0 ||
             ocrSlip.transactionDate.second != 0);
 
     final qrHasTime = qrSlip != null &&
         qrSlip.hasParsedDateTime &&
-        (qrSlip.transactionDate.hour != 0 ||
+        (qrSlip.hasParsedTime ||
+            qrSlip.transactionDate.hour != 0 ||
             qrSlip.transactionDate.minute != 0 ||
             qrSlip.transactionDate.second != 0);
 
@@ -474,8 +492,28 @@ class BankSlipService {
       hour = qrSlip.transactionDate.hour;
       minute = qrSlip.transactionDate.minute;
       second = qrSlip.transactionDate.second;
-    } else if (fileModTime != null && !isTempCacheTime) {
-      // หาก OCR/QR ไม่มีเวลา และเวลาของไฟล์ภาพไม่ใช่แคชที่เพิ่งสร้างตอนอัปโหลด ให้ใช้เวลาของไฟล์ภาพ
+    }
+
+    // 4. หากยังไม่มีเวลา ให้ลองสกัดเวลาจากรหัสอ้างอิงของสลิป (Reference Number Embedded Time)
+    if (hour == 0 && minute == 0 && second == 0) {
+      final refToTry = qrSlip?.referenceNo ?? ocrSlip?.referenceNo;
+      if (refToTry != null && refToTry.isNotEmpty) {
+        // รูปแบบ ค.ศ. หรือ พ.ศ. ตามด้วย HHMMSS เช่น ...20260912143522... หรือ ...25690912143500...
+        final timeFromRef = RegExp(
+          r'(?:202\d|25[6-7]\d)(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])([01]\d|2[0-3])([0-5]\d)([0-5]\d)?',
+        ).firstMatch(refToTry);
+        if (timeFromRef != null) {
+          hour = int.tryParse(timeFromRef.group(1)!) ?? 0;
+          minute = int.tryParse(timeFromRef.group(2)!) ?? 0;
+          if (timeFromRef.group(3) != null) {
+            second = int.tryParse(timeFromRef.group(3)!) ?? 0;
+          }
+        }
+      }
+    }
+
+    // 5. หากสลิปและรหัสอ้างอิงไม่มีเวลาจริง ให้ใช้เวลาของไฟล์ภาพ (ป้องกันการตกเป็น 00:00:00 เที่ยงคืน)
+    if (!ocrHasTime && !qrHasTime && hour == 0 && minute == 0 && second == 0 && fileModTime != null && !isTempCacheTime) {
       hour = fileModTime.hour;
       minute = fileModTime.minute;
       second = fileModTime.second;
@@ -484,29 +522,56 @@ class BankSlipService {
     return DateTime(year, month, day, hour, minute, second);
   }
 
-  /// นำประวัติรายการธุรกรรมในระบบมาช่วยเพิ่มความแม่นยำในการทำนายหมวดหมู่ (History-Based Learning)
+  /// นำประวัติรายการธุรกรรมในระบบมาช่วยเพิ่มความแม่นยำในการทำนายหมวดหมู่และชื่อรายการ (History-Based Learning)
   BankSlipData enrichWithHistory(BankSlipData slip) {
     try {
       if (Get.isRegistered<DashboardController>()) {
         final controller = Get.find<DashboardController>();
         final history = controller.transactions;
+        final userProfileName = controller.userName.value.isNotEmpty ? controller.userName.value : null;
         if (history.isNotEmpty) {
           final prediction = SlipCategoryPredictor.predict(
             memo: slip.memo,
             receiverName: slip.receiverName,
+            senderName: slip.senderName,
+            userProfileName: userProfileName,
             fullText: slip.rawText,
             amount: slip.amount,
             transactionDate: slip.transactionDate,
             history: history,
           );
+
+          // ตรวจสอบประวัติเพื่อค้นหาบันทึกช่วยจำ/ชื่อรายการที่เคยใช้กับผู้รับนี้ (หาก slip.memo ว่างอยู่)
+          String? learnedMemo = slip.memo;
+          if ((learnedMemo == null || learnedMemo.trim().isEmpty) &&
+              slip.receiverName != null &&
+              slip.receiverName!.trim().isNotEmpty) {
+            final cleanRecv = slip.receiverName!.trim().toLowerCase();
+            for (final tx in history) {
+              final title = tx.title.toLowerCase();
+              final note = (tx.note ?? '').toLowerCase();
+              if (title.contains(cleanRecv) ||
+                  (cleanRecv.length > 4 && cleanRecv.contains(title)) ||
+                  note.contains(cleanRecv)) {
+                if (tx.note != null && tx.note!.trim().isNotEmpty) {
+                  learnedMemo = tx.note!.trim();
+                  break;
+                }
+              }
+            }
+          }
+
           if (prediction.confidence >= slip.predictionConfidence) {
             return slip.copyWith(
+              memo: learnedMemo,
               suggestedCategory: prediction.category,
               suggestedType: prediction.type,
               suggestedCostNature: prediction.costNature,
               predictionConfidence: prediction.confidence,
               predictionReason: prediction.reason,
             );
+          } else if (learnedMemo != slip.memo) {
+            return slip.copyWith(memo: learnedMemo);
           }
         }
       }
@@ -516,7 +581,12 @@ class BankSlipService {
 
   /// แปลงข้อความสลิปเป็น `BankSlipData`
   BankSlipData parseSlipText(String text) {
-    final parsed = BankSlipParser.parse(text);
+    String? userProfileName;
+    if (Get.isRegistered<DashboardController>()) {
+      final u = Get.find<DashboardController>().userName.value;
+      if (u.isNotEmpty) userProfileName = u;
+    }
+    final parsed = BankSlipParser.parse(text, userProfileName: userProfileName);
     return enrichWithHistory(parsed);
   }
 

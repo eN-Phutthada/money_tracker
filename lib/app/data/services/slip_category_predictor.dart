@@ -56,30 +56,51 @@ class SlipCategoryPredictor {
   static SlipPrediction predict({
     String? memo,
     String? receiverName,
+    String? senderName,
+    String? userProfileName,
     required String fullText,
     required double amount,
     required DateTime transactionDate,
     List<TransactionItem> history = const [],
   }) {
+    final lowerFull = fullText.toLowerCase();
+
+    // 1. ตรวจสอบสัญญาณรายการเงินเข้าที่ชัดเจน (Explicit Income Signals)
+    // ระมัดระวังไม่ให้คำว่า "โอนเงินเข้าบัญชี..." ของสลิปโอนออกถูกเข้าใจผิดว่าเป็นเงินเข้า
+    final isExplicitIncomeHeader = lowerFull.contains('เงินเข้าสำเร็จ') ||
+        lowerFull.contains('เงินโอนเข้าสำเร็จ') ||
+        lowerFull.contains('แจ้งเตือนเงินเข้า') ||
+        lowerFull.contains('มีเงินโอนเข้า') ||
+        lowerFull.contains('รับเงินสำเร็จ') ||
+        lowerFull.contains('รับโอนเงินสำเร็จ') ||
+        lowerFull.contains('ได้รับเงินแล้ว') ||
+        lowerFull.contains('คุณได้รับเงิน') ||
+        lowerFull.contains('ท่านได้รับเงิน') ||
+        lowerFull.contains('โอนเข้าบัญชีคุณ') ||
+        lowerFull.contains('โอนเข้าบัญชีท่าน') ||
+        lowerFull.contains('incoming transfer') ||
+        lowerFull.contains('money received') ||
+        lowerFull.contains('payment received from') ||
+        RegExp(r'(^|\n)\s*เงินเข้า\s*($|\n|:)').hasMatch(lowerFull);
+
+    // 2. วิเคราะห์ประเภทธุรกรรม (รายจ่าย vs รายรับ) โดยพิจารณาจากผู้ส่งและผู้รับ
+    final resolvedType = _resolveTransactionType(
+      senderName: senderName,
+      receiverName: receiverName,
+      userProfileName: userProfileName,
+      memo: memo,
+      fullText: fullText,
+      hasExplicitIncomeSignal: isExplicitIncomeHeader,
+    );
+
     final combined =
         '${memo ?? ''} ${receiverName ?? ''} $fullText'.toLowerCase();
-
-    // ตรวจสอบสัญญาณรายการเงินเข้า (Income Signal)
-    final isIncomeSignal = combined.contains('เงินเข้า') ||
-        combined.contains('โอนเงินเข้า') ||
-        combined.contains('รับเงินสำเร็จ') ||
-        combined.contains('ได้รับเงิน') ||
-        combined.contains('เงินโอนเข้า') ||
-        combined.contains('receive money') ||
-        combined.contains('money in') ||
-        combined.contains('received') ||
-        combined.contains('โอนเข้าบัญชีคุณ');
 
     // Score map: category → accumulated score
     final scores = <String, int>{for (final d in _defs) d.category: 0};
     final hints = <String, String>{};
 
-    if (isIncomeSignal) {
+    if (resolvedType == TransactionType.income) {
       scores['ขายของ/รายได้เสริม'] = (scores['ขายของ/รายได้เสริม'] ?? 0) + 12;
       scores['เงินเดือน'] = (scores['เงินเดือน'] ?? 0) + 8;
       scores['เงินคืน/โอนคืน'] = (scores['เงินคืน/โอนคืน'] ?? 0) + 8;
@@ -128,45 +149,193 @@ class SlipCategoryPredictor {
       }
     }
 
-    // ── Find Winner ──────────────────────────────────────────────────
+    // ── Find Winner (กรองประเภทหมวดหมู่ให้สอดคล้องกับ resolvedType) ───
     String best = 'อื่นๆ';
-    int bestScore = 0;
+    int bestScore = -1;
     for (final entry in scores.entries) {
+      final catDef = _defs.firstWhere(
+        (d) => d.category == entry.key,
+        orElse: () => _fallbackDef,
+      );
+
+      // กรองไม่ให้หมวดหมู่รายรับชนะในสลิปรายจ่าย และไม่ให้หมวดหมู่รายจ่ายชนะในสลิปรายรับ
+      if (resolvedType == TransactionType.income && catDef.type == TransactionType.expense) {
+        continue;
+      }
+      if (resolvedType == TransactionType.expense && catDef.type == TransactionType.income) {
+        continue;
+      }
+
       if (entry.value > bestScore) {
         bestScore = entry.value;
         best = entry.key;
       }
     }
 
-    final fallback = isIncomeSignal ? _fallbackIncomeDef : _fallbackDef;
+    final fallback = resolvedType == TransactionType.income ? _fallbackIncomeDef : _fallbackDef;
 
     final def = _defs.firstWhere(
       (d) => d.category == best,
       orElse: () => fallback,
     );
 
+    final finalType = (resolvedType == TransactionType.income)
+        ? TransactionType.income
+        : (def.type == TransactionType.savingsInvestment
+            ? TransactionType.savingsInvestment
+            : TransactionType.expense);
+
     final confidence = _toConfidence(
-      bestScore,
+      bestScore > 0 ? bestScore : 0,
       isHistory: historyCategory == best,
       historyCount: historyCount,
     );
 
-    final reason = hints[best] ??
-        (isIncomeSignal
-            ? 'ตรวจพบสัญญาณเงินโอนเข้า'
-            : (amount > 0
-                ? 'ประมาณจากยอดเงิน ฿${amount.toStringAsFixed(0)}'
-                : 'ค่าเริ่มต้น'));
+    String defaultReason;
+    if (finalType == TransactionType.income) {
+      defaultReason = 'ตรวจพบสัญญาณเงินโอนเข้า';
+    } else if (receiverName != null && _isMerchantOrBusiness(receiverName)) {
+      defaultReason = 'ชำระเงินให้ร้านค้า/บริการ';
+    } else if (amount > 0) {
+      defaultReason = 'ประมาณจากยอดเงิน ฿${amount.toStringAsFixed(0)}';
+    } else {
+      defaultReason = 'ค่าเริ่มต้น';
+    }
+
+    final reason = hints[best] ?? defaultReason;
 
     return SlipPrediction(
       category: best,
-      type: isIncomeSignal && def.type == TransactionType.expense
-          ? TransactionType.income
-          : def.type,
-      costNature: isIncomeSignal ? CostNature.notApplicable : def.costNature,
+      type: finalType,
+      costNature: finalType == TransactionType.income
+          ? CostNature.notApplicable
+          : def.costNature,
       confidence: confidence,
       reason: reason,
     );
+  }
+
+  /// ตรวจสอบและระบุประเภทธุรกรรม (รายจ่าย vs รายรับ) โดยพิจารณาจากผู้ส่ง ผู้รับ และชื่อผู้ใช้
+  static TransactionType _resolveTransactionType({
+    String? senderName,
+    String? receiverName,
+    String? userProfileName,
+    String? memo,
+    required String fullText,
+    required bool hasExplicitIncomeSignal,
+  }) {
+    final lowerFull = fullText.toLowerCase();
+    final lowerMemo = (memo ?? '').toLowerCase();
+
+    // 1. ตรวจสอบชื่อผู้ใช้กับผู้ส่งและผู้รับ (User Profile Name Matching)
+    if (userProfileName != null && userProfileName.trim().isNotEmpty) {
+      final userClean = _cleanPersonName(userProfileName);
+      if (userClean.isNotEmpty) {
+        final senderClean = senderName != null ? _cleanPersonName(senderName) : '';
+        final receiverClean = receiverName != null ? _cleanPersonName(receiverName) : '';
+
+        // ถ้าชื่อผู้ใช้ตรงกับผู้ส่ง -> ผู้ใช้เป็นคนโอนเงินออก -> รายจ่าย 100%
+        if (senderClean.isNotEmpty && _nameMatches(senderClean, userClean)) {
+          return TransactionType.expense;
+        }
+
+        // ถ้าชื่อผู้ใช้ตรงกับผู้รับ และไม่ตรงกับผู้ส่ง -> ผู้ใช้ได้รับเงิน -> รายรับ
+        if (receiverClean.isNotEmpty &&
+            _nameMatches(receiverClean, userClean) &&
+            !_nameMatches(senderClean, userClean)) {
+          return TransactionType.income;
+        }
+      }
+    }
+
+    // 2. ถ้าผู้รับเงินเป็นร้านค้า ธุรกิจ หรือนิติบุคคล -> โอนจ่ายร้านค้า -> รายจ่าย 100%
+    if (receiverName != null && receiverName.trim().isNotEmpty) {
+      if (_isMerchantOrBusiness(receiverName)) {
+        return TransactionType.expense;
+      }
+    }
+
+    // 3. ตรวจสอบกรณีผู้ส่งเป็นบริษัท/นายจ้าง และผู้รับเป็นบุคคลธรรมดา พร้อมมีสัญญาณเงินเดือน/ค่าจ้าง -> รายรับ
+    if (senderName != null && senderName.trim().isNotEmpty) {
+      final senderIsOrg = _isMerchantOrBusiness(senderName);
+      final receiverIsPerson = receiverName == null || !_isMerchantOrBusiness(receiverName);
+      final hasSalaryKeyword = lowerMemo.contains('เงินเดือน') ||
+          lowerMemo.contains('salary') ||
+          lowerMemo.contains('payroll') ||
+          lowerMemo.contains('ค่าจ้าง') ||
+          lowerMemo.contains('ค่าแรง') ||
+          lowerMemo.contains('โบนัส') ||
+          lowerMemo.contains('bonus') ||
+          lowerMemo.contains('รายได้') ||
+          lowerFull.contains('เงินเดือน') ||
+          lowerFull.contains('payroll');
+
+      if (senderIsOrg && receiverIsPerson && (hasSalaryKeyword || hasExplicitIncomeSignal)) {
+        return TransactionType.income;
+      }
+    }
+
+    // 4. สัญญาณเงินเข้าที่ระบุชัดเจน (เช่น หัวสลิประบุ เงินเข้าสำเร็จ, เงินโอนเข้าสำเร็จ)
+    if (hasExplicitIncomeSignal) {
+      return TransactionType.income;
+    }
+
+    // 5. สลิปการโอนเงินทั่วไปของธนาคารในโทรศัพท์ -> สันนิษฐานเป็น "รายจ่าย" (Expense) เป็นค่าเริ่มต้น
+    return TransactionType.expense;
+  }
+
+  /// ทำความสะอาดชื่อบุคคลเพื่อเปรียบเทียบความตรงกัน
+  static String _cleanPersonName(String name) {
+    return name
+        .toLowerCase()
+        .replaceAll(
+          RegExp(
+            r'(นาย|นาง|นางสาว|น\.ส\.|ด\.ช\.|ด\.ญ\.|mr\.?|ms\.?|mrs\.?|dr\.?)\s*',
+            caseSensitive: false,
+          ),
+          '',
+        )
+        .replaceAll(RegExp(r'[\*\.\-_\s]'), '')
+        .trim();
+  }
+
+  /// เปรียบเทียบชื่อบุคคล 2 ชื่อ (รองรับกรณีมีตัวอักษร Masking เช่น พุทธดา ห * * *)
+  static bool _nameMatches(String nameA, String nameB) {
+    final a = _cleanPersonName(nameA);
+    final b = _cleanPersonName(nameB);
+    if (a.isEmpty || b.isEmpty) return false;
+    if (a == b) return true;
+    if (a.length >= 3 && b.length >= 3) {
+      return a.contains(b) || b.contains(a);
+    }
+    return false;
+  }
+
+  /// ตรวจสอบว่าชื่อผู้รับ/ผู้ส่งเป็นนิติบุคคล ร้านค้า หรือบริการหรือไม่
+  static bool _isMerchantOrBusiness(String name) {
+    final lower = name.toLowerCase().trim();
+    final prefixes = [
+      'ร้าน', 'บจก.', 'บริษัท', 'หจก.', 'บมจ.', 'โรงพยาบาล', 'รพ.', 'คลินิก',
+      'การไฟฟ้า', 'การประปา', 'เทศบาล', 'มหาวิทยาลัย', 'โรงเรียน', 'สำนักงาน',
+      'สหกรณ์', 'ห้างหุ้นส่วน', 'ห้างสรรพสินค้า', 'ซุปเปอร์', 'มินิมาร์ท',
+      'บลจ.', 'บมจ', 'บจ.',
+    ];
+    for (final p in prefixes) {
+      if (name.startsWith(p) || lower.startsWith(p)) return true;
+    }
+    final keywords = [
+      'co.,', 'ltd', 'limited', 'inc', 'corp', 'store', 'shop', 'market',
+      'cafe', 'coffee', 'restaurant', 'express', 'shopee', 'lazada', 'grab',
+      'lineman', 'foodpanda', 'netflix', 'spotify', 'apple', 'google',
+      '7-eleven', 'เซเว่น', 'โลตัส', 'บิ๊กซี', 'ท็อปส์', 'amazon', 'station',
+      'service', 'clinic', 'hospital', 'delivery', 'kfc', 'mcdonald',
+      'starbucks', 'ptt', 'ปตท', 'bbl', 'ktb', 'scb', 'kbank', 'ktam',
+      'dime', 'uob', 'ttb', 'cimb', 'tisco', 'shopeepay', 'truemoney',
+    ];
+    for (final kw in keywords) {
+      if (lower.contains(kw)) return true;
+    }
+    return false;
   }
 
   // ─── Helpers ──────────────────────────────────────────────────────────────

@@ -398,7 +398,7 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      item.slip.receiverName ?? item.slip.suggestedCategory,
+                      item.slip.receiverName ?? item.slip.defaultTitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
