@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
@@ -599,6 +600,8 @@ class BankSlipService {
     TransactionType? customType,
     CostNature? customCostNature,
     DateTime? customDate,
+    DateTime? customTime,
+    TimeOfDay? customTimeOfDay,
     bool notify = true,
   }) {
     final controller = Get.find<DashboardController>();
@@ -609,6 +612,8 @@ class BankSlipService {
       customType: customType,
       customCostNature: customCostNature,
       customDate: customDate,
+      customTime: customTime,
+      customTimeOfDay: customTimeOfDay,
     );
 
     controller.addTransaction(transactionItem, notify: false);

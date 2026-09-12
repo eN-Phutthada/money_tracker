@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import '../../../data/models/transaction_model.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_popup_decorations.dart';
@@ -306,6 +307,25 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
           picked.day,
           _selectedDate.hour,
           _selectedDate.minute,
+        );
+      });
+    }
+  }
+
+  Future<void> _pickTime() async {
+    HapticFeedback.selectionClick();
+    final pickedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: _selectedDate.hour, minute: _selectedDate.minute),
+    );
+    if (pickedTime != null) {
+      setState(() {
+        _selectedDate = DateTime(
+          _selectedDate.year,
+          _selectedDate.month,
+          _selectedDate.day,
+          pickedTime.hour,
+          pickedTime.minute,
         );
       });
     }
@@ -863,6 +883,33 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
                           borderRadius: BorderRadius.circular(7),
                         ),
                         child: const Icon(Icons.edit_calendar_rounded, size: 14, color: AppColors.primary),
+                      ),
+                    ),
+                    const SizedBox(width: 5),
+                    InkWell(
+                      onTap: _pickTime,
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(7),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.access_time_rounded, size: 13, color: AppColors.primary),
+                            const SizedBox(width: 3),
+                            Text(
+                              DateFormat('HH:mm').format(_selectedDate),
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],

@@ -1019,10 +1019,16 @@ class _BankSlipSheetState extends State<BankSlipSheet> {
 
   void _onTypeChanged(TransactionType newType) {
     setState(() {
+      final oldPredictedTitle = widget.slip.getPredictedTitle(type: _selectedType);
+      final isTitleUntouched = _titleController.text.trim() == oldPredictedTitle ||
+          _titleController.text.trim().isEmpty;
       _selectedType = newType;
       final cats = _currentCategories;
       if (!cats.contains(_selectedCategory)) {
         _selectedCategory = cats.first;
+      }
+      if (isTitleUntouched) {
+        _titleController.text = widget.slip.getPredictedTitle(type: newType);
       }
     });
   }

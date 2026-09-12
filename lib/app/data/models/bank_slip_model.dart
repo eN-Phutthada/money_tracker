@@ -1,4 +1,6 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../modules/dashboard/controllers/dashboard_controller.dart';
 import 'transaction_model.dart';
 
 /// โมเดลข้อมูลสลิปโอนเงินธนาคารไทยทุกแห่ง (K PLUS, SCB EASY, Krungthai NEXT, เป๋าตัง, Bualuang, ttb, MyMo, BAAC ฯลฯ)
@@ -25,7 +27,7 @@ class BankSlipData {
   /// ความมั่นใจในการทำนายหมวดหมู่ 0.0–1.0 (จาก SlipCategoryPredictor)
   final double predictionConfidence;
 
-  /// เหตุผลสั้นๆ ที่ระบบทำนายหมวดหมู่นี้ สำหรับแสดง UI
+  /// เหตุผลสั้นๆ ที่ระบบแนะนำหมวดหมู่นี้
   final String predictionReason;
 
   const BankSlipData({
@@ -37,16 +39,16 @@ class BankSlipData {
     this.receiverAccount,
     this.referenceNo,
     this.memo,
-    this.bankName = 'ธนาคารกรุงไทย',
-    this.isKrungthai = true,
-    this.suggestedCategory = 'อื่นๆ',
-    this.suggestedType = TransactionType.expense,
-    this.suggestedCostNature = CostNature.variable,
-    this.rawText = '',
-    this.hasParsedDateTime = false,
-    this.hasParsedTime = false,
-    this.predictionConfidence = 0.5,
-    this.predictionReason = '',
+    required this.bankName,
+    required this.isKrungthai,
+    required this.suggestedCategory,
+    required this.suggestedType,
+    required this.suggestedCostNature,
+    required this.rawText,
+    required this.hasParsedDateTime,
+    required this.hasParsedTime,
+    required this.predictionConfidence,
+    required this.predictionReason,
   });
 
   /// สร้างสำเนาที่มีค่าบางฟิลด์ถูกแทนที่ (สำหรับ history-based enhancement)
@@ -92,89 +94,177 @@ class BankSlipData {
     );
   }
 
+  /// ดึงรหัสภาษาปัจจุบันของแอปพลิเคชันอย่างแม่นยำ (th หรือ en)
+  static String get _currentAppLanguage {
+    try {
+      if (Get.isRegistered<DashboardController>()) {
+        final ctrl = Get.find<DashboardController>();
+        final lang = ctrl.currentLanguage.value.trim().toLowerCase();
+        if (lang == 'en' || lang == 'th') return lang;
+      }
+    } catch (_) {}
+    try {
+      final loc = Get.locale?.languageCode.trim().toLowerCase();
+      if (loc == 'en' || loc == 'th') return loc!;
+    } catch (_) {}
+    try {
+      final sysLang = WidgetsBinding.instance.platformDispatcher.locale.languageCode.toLowerCase();
+      if (sysLang == 'en' || sysLang == 'th') return sysLang;
+    } catch (_) {}
+    return 'th';
+  }
+
   /// ชื่อรายการเริ่มต้นที่กระชับและเข้าใจง่าย (รองรับทั้งภาษาไทยและอังกฤษตามภาษาปัจจุบันของแอป)
   String get defaultTitle => getPredictedTitle();
 
-  /// ทำนายชื่อรายการโดยอ้างอิงภาษาที่เลือก (th หรือ en) พร้อมแยกแยะประเภทบุคคล/ร้านค้าอย่างแม่นยำ
-  String getPredictedTitle({String? langCode}) {
-    // กำหนดภาษาโดยดูจาก langCode หรือตรวจจับจากภาษาของสลิป/ชื่อคู่กรณีเป็นหลัก
-    final hasThaiChar = (receiverName?.contains(RegExp(r'[\u0E00-\u0E7F]')) ?? false) ||
-        (senderName?.contains(RegExp(r'[\u0E00-\u0E7F]')) ?? false) ||
-        rawText.contains(RegExp(r'[\u0E00-\u0E7F]')) ||
-        bankName.contains(RegExp(r'[\u0E00-\u0E7F]'));
-
-    final effectiveLang = langCode?.toLowerCase() ??
-        (hasThaiChar ? 'th' : (Get.locale?.languageCode.toLowerCase() ?? 'th'));
+  /// ทำนายชื่อรายการโดยอ้างอิงภาษาปัจจุบันของแอปพลิเคชัน (th หรือ en) พร้อมแยกแยะประเภทบุคคล/ร้านค้าอย่างแม่นยำ
+  String getPredictedTitle({String? langCode, TransactionType? type}) {
+    final effectiveLang = (langCode != null && langCode.trim().isNotEmpty)
+        ? langCode.trim().toLowerCase()
+        : _currentAppLanguage;
     final isEnglish = effectiveLang == 'en';
+    final activeType = type ?? suggestedType;
 
-    if (memo != null && memo!.trim().isNotEmpty) {
-      return memo!.trim();
+    // หากผู้ใช้มีบันทึกช่วยจำที่ไม่ใช่ข้อความทั่วไปของระบบ ให้ใช้ข้อความบันทึกเป็นชื่อรายการ
+    final cleanMemo = memo?.trim();
+    if (cleanMemo != null && cleanMemo.isNotEmpty) {
+      final lowerMemo = cleanMemo.toLowerCase();
+      final isGenericMemo = lowerMemo == 'โอนเงิน' ||
+          lowerMemo == 'เงินโอน' ||
+          lowerMemo == 'พร้อมเพย์' ||
+          lowerMemo == 'promptpay' ||
+          lowerMemo == 'transfer' ||
+          lowerMemo == 'payment' ||
+          lowerMemo == 'qr payment';
+      if (!isGenericMemo) {
+        return cleanMemo;
+      }
     }
 
-    if (suggestedType == TransactionType.income) {
+    // กรณีเงินเข้า (Income)
+    if (activeType == TransactionType.income) {
       if (senderName != null && senderName!.trim().isNotEmpty) {
         final name = senderName!.trim();
+        final isOrg = _isBusinessOrOrg(name);
+
         if (isEnglish) {
-          if (name.toLowerCase().startsWith('from ') ||
-              name.toLowerCase().startsWith('received from ')) {
-            return name;
+          var cleanName = name;
+          if (cleanName.startsWith('รับเงินจาก ')) {
+            cleanName = cleanName.substring('รับเงินจาก '.length).trim();
+          } else if (cleanName.startsWith('รับจาก ')) {
+            cleanName = cleanName.substring('รับจาก '.length).trim();
+          } else if (cleanName.startsWith('รายได้จาก ')) {
+            cleanName = cleanName.substring('รายได้จาก '.length).trim();
           }
-          final isOrg = _isBusinessOrOrg(name);
-          return isOrg ? 'Income from $name' : 'Received from $name';
+
+          final lower = cleanName.toLowerCase();
+          if (lower.startsWith('from ') ||
+              lower.startsWith('received from ') ||
+              lower.startsWith('income from ')) {
+            return cleanName;
+          }
+          return isOrg ? 'Income from $cleanName' : 'Received from $cleanName';
         } else {
-          if (name.startsWith('รับจาก') || name.startsWith('รับเงินจาก')) {
-            return name;
+          var cleanName = name;
+          final lower = cleanName.toLowerCase();
+          if (lower.startsWith('received from ')) {
+            cleanName = cleanName.substring('received from '.length).trim();
+          } else if (lower.startsWith('income from ')) {
+            cleanName = cleanName.substring('income from '.length).trim();
+          } else if (lower.startsWith('from ')) {
+            cleanName = cleanName.substring(5).trim();
           }
-          final isOrg = _isBusinessOrOrg(name);
-          return isOrg ? 'รายได้จาก $name' : 'รับเงินจาก $name';
+
+          if (cleanName.startsWith('รับจาก') ||
+              cleanName.startsWith('รับเงินจาก') ||
+              cleanName.startsWith('รายได้จาก')) {
+            return cleanName;
+          }
+          return isOrg ? 'รายได้จาก $cleanName' : 'รับเงินจาก $cleanName';
         }
       }
+
       if (suggestedCategory.isNotEmpty &&
           suggestedCategory != 'อื่นๆ' &&
-          suggestedCategory != 'โอนเงิน/ธุรกรรม') {
+          suggestedCategory != 'Other' &&
+          suggestedCategory != 'Others' &&
+          suggestedCategory != 'โอนเงิน/ธุรกรรม' &&
+          suggestedCategory != 'Transfers & Transactions') {
         if (isEnglish) {
           final translatedCat = _translateCategory(suggestedCategory);
           return 'Income: $translatedCat';
         } else {
-          return 'เงินได้ $suggestedCategory';
+          final thaiCat = _translateCategoryToThai(suggestedCategory);
+          return 'เงินได้ $thaiCat';
         }
       }
+
       return isEnglish ? 'Incoming Transfer' : 'เงินโอนเข้า';
     }
 
-    // Expense & Savings / Transfer
+    // กรณีเงินออก (Expense & Savings / Transfer)
     if (receiverName != null && receiverName!.trim().isNotEmpty) {
       final name = receiverName!.trim();
       final isMerchant = _isBusinessOrMerchant(name);
 
       if (isEnglish) {
-        if (name.toLowerCase().startsWith('to ') ||
-            name.toLowerCase().startsWith('transfer to ') ||
-            name.toLowerCase().startsWith('pay ')) {
-          return name;
+        var cleanName = name;
+        if (cleanName.startsWith('โอนให้ ')) {
+          cleanName = cleanName.substring('โอนให้ '.length).trim();
+        } else if (cleanName.startsWith('โอนไปยัง ')) {
+          cleanName = cleanName.substring('โอนไปยัง '.length).trim();
+        } else if (cleanName.startsWith('จ่าย ')) {
+          cleanName = cleanName.substring('จ่าย '.length).trim();
         }
-        return isMerchant ? 'Pay $name' : 'Transfer to $name';
+
+        final lower = cleanName.toLowerCase();
+        if (lower.startsWith('to ') ||
+            lower.startsWith('transfer to ') ||
+            lower.startsWith('pay ')) {
+          return cleanName;
+        }
+        return isMerchant ? 'Pay $cleanName' : 'Transfer to $cleanName';
       } else {
-        if (name.startsWith('โอนให้') ||
-            name.startsWith('โอนไปยัง') ||
-            name.startsWith('จ่าย')) {
-          return name;
+        var cleanName = name;
+        final lower = cleanName.toLowerCase();
+        if (lower.startsWith('to ')) {
+          cleanName = cleanName.substring(3).trim();
+        } else if (lower.startsWith('transfer to ')) {
+          cleanName = cleanName.substring('transfer to '.length).trim();
+        } else if (lower.startsWith('pay ')) {
+          cleanName = cleanName.substring('pay '.length).trim();
         }
-        // สอดคล้องกับพฤติกรรมภาษาไทยที่เป็นธรรมชาติ
-        if (name.startsWith('ร้าน ')) {
-          return 'จ่าย $name';
+
+        if (cleanName.startsWith('โอนให้') ||
+            cleanName.startsWith('โอนไปยัง') ||
+            cleanName.startsWith('จ่าย')) {
+          return cleanName;
         }
-        return 'โอนให้ $name';
+        if (isMerchant || cleanName.startsWith('ร้าน ')) {
+          return 'จ่าย $cleanName';
+        }
+        return 'โอนให้ $cleanName';
       }
     }
 
     if (suggestedCategory.isNotEmpty &&
         suggestedCategory != 'อื่นๆ' &&
-        suggestedCategory != 'โอนเงิน/ธุรกรรม') {
+        suggestedCategory != 'Other' &&
+        suggestedCategory != 'Others' &&
+        suggestedCategory != 'โอนเงิน/ธุรกรรม' &&
+        suggestedCategory != 'Transfers & Transactions') {
       if (isEnglish) {
-        return _translateCategory(suggestedCategory);
+        final translatedCat = _translateCategory(suggestedCategory);
+        return 'Expense: $translatedCat';
       } else {
-        return 'ค่า$suggestedCategory';
+        final thaiCat = _translateCategoryToThai(suggestedCategory);
+        if (thaiCat.startsWith('ค่า') ||
+            thaiCat.startsWith('เงิน') ||
+            thaiCat.startsWith('การ') ||
+            thaiCat.startsWith('ช้อปปิ้ง')) {
+          return thaiCat;
+        }
+        return 'ค่า$thaiCat';
       }
     }
 
@@ -184,24 +274,110 @@ class BankSlipData {
   static String _translateCategory(String category) {
     const mapped = {
       'อาหารและเครื่องดื่ม': 'Food & Dining',
+      'อาหาร/ของกิน': 'Food & Dining',
+      'กาแฟ/เครื่องดื่ม': 'Coffee & Drinks',
       'ช้อปปิ้ง': 'Shopping',
-      'ที่อยู่อาศัย': 'Housing',
+      'ที่อยู่อาศัย': 'Housing & Rent',
+      'ค่าที่พัก/หอพัก': 'Rent & Housing',
       'การเดินทาง': 'Transportation',
-      'สุขภาพ/ยา': 'Healthcare & Medical',
-      'การศึกษา': 'Education',
+      'เดินทาง': 'Transportation',
+      'เดินทาง/ขนส่ง': 'Transit & Transportation',
+      'สุขภาพ/ยา': 'Health & Medical',
+      'สุขภาพ': 'Health & Fitness',
+      'การศึกษา': 'Education & Study',
       'ความบันเทิง': 'Entertainment',
+      'บันเทิง': 'Entertainment',
+      'บันเทิง/พักผ่อน': 'Entertainment & Leisure',
       'การลงทุน': 'Investments',
       'เงินเดือน': 'Salary',
       'ธุรกิจ/ขายของ': 'Business & Sales',
-      'โอนเงิน/ธุรกรรม': 'Transfers',
+      'ขายของ': 'Commerce & Sales',
+      'ขายของ/รายได้เสริม': 'Commerce & Side Hustle',
+      'ฟรีแลนซ์/งานเสริม': 'Freelance & Gig',
+      'ฟรีแลนซ์': 'Freelance',
+      'โบนัส': 'Bonus',
+      'โอนเงิน/ธุรกรรม': 'Transfers & Transactions',
       'บิล/สาธารณูปโภค': 'Bills & Utilities',
+      'สาธารณูปโภค': 'Utilities & Bills',
       'ประกันภัย': 'Insurance',
       'ท่องเที่ยว': 'Travel & Vacation',
       'บริจาค/ทำบุญ': 'Donations & Charity',
       'ของใช้ส่วนตัว': 'Personal Care',
-      'อื่นๆ': 'Others',
+      'ของใช้': 'Daily Goods',
+      'เงินคืน/โอนคืน': 'Refunds & Returns',
+      'เงินออม/DCA': 'Savings / DCA',
+      'กองทุนรวม': 'Mutual Funds',
+      'หุ้น': 'Stocks',
+      'หุ้น/ตราสาร': 'Stocks & Bonds',
+      'หุ้น/คริปโต': 'Stocks / Crypto',
+      'เงินสำรองฉุกเฉิน': 'Emergency Fund',
+      'สำรองฉุกเฉิน': 'Emergency Fund',
+      'สินทรัพย์อื่นๆ': 'Other Assets',
+      'คริปโต/สินทรัพย์ดิจิทัล': 'Crypto & Digital Assets',
+      'สลากออมทรัพย์': 'Savings Lottery',
+      'ทองคำ': 'Gold Assets',
+      'ดอกเบี้ย/ปันผล': 'Dividends/Interest',
+      'เงินปันผล/ดอกเบี้ย': 'Dividends/Interest',
+      'รายรับอื่นๆ': 'Other Income',
+      'อื่นๆ': 'Other',
+      'Other': 'Other',
+      'Others': 'Other',
     };
     if (mapped.containsKey(category)) return mapped[category]!;
+    try {
+      final trVal = category.tr;
+      if (trVal.isNotEmpty && trVal != category) return trVal;
+    } catch (_) {}
+    return category;
+  }
+
+  static String _translateCategoryToThai(String category) {
+    const mappedToThai = {
+      'Food & Dining': 'อาหาร/ของกิน',
+      'Coffee & Drinks': 'กาแฟ/เครื่องดื่ม',
+      'Shopping': 'ช้อปปิ้ง',
+      'Personal Care': 'ของใช้ส่วนตัว',
+      'Daily Goods': 'ของใช้',
+      'Housing & Rent': 'ที่อยู่อาศัย',
+      'Rent & Housing': 'ค่าที่พัก/หอพัก',
+      'Utilities & Bills': 'สาธารณูปโภค',
+      'Bills & Utilities': 'บิล/สาธารณูปโภค',
+      'Transportation': 'การเดินทาง',
+      'Transit & Transportation': 'เดินทาง/ขนส่ง',
+      'Health & Medical': 'สุขภาพ/ยา',
+      'Health & Fitness': 'สุขภาพ',
+      'Education & Study': 'การศึกษา',
+      'Entertainment & Leisure': 'บันเทิง/พักผ่อน',
+      'Entertainment': 'บันเทิง',
+      'Investments': 'การลงทุน',
+      'Savings / DCA': 'เงินออม/DCA',
+      'Mutual Funds': 'กองทุนรวม',
+      'Stocks': 'หุ้น',
+      'Stocks & Bonds': 'หุ้น/ตราสาร',
+      'Stocks / Crypto': 'หุ้น/คริปโต',
+      'Savings Lottery': 'สลากออมทรัพย์',
+      'Gold Assets': 'ทองคำ',
+      'Emergency Fund': 'เงินสำรองฉุกเฉิน',
+      'Other Assets': 'สินทรัพย์อื่นๆ',
+      'Crypto & Digital Assets': 'คริปโต/สินทรัพย์ดิจิทัล',
+      'Salary': 'เงินเดือน',
+      'Business & Sales': 'ธุรกิจ/ขายของ',
+      'Commerce & Sales': 'ขายของ',
+      'Commerce & Side Hustle': 'ขายของ/รายได้เสริม',
+      'Freelance & Gig': 'ฟรีแลนซ์/งานเสริม',
+      'Freelance': 'ฟรีแลนซ์',
+      'Bonus': 'โบนัส',
+      'Dividends/Interest': 'เงินปันผล/ดอกเบี้ย',
+      'Refunds & Returns': 'เงินคืน/โอนคืน',
+      'Other Income': 'รายรับอื่นๆ',
+      'Transfers & Transactions': 'โอนเงิน/ธุรกรรม',
+      'Insurance': 'ประกันภัย',
+      'Travel & Vacation': 'ท่องเที่ยว',
+      'Donations & Charity': 'บริจาค/ทำบุญ',
+      'Other': 'อื่นๆ',
+      'Others': 'อื่นๆ',
+    };
+    if (mappedToThai.containsKey(category)) return mappedToThai[category]!;
     try {
       final trVal = category.tr;
       if (trVal.isNotEmpty && trVal != category) return trVal;
@@ -238,25 +414,33 @@ class BankSlipData {
   }
 
   /// บันทึกประกอบรายการที่มีรหัสอ้างอิงธุรกรรมกำกับ
-  String get formattedNote {
+  String get formattedNote => getFormattedNote();
+
+  /// บันทึกประกอบรายการพร้อมระบุภาษา (th หรือ en)
+  String getFormattedNote({String? langCode}) {
+    final effectiveLang = (langCode != null && langCode.trim().isNotEmpty)
+        ? langCode.trim().toLowerCase()
+        : _currentAppLanguage;
+    final isEnglish = effectiveLang == 'en';
+
     final parts = <String>[];
     if (memo != null && memo!.trim().isNotEmpty) {
-      parts.add('บันทึก: ${memo!.trim()}');
+      parts.add(isEnglish ? 'Note: ${memo!.trim()}' : 'บันทึก: ${memo!.trim()}');
     }
     if (suggestedType == TransactionType.income && senderName != null && senderName!.trim().isNotEmpty) {
-      parts.add('ผู้โอน: ${senderName!.trim()}');
+      parts.add(isEnglish ? 'Sender: ${senderName!.trim()}' : 'ผู้โอน: ${senderName!.trim()}');
     }
     if (receiverName != null && receiverName!.trim().isNotEmpty) {
-      parts.add('ผู้รับ: ${receiverName!.trim()}');
+      parts.add(isEnglish ? 'Receiver: ${receiverName!.trim()}' : 'ผู้รับ: ${receiverName!.trim()}');
     }
     if (referenceNo != null && referenceNo!.trim().isNotEmpty) {
-      parts.add('รหัสอ้างอิง: ${referenceNo!.trim()}');
+      parts.add(isEnglish ? 'Ref: ${referenceNo!.trim()}' : 'รหัสอ้างอิง: ${referenceNo!.trim()}');
     }
-    parts.add('สลิป: $bankName');
+    parts.add(isEnglish ? 'Slip: $bankName' : 'สลิป: $bankName');
     return parts.join(' | ');
   }
 
-  /// แปลงข้อมูลสลิปเป็น TransactionItem สำหรับบันทึกลงระบบ
+  /// แปลงข้อมูลสลิปเป็น TransactionItem สำหรับบันทึกลงระบบ (รองรับการกำหนดวันและเวลาที่บันทึกรายการ)
   TransactionItem toTransactionItem({
     double? customAmount,
     String? customTitle,
@@ -264,6 +448,9 @@ class BankSlipData {
     TransactionType? customType,
     CostNature? customCostNature,
     DateTime? customDate,
+    DateTime? customTime,
+    TimeOfDay? customTimeOfDay,
+    String? langCode,
   }) {
     final type = customType ?? suggestedType;
     final costNature = type == TransactionType.expense
@@ -272,17 +459,37 @@ class BankSlipData {
 
     final idPrefix = isKrungthai ? 'ktb' : 'slip';
 
+    DateTime resolvedDate = customDate ?? transactionDate;
+    if (customTime != null) {
+      resolvedDate = DateTime(
+        resolvedDate.year,
+        resolvedDate.month,
+        resolvedDate.day,
+        customTime.hour,
+        customTime.minute,
+        customTime.second,
+      );
+    } else if (customTimeOfDay != null) {
+      resolvedDate = DateTime(
+        resolvedDate.year,
+        resolvedDate.month,
+        resolvedDate.day,
+        customTimeOfDay.hour,
+        customTimeOfDay.minute,
+      );
+    }
+
     return TransactionItem(
       id: referenceNo != null && referenceNo!.isNotEmpty
           ? '${idPrefix}_${referenceNo!}'
           : '${idPrefix}_${DateTime.now().millisecondsSinceEpoch}',
-      title: customTitle ?? defaultTitle,
+      title: customTitle ?? getPredictedTitle(langCode: langCode, type: type),
       amount: customAmount ?? amount,
       type: type,
       costNature: costNature,
       categoryName: customCategory ?? suggestedCategory,
-      date: customDate ?? transactionDate,
-      note: formattedNote,
+      date: resolvedDate,
+      note: getFormattedNote(langCode: langCode),
     );
   }
 

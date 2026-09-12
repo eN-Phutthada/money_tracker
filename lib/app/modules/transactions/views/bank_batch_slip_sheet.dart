@@ -64,13 +64,15 @@ class _BatchItemState {
   final bool isDuplicate;
   bool isSelected;
   String category;
+  DateTime date;
 
   _BatchItemState({
     required this.slip,
     this.isDuplicate = false,
     required this.isSelected,
     required this.category,
-  });
+    DateTime? date,
+  }) : date = date ?? slip.transactionDate;
 }
 
 class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
@@ -107,6 +109,7 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
           isDuplicate: false,
           isSelected: true,
           category: slip.suggestedCategory,
+          date: slip.transactionDate,
         ),
       );
     }
@@ -121,6 +124,7 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
           isDuplicate: true,
           isSelected: false,
           category: slip.suggestedCategory,
+          date: slip.transactionDate,
         ),
       );
     }
@@ -131,6 +135,33 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
   double get _selectedTotalAmount => _items
       .where((i) => i.isSelected)
       .fold(0.0, (sum, i) => sum + i.slip.amount);
+
+  Future<void> _pickDateTimeForItem(_BatchItemState item) async {
+    HapticFeedback.selectionClick();
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: item.date,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2035),
+    );
+    if (pickedDate == null || !mounted) return;
+
+    final pickedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: item.date.hour, minute: item.date.minute),
+    );
+    if (!mounted) return;
+
+    setState(() {
+      item.date = DateTime(
+        pickedDate.year,
+        pickedDate.month,
+        pickedDate.day,
+        pickedTime?.hour ?? item.date.hour,
+        pickedTime?.minute ?? item.date.minute,
+      );
+    });
+  }
 
   Future<void> _saveSelectedSlips() async {
     final selected = _items.where((i) => i.isSelected).toList();
@@ -146,6 +177,7 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
         slipService.saveSlipTransaction(
           item.slip,
           customCategory: item.category,
+          customDate: item.date,
           notify: false,
         );
         savedCount++;
@@ -398,7 +430,7 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      item.slip.receiverName ?? item.slip.defaultTitle,
+                      item.slip.defaultTitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -408,11 +440,32 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
                       ),
                     ),
                     const SizedBox(height: 2),
-                    Text(
-                      '${item.slip.bankName} • ${DateFormat('d MMM yyyy, HH:mm น.').format(item.slip.transactionDate)}',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                    InkWell(
+                      onTap: () => _pickDateTimeForItem(item),
+                      borderRadius: BorderRadius.circular(6),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 2),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Flexible(
+                              child: Text(
+                                '${item.slip.bankName} • ${DateFormat('d MMM yyyy, HH:mm น.').format(item.date)}',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(
+                              Icons.access_time_rounded,
+                              size: 11,
+                              color: const Color(0xFF00A3E0),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
