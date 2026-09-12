@@ -5,7 +5,7 @@ import 'package:liquid_glass_easy/liquid_glass_easy.dart';
 import '../modules/dashboard/controllers/dashboard_controller.dart';
 import '../modules/security/controllers/security_controller.dart';
 import '../modules/transactions/views/quick_add_bottom_sheet.dart';
-import '../modules/transactions/views/krungthai_slip_sheet.dart';
+import '../modules/transactions/views/bank_slip_sheet.dart';
 import '../routes/app_routes.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_popup_decorations.dart';
@@ -328,7 +328,7 @@ class LiquidGlassNavDock extends StatelessWidget {
         onSelected: (val) {
           HapticFeedback.selectionClick();
           if (val == 'slip') {
-            KrungthaiSlipScanModal.show(context);
+            BankSlipScanModal.show(context);
           } else if (val == 'theme') {
             showThemePickerDialog(context);
           } else if (val == 'language') {
@@ -586,7 +586,7 @@ class LiquidGlassNavDock extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'scan_krungthai_slip'.tr,
+                      'scan_bank_slip'.tr,
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,

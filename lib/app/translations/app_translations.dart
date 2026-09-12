@@ -333,6 +333,7 @@ class AppTranslations extends Translations {
       'warning': 'แจ้งเตือน',
 
       // Bank Slip & OCR Scanner
+      'scan_bank_slip': 'สแกนสลิปโอนเงิน',
       'scan_krungthai_slip': 'สแกนสลิปโอนเงิน',
       'scan_slip_all_banks': 'สแกนสลิปโอนเงิน (ทุกธนาคาร)',
       'slip_all_banks_supported': 'รองรับทุกธนาคาร (หลัก: กรุงไทย, กสิกร, SCB และทุกแอป)',
@@ -822,6 +823,7 @@ class AppTranslations extends Translations {
       'warning': 'Notice',
 
       // Bank Slip & OCR Scanner
+      'scan_bank_slip': 'Scan Transfer Slip',
       'scan_krungthai_slip': 'Scan Transfer Slip',
       'scan_slip_all_banks': 'Scan Transfer Slip (All Banks)',
       'slip_all_banks_supported': 'Supports all Thai banks (Krungthai, KBank, SCB, etc.)',

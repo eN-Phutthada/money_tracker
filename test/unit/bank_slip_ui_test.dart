@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
-import 'package:money_tracker/app/data/models/krungthai_slip_model.dart';
+import 'package:money_tracker/app/data/models/bank_slip_model.dart';
 import 'package:money_tracker/app/data/models/transaction_model.dart';
-import 'package:money_tracker/app/data/services/krungthai_slip_service.dart';
+import 'package:money_tracker/app/data/services/bank_slip_service.dart';
 import 'package:money_tracker/app/modules/dashboard/controllers/dashboard_controller.dart';
-import 'package:money_tracker/app/modules/transactions/views/krungthai_slip_sheet.dart';
+import 'package:money_tracker/app/modules/transactions/views/bank_slip_sheet.dart';
 import 'package:money_tracker/app/theme/app_theme.dart';
 import 'package:money_tracker/app/translations/app_translations.dart';
 import 'package:money_tracker/app/widgets/app_feedback.dart';
@@ -18,7 +18,7 @@ void main() {
     Get.addTranslations(AppTranslations().keys);
     Get.locale = const Locale('th', 'TH');
     Get.put(DashboardController());
-    KrungthaiSlipService().isInstantAutoSave.value = false;
+    BankSlipService().isInstantAutoSave.value = false;
   });
 
   tearDown(() {
@@ -27,7 +27,7 @@ void main() {
   });
 
   group('Krungthai Slip UI & Modal Tests', () {
-    testWidgets('1. KrungthaiSlipScanModal renders all options and Mode A/B toggle', (tester) async {
+    testWidgets('1. BankSlipScanModal renders all options and Mode A/B toggle', (tester) async {
       await tester.binding.setSurfaceSize(const Size(430, 932));
 
       await tester.pumpWidget(
@@ -36,14 +36,14 @@ void main() {
           locale: const Locale('th', 'TH'),
           translations: AppTranslations(),
           home: const Scaffold(
-            body: KrungthaiSlipScanModal(),
+            body: BankSlipScanModal(),
           ),
         ),
       );
       await tester.pumpAndSettle();
 
       // Check header and branding
-      expect(find.text('scan_krungthai_slip'.tr), findsOneWidget);
+      expect(find.text('scan_bank_slip'.tr), findsOneWidget);
       expect(find.text('slip_all_banks_supported'.tr), findsOneWidget);
 
       // Check scan methods
@@ -64,10 +64,10 @@ void main() {
       expect(find.text('mode_b_instant'.tr), findsOneWidget);
     });
 
-    testWidgets('2. KrungthaiSlipSheet renders extracted slip data in Mode A for confirmation', (tester) async {
+    testWidgets('2. BankSlipSheet renders extracted slip data in Mode A for confirmation', (tester) async {
       await tester.binding.setSurfaceSize(const Size(430, 1200));
 
-      final slip = KrungthaiSlipData(
+      final slip = BankSlipData(
         bankName: 'ธนาคารกรุงไทย (Krungthai NEXT)',
         amount: 350.0,
         transactionDate: DateTime(2026, 9, 11, 12, 35),
@@ -88,7 +88,7 @@ void main() {
           locale: const Locale('th', 'TH'),
           translations: AppTranslations(),
           home: Scaffold(
-            body: KrungthaiSlipSheet(slip: slip),
+            body: BankSlipSheet(slip: slip),
           ),
         ),
       );
@@ -118,7 +118,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
     });
 
-    testWidgets('3. KrungthaiSlipSheet displays duplicate warning banner when duplicate transaction exists', (tester) async {
+    testWidgets('3. BankSlipSheet displays duplicate warning banner when duplicate transaction exists', (tester) async {
       await tester.binding.setSurfaceSize(const Size(430, 1200));
 
       final controller = Get.find<DashboardController>();
@@ -136,7 +136,7 @@ void main() {
         notify: false,
       );
 
-      final slip = KrungthaiSlipData(
+      final slip = BankSlipData(
         bankName: 'ธนาคารกรุงไทย (Krungthai NEXT)',
         amount: 350.0,
         transactionDate: DateTime(2026, 9, 11, 12, 35),
@@ -157,7 +157,7 @@ void main() {
           locale: const Locale('th', 'TH'),
           translations: AppTranslations(),
           home: Scaffold(
-            body: KrungthaiSlipSheet(slip: slip),
+            body: BankSlipSheet(slip: slip),
           ),
         ),
       );
@@ -169,7 +169,7 @@ void main() {
       expect(find.textContaining('ร้านก๋วยเตี๋ยวเรือป้าเล็ก'), findsWidgets);
     });
 
-    testWidgets('4. KrungthaiSlipScanModal.showScanErrorDialog renders warning dialog on non-slip image', (tester) async {
+    testWidgets('4. BankSlipScanModal.showScanErrorDialog renders warning dialog on non-slip image', (tester) async {
       await tester.binding.setSurfaceSize(const Size(430, 932));
 
       await tester.pumpWidget(
@@ -181,7 +181,7 @@ void main() {
             body: Builder(
               builder: (ctx) => Center(
                 child: ElevatedButton(
-                  onPressed: () => KrungthaiSlipScanModal.showScanErrorDialog(ctx),
+                  onPressed: () => BankSlipScanModal.showScanErrorDialog(ctx),
                   child: const Text('Trigger Error'),
                 ),
               ),
@@ -202,7 +202,7 @@ void main() {
       expect(find.text('paste_slip_text'.tr), findsNothing);
     });
 
-    testWidgets('5. English locale renders KrungthaiSlipScanModal and KrungthaiSlipSheet with 100% English translations', (tester) async {
+    testWidgets('5. English locale renders BankSlipScanModal and BankSlipSheet with 100% English translations', (tester) async {
       Get.locale = const Locale('en', 'US');
       await tester.binding.setSurfaceSize(const Size(430, 932));
 
@@ -212,7 +212,7 @@ void main() {
           locale: const Locale('en', 'US'),
           translations: AppTranslations(),
           home: const Scaffold(
-            body: KrungthaiSlipScanModal(),
+            body: BankSlipScanModal(),
           ),
         ),
       );

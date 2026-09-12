@@ -4,18 +4,18 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-import '../../../data/models/krungthai_slip_model.dart';
+import '../../../data/models/bank_slip_model.dart';
 import '../../../data/models/transaction_model.dart';
-import '../../../data/services/krungthai_slip_parser.dart';
-import '../../../data/services/krungthai_slip_service.dart';
+import '../../../data/services/bank_slip_parser.dart';
+import '../../../data/services/bank_slip_service.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_popup_decorations.dart';
 import '../../dashboard/controllers/dashboard_controller.dart';
-import 'krungthai_batch_slip_sheet.dart';
+import 'bank_batch_slip_sheet.dart';
 
 /// หน้าต่างเลือกวิธีสแกนสลิปกรุงไทย (Scan Option Sheet)
-class KrungthaiSlipScanModal extends StatelessWidget {
-  const KrungthaiSlipScanModal({super.key});
+class BankSlipScanModal extends StatelessWidget {
+  const BankSlipScanModal({super.key});
 
   static void show(BuildContext context) {
     final isDesktop = MediaQuery.sizeOf(context).width >= 800;
@@ -25,14 +25,14 @@ class KrungthaiSlipScanModal extends StatelessWidget {
         const AppGlassDialog(
           maxWidth: 440,
           padding: EdgeInsets.all(22),
-          child: KrungthaiSlipScanModal(),
+          child: BankSlipScanModal(),
         ),
       );
     } else {
       Get.bottomSheet(
         BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-          child: const KrungthaiSlipScanModal(),
+          child: const BankSlipScanModal(),
         ),
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
@@ -43,7 +43,7 @@ class KrungthaiSlipScanModal extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final slipService = KrungthaiSlipService();
+    final slipService = BankSlipService();
 
     return Container(
       decoration: BoxDecoration(
@@ -112,7 +112,7 @@ class KrungthaiSlipScanModal extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'scan_krungthai_slip'.tr,
+                      'scan_bank_slip'.tr,
                       style: TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w800,
@@ -329,7 +329,7 @@ class KrungthaiSlipScanModal extends StatelessWidget {
   }
 
   static Future<void> processSlipFile(XFile file) async {
-    final slipService = KrungthaiSlipService();
+    final slipService = BankSlipService();
     final activeContext = Get.context;
     final isDark = activeContext != null
         ? Theme.of(activeContext).brightness == Brightness.dark
@@ -417,7 +417,7 @@ class KrungthaiSlipScanModal extends StatelessWidget {
 
   /// ประมวลผลรูปภาพสลิปแบบกลุ่ม (Batch Processing)
   static Future<void> processBatchSlipFiles(List<XFile> files) async {
-    final slipService = KrungthaiSlipService();
+    final slipService = BankSlipService();
     final activeContext = Get.context;
     final isDark = activeContext != null
         ? Theme.of(activeContext).brightness == Brightness.dark
@@ -538,7 +538,7 @@ class KrungthaiSlipScanModal extends StatelessWidget {
 
       // หากมีสลิปซ้ำ เปิด Sheet ให้ตรวจสอบรายการที่ซ้ำ
       if (duplicateCount > 0) {
-        KrungthaiBatchSlipSheet.show(
+        BankBatchSlipSheet.show(
           slips: const [],
           duplicates: batchResult.duplicateSlips,
         );
@@ -548,7 +548,7 @@ class KrungthaiSlipScanModal extends StatelessWidget {
       if (batchResult.validSlips.isEmpty && batchResult.duplicateSlips.isEmpty) {
         showScanErrorDialog();
       } else {
-        KrungthaiBatchSlipSheet.show(
+        BankBatchSlipSheet.show(
           slips: batchResult.validSlips,
           duplicates: batchResult.duplicateSlips,
         );
@@ -629,8 +629,8 @@ class KrungthaiSlipScanModal extends StatelessWidget {
     final activeContext = (context != null && context.mounted ? context : Get.context);
     if (activeContext == null) return;
     final isDark = Theme.of(activeContext).brightness == Brightness.dark;
-    final slipService = KrungthaiSlipService();
-    final presets = KrungthaiSlipService.getRecommendedFolderPresets();
+    final slipService = BankSlipService();
+    final presets = BankSlipService.getRecommendedFolderPresets();
 
     final customPathController = TextEditingController(text: slipService.targetFolderPath.value);
 
@@ -858,15 +858,15 @@ class KrungthaiSlipScanModal extends StatelessWidget {
     );
   }
 
-  static void dispatchSlip(KrungthaiSlipData slip, [BuildContext? context]) {
+  static void dispatchSlip(BankSlipData slip, [BuildContext? context]) {
     final activeContext = (context != null && context.mounted ? context : Get.context);
     if (activeContext == null) return;
-    final slipService = KrungthaiSlipService();
+    final slipService = BankSlipService();
     final dashboardController = Get.isRegistered<DashboardController>()
         ? Get.find<DashboardController>()
         : null;
     final isDuplicate = dashboardController != null &&
-        KrungthaiSlipParser.isDuplicate(slip, dashboardController.transactions);
+        BankSlipParser.isDuplicate(slip, dashboardController.transactions);
 
     if (isDuplicate) {
       // แม้จะเปิดโหมด Instant Auto-Save ไว้ หากตรวจพบว่าเป็นสลิปที่เคยใช้ไปแล้ว
@@ -874,7 +874,7 @@ class KrungthaiSlipScanModal extends StatelessWidget {
       try {
         HapticFeedback.heavyImpact();
       } catch (_) {}
-      KrungthaiSlipSheet.show(activeContext, slip: slip);
+      BankSlipSheet.show(activeContext, slip: slip);
       return;
     }
 
@@ -883,7 +883,7 @@ class KrungthaiSlipScanModal extends StatelessWidget {
       try {
         HapticFeedback.mediumImpact();
       } catch (_) {}
-      KrungthaiSlipSheet.show(activeContext, slip: slip);
+      BankSlipSheet.show(activeContext, slip: slip);
       return;
     }
 
@@ -892,18 +892,18 @@ class KrungthaiSlipScanModal extends StatelessWidget {
       slipService.saveSlipTransaction(slip, notify: true);
     } else {
       // โหมด A: แสดงหน้าต่างตรวจสอบและแก้ไขก่อนบันทึก
-      KrungthaiSlipSheet.show(activeContext, slip: slip);
+      BankSlipSheet.show(activeContext, slip: slip);
     }
   }
 }
 
 /// หน้าต่างพรีวิวและยืนยันสลิปกรุงไทย (Krungthai Slip Confirmation Sheet)
-class KrungthaiSlipSheet extends StatefulWidget {
-  final KrungthaiSlipData slip;
+class BankSlipSheet extends StatefulWidget {
+  final BankSlipData slip;
 
-  const KrungthaiSlipSheet({super.key, required this.slip});
+  const BankSlipSheet({super.key, required this.slip});
 
-  static void show(BuildContext context, {required KrungthaiSlipData slip}) {
+  static void show(BuildContext context, {required BankSlipData slip}) {
     final activeContext = (context.mounted ? context : Get.context) ?? context;
     final isDesktop = MediaQuery.sizeOf(activeContext).width >= 800;
 
@@ -912,14 +912,14 @@ class KrungthaiSlipSheet extends StatefulWidget {
         AppGlassDialog(
           maxWidth: 480,
           padding: const EdgeInsets.all(22),
-          child: KrungthaiSlipSheet(slip: slip),
+          child: BankSlipSheet(slip: slip),
         ),
       );
     } else {
       Get.bottomSheet(
         BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-          child: KrungthaiSlipSheet(slip: slip),
+          child: BankSlipSheet(slip: slip),
         ),
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
@@ -928,12 +928,12 @@ class KrungthaiSlipSheet extends StatefulWidget {
   }
 
   @override
-  State<KrungthaiSlipSheet> createState() => _KrungthaiSlipSheetState();
+  State<BankSlipSheet> createState() => _BankSlipSheetState();
 }
 
-class _KrungthaiSlipSheetState extends State<KrungthaiSlipSheet> {
+class _BankSlipSheetState extends State<BankSlipSheet> {
   final DashboardController controller = Get.find<DashboardController>();
-  final KrungthaiSlipService slipService = KrungthaiSlipService();
+  final BankSlipService slipService = BankSlipService();
 
   late TextEditingController _titleController;
   late double _currentAmount;
@@ -1331,7 +1331,7 @@ class _KrungthaiSlipSheetState extends State<KrungthaiSlipSheet> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final duplicateItem = KrungthaiSlipParser.findDuplicateTransaction(widget.slip, controller.transactions);
+    final duplicateItem = BankSlipParser.findDuplicateTransaction(widget.slip, controller.transactions);
 
     return Container(
       constraints: BoxConstraints(
@@ -1931,3 +1931,8 @@ class _KrungthaiSlipSheetState extends State<KrungthaiSlipSheet> {
     );
   }
 }
+
+
+/// Typedef สำหรับความเข้ากันได้ย้อนหลัง 100%
+typedef KrungthaiSlipSheet = BankSlipSheet;
+typedef KrungthaiSlipScanModal = BankSlipScanModal;

@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:money_tracker/app/data/models/krungthai_slip_model.dart';
+import 'package:money_tracker/app/data/models/bank_slip_model.dart';
 import 'package:money_tracker/app/data/models/transaction_model.dart';
 import 'package:money_tracker/app/data/services/slip_category_predictor.dart';
-import 'package:money_tracker/app/data/services/krungthai_slip_parser.dart';
+import 'package:money_tracker/app/data/services/bank_slip_parser.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -221,9 +221,9 @@ void main() {
     });
   });
 
-  group('KrungthaiSlipData Model & Parser Integration Tests', () {
-    test('KrungthaiSlipData toJson and fromJson preserves prediction fields', () {
-      final original = KrungthaiSlipData(
+  group('BankSlipData Model & Parser Integration Tests', () {
+    test('BankSlipData toJson and fromJson preserves prediction fields', () {
+      final original = BankSlipData(
         amount: 250.0,
         transactionDate: DateTime(2026, 9, 12, 11, 0),
         receiverName: 'ร้านส้มตำ',
@@ -238,14 +238,14 @@ void main() {
       expect(json['predictionConfidence'], equals(0.85));
       expect(json['predictionReason'], equals('คีย์เวิร์ด: ส้มตำ'));
 
-      final restored = KrungthaiSlipData.fromJson(json);
+      final restored = BankSlipData.fromJson(json);
       expect(restored.predictionConfidence, equals(0.85));
       expect(restored.predictionReason, equals('คีย์เวิร์ด: ส้มตำ'));
       expect(restored.suggestedCategory, equals('อาหาร/ของกิน'));
     });
 
-    test('KrungthaiSlipData copyWith allows updating prediction attributes', () {
-      final original = KrungthaiSlipData(
+    test('BankSlipData copyWith allows updating prediction attributes', () {
+      final original = BankSlipData(
         amount: 100.0,
         transactionDate: DateTime(2026, 9, 12),
         predictionConfidence: 0.5,
@@ -264,7 +264,7 @@ void main() {
       expect(updated.amount, equals(100.0));
     });
 
-    test('KrungthaiSlipParser.parse populates prediction confidence and reason', () {
+    test('BankSlipParser.parse populates prediction confidence and reason', () {
       const text = '''
 ธนาคารกรุงไทย Krungthai NEXT
 โอนเงินสำเร็จ
@@ -275,7 +275,7 @@ void main() {
 บันทึก: ชาเขียวนมสด
 ''';
 
-      final slip = KrungthaiSlipParser.parse(text);
+      final slip = BankSlipParser.parse(text);
       expect(slip.suggestedCategory, equals('กาแฟ/เครื่องดื่ม'));
       expect(slip.predictionConfidence, greaterThan(0.50));
       expect(slip.predictionReason, isNotEmpty);

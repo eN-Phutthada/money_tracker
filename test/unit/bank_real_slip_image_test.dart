@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
-import 'package:money_tracker/app/data/services/krungthai_slip_service.dart';
+import 'package:money_tracker/app/data/services/bank_slip_service.dart';
 import 'package:zxing2/qrcode.dart';
 
 void main() {
@@ -46,7 +46,7 @@ void main() {
       const payload = '0046000600000101030140225111235102026091100069922115405350.005802TH6304ABCD';
       final file = createQrImageFile(payload, 'ktb_bot_slip.png');
 
-      final service = KrungthaiSlipService();
+      final service = BankSlipService();
       final slip = await service.processSlipImage(XFile(file.path));
 
       expect(slip, isNotNull);
@@ -70,7 +70,7 @@ void main() {
       const payload = 'https://next.krungthai.com/slip/verify?transRef=202609120006123456&amount=1290.00&date=20260912';
       final file = createQrImageFile(payload, 'ktb_next_url_slip.png');
 
-      final service = KrungthaiSlipService();
+      final service = BankSlipService();
       final slip = await service.processSlipImage(XFile(file.path));
 
       expect(slip, isNotNull);
@@ -87,7 +87,7 @@ void main() {
       const payload = 'https://paotang.krungthai.com/slip/verify?id=202609010006778899&amount=4500.00';
       final file = createQrImageFile(payload, 'ktb_paotang_slip.png');
 
-      final service = KrungthaiSlipService();
+      final service = BankSlipService();
       final slip = await service.processSlipImage(XFile(file.path));
 
       expect(slip, isNotNull);
@@ -104,7 +104,7 @@ void main() {
       const payload = 'https://example.com/not-a-bank-slip';
       final file = createQrImageFile(payload, 'random_qr.png');
 
-      final service = KrungthaiSlipService();
+      final service = BankSlipService();
       final slip = await service.processSlipImage(XFile(file.path));
 
       expect(slip, isNull);

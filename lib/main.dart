@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'app/data/services/krungthai_slip_service.dart';
+import 'app/data/services/bank_slip_service.dart';
 import 'app/data/services/security_service.dart';
 import 'app/data/services/storage_service.dart';
 import 'app/modules/security/controllers/security_controller.dart';
@@ -18,17 +18,18 @@ Locale resolveInitialLocale(String? savedLang) {
   }
   // Default to system locale
   try {
-    final sysLang = WidgetsBinding.instance.platformDispatcher.locale.languageCode.toLowerCase();
-    return sysLang == 'th' ? const Locale('th', 'TH') : const Locale('en', 'US');
-  } catch (_) {
-    return const Locale('th', 'TH');
-  }
+    final deviceLocale = WidgetsBinding.instance.platformDispatcher.locale;
+    if (deviceLocale.languageCode == 'th') {
+      return const Locale('th', 'TH');
+    }
+  } catch (_) {}
+  return const Locale('en', 'US');
 }
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SecurityService().init();
-  await KrungthaiSlipService().init();
+  await BankSlipService().init();
   final savedLang = await StorageService().loadLanguage();
   final initialLocale = resolveInitialLocale(savedLang);
   runApp(MoneyTrackerApp(initialLocale: initialLocale));

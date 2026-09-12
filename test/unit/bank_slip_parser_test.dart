@@ -1,15 +1,15 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
-import 'package:money_tracker/app/data/models/krungthai_slip_model.dart';
+import 'package:money_tracker/app/data/models/bank_slip_model.dart';
 import 'package:money_tracker/app/data/models/transaction_model.dart';
-import 'package:money_tracker/app/data/services/krungthai_qr_decoder.dart';
-import 'package:money_tracker/app/data/services/krungthai_slip_parser.dart';
-import 'package:money_tracker/app/data/services/krungthai_slip_service.dart';
+import 'package:money_tracker/app/data/services/bank_qr_decoder.dart';
+import 'package:money_tracker/app/data/services/bank_slip_parser.dart';
+import 'package:money_tracker/app/data/services/bank_slip_service.dart';
 import 'package:money_tracker/app/modules/dashboard/controllers/dashboard_controller.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  group('KrungthaiSlipParser Unit Tests', () {
+  group('BankSlipParser Unit Tests', () {
     test('1. Parses Thai Krungthai NEXT slip accurately', () {
       const rawText = '''
 ธนาคารกรุงไทย
@@ -30,7 +30,7 @@ Krungthai NEXT
 บันทึกช่วยจำ: ค่าอาหารกลางวันทีม
 ''';
 
-      final slip = KrungthaiSlipParser.parse(rawText);
+      final slip = BankSlipParser.parse(rawText);
 
       expect(slip.isKrungthai, isTrue);
       expect(slip.bankName, equals('ธนาคารกรุงไทย (Krungthai NEXT)'));
@@ -56,7 +56,7 @@ Krungthai
 ไปยัง: กาแฟพันธุ์ไทย
 ''';
 
-      final slip = KrungthaiSlipParser.parse(rawText);
+      final slip = BankSlipParser.parse(rawText);
       expect(slip.amount, equals(120.00));
       expect(slip.transactionDate.year, equals(2026));
       expect(slip.transactionDate.month, equals(1));
@@ -88,7 +88,7 @@ Krungthai
 ค่าห้อง 502 เดือนกันยายน
 ''';
 
-      final slip = KrungthaiSlipParser.parse(rawText);
+      final slip = BankSlipParser.parse(rawText);
       expect(slip.isKrungthai, isTrue);
       expect(slip.amount, equals(4500.00));
       expect(slip.receiverName, contains('นิติบุคคล อาคารชุดสุขสบาย'));
@@ -111,7 +111,7 @@ Fee: 0.00 THB
 Memo: หูฟังบลูทูธไร้สาย
 ''';
 
-      final slip = KrungthaiSlipParser.parse(rawText);
+      final slip = BankSlipParser.parse(rawText);
       expect(slip.isKrungthai, isTrue);
       expect(slip.amount, equals(1290.00));
       expect(slip.receiverName, equals('ShopeePay Thailand'));
@@ -123,7 +123,7 @@ Memo: หูฟังบลูทูธไร้สาย
 
     test('5. Correctly classifies various categories from keywords', () {
       // Utilities
-      final utilSlip = KrungthaiSlipParser.parse('''
+      final utilSlip = BankSlipParser.parse('''
 ธ.กรุงไทย
 จำนวนเงิน 850.50 บาท
 ไปยัง การไฟฟ้านครหลวง
@@ -133,7 +133,7 @@ Memo: หูฟังบลูทูธไร้สาย
       expect(utilSlip.suggestedCostNature, equals(CostNature.fixed));
 
       // Transport
-      final transportSlip = KrungthaiSlipParser.parse('''
+      final transportSlip = BankSlipParser.parse('''
 กรุงไทย
 จำนวนเงิน 65.00 บาท
 ไปยัง รถไฟฟ้า BTS
@@ -142,7 +142,7 @@ Memo: หูฟังบลูทูธไร้สาย
       expect(transportSlip.suggestedCostNature, equals(CostNature.variable));
 
       // Health
-      final healthSlip = KrungthaiSlipParser.parse('''
+      final healthSlip = BankSlipParser.parse('''
 KTB NEXT
 จำนวนเงิน 1,500.00 บาท
 ไปยัง โรงพยาบาลกรุงเทพ
@@ -151,7 +151,7 @@ KTB NEXT
       expect(healthSlip.suggestedCategory, equals('สุขภาพ/ยา'));
 
       // Education
-      final eduSlip = KrungthaiSlipParser.parse('''
+      final eduSlip = BankSlipParser.parse('''
 ธนาคารกรุงไทย
 จำนวนเงิน 2,000.00 บาท
 บันทึกช่วยจำ ค่าเรียนพิเศษภาษาอังกฤษ
@@ -159,7 +159,7 @@ KTB NEXT
       expect(eduSlip.suggestedCategory, equals('การศึกษา'));
 
       // Savings
-      final savingsSlip = KrungthaiSlipParser.parse('''
+      final savingsSlip = BankSlipParser.parse('''
 กรุงไทย NEXT
 จำนวนเงิน 5,000.00 บาท
 บันทึกช่วยจำ ออมเงินกองทุนรวม
@@ -168,8 +168,8 @@ KTB NEXT
       expect(savingsSlip.suggestedType, equals(TransactionType.savingsInvestment));
     });
 
-    test('6. Converts KrungthaiSlipData to TransactionItem correctly', () {
-      final slip = KrungthaiSlipData(
+    test('6. Converts BankSlipData to TransactionItem correctly', () {
+      final slip = BankSlipData(
         bankName: 'ธนาคารกรุงไทย',
         amount: 350.0,
         transactionDate: DateTime(2026, 9, 11, 12, 35),
@@ -205,7 +205,7 @@ KTB NEXT
     });
 
     test('7. Detects duplicate slip based on reference number or date+amount', () {
-      final slip = KrungthaiSlipData(
+      final slip = BankSlipData(
         bankName: 'ธนาคารกรุงไทย',
         amount: 500.0,
         transactionDate: DateTime(2026, 9, 11, 14, 0),
@@ -226,9 +226,9 @@ KTB NEXT
         ),
       ];
 
-      expect(KrungthaiSlipParser.isDuplicate(slip, existingTransactions), isTrue);
+      expect(BankSlipParser.isDuplicate(slip, existingTransactions), isTrue);
 
-      final nonMatchingSlip = KrungthaiSlipData(
+      final nonMatchingSlip = BankSlipData(
         bankName: 'ธนาคารกรุงไทย',
         amount: 250.0,
         transactionDate: DateTime(2026, 9, 12, 10, 0),
@@ -237,11 +237,11 @@ KTB NEXT
         isKrungthai: true,
       );
 
-      expect(KrungthaiSlipParser.isDuplicate(nonMatchingSlip, existingTransactions), isFalse);
+      expect(BankSlipParser.isDuplicate(nonMatchingSlip, existingTransactions), isFalse);
     });
 
-    test('8. KrungthaiSlipService sample slips contain valid data', () {
-      final service = KrungthaiSlipService();
+    test('8. BankSlipService sample slips contain valid data', () {
+      final service = BankSlipService();
       final samples = service.getSampleKrungthaiSlips();
 
       expect(samples.length, equals(4));
@@ -256,8 +256,8 @@ KTB NEXT
       }
     });
 
-    test('9. KrungthaiSlipService supports toggling between Mode A and Mode B', () async {
-      final service = KrungthaiSlipService();
+    test('9. BankSlipService supports toggling between Mode A and Mode B', () async {
+      final service = BankSlipService();
       expect(service.isInstantAutoSave.value, isFalse); // Default Mode A (Preview & Confirm)
 
       await service.toggleAutoSave(true);
@@ -267,12 +267,12 @@ KTB NEXT
       expect(service.isInstantAutoSave.value, isFalse); // Restored to Mode A
     });
 
-    test('10. KrungthaiSlipService.saveSlipTransaction saves to DashboardController', () {
+    test('10. BankSlipService.saveSlipTransaction saves to DashboardController', () {
       Get.reset();
       final controller = Get.put(DashboardController());
 
-      final service = KrungthaiSlipService();
-      final slip = KrungthaiSlipData(
+      final service = BankSlipService();
+      final slip = BankSlipData(
         amount: 888.0,
         transactionDate: DateTime(2026, 9, 11, 15, 30),
         receiverName: 'ร้านค้าไอที',
@@ -295,7 +295,7 @@ KTB NEXT
     });
 
     test('11. Detects duplicate transaction by reference number and amount/time', () {
-      final slip = KrungthaiSlipData(
+      final slip = BankSlipData(
         amount: 350.0,
         transactionDate: DateTime(2026, 9, 11, 12, 35),
         referenceNo: '202609110006992211',
@@ -316,14 +316,14 @@ KTB NEXT
         ),
       ];
 
-      expect(KrungthaiSlipParser.isDuplicate(slip, existingTxList), isTrue);
-      final matched = KrungthaiSlipParser.findDuplicateTransaction(slip, existingTxList);
+      expect(BankSlipParser.isDuplicate(slip, existingTxList), isTrue);
+      final matched = BankSlipParser.findDuplicateTransaction(slip, existingTxList);
       expect(matched, isNotNull);
       expect(matched!.title, equals('ร้านก๋วยเตี๋ยวเรือ'));
     });
 
     test('12. Does not flag distinct transaction as duplicate', () {
-      final slip = KrungthaiSlipData(
+      final slip = BankSlipData(
         amount: 500.0,
         transactionDate: DateTime(2026, 9, 12, 10, 0),
         referenceNo: '20260912999999',
@@ -344,8 +344,8 @@ KTB NEXT
         ),
       ];
 
-      expect(KrungthaiSlipParser.isDuplicate(slip, existingTxList), isFalse);
-      expect(KrungthaiSlipParser.findDuplicateTransaction(slip, existingTxList), isNull);
+      expect(BankSlipParser.isDuplicate(slip, existingTxList), isFalse);
+      expect(BankSlipParser.findDuplicateTransaction(slip, existingTxList), isNull);
     });
 
     test('13. Accurately parses user real Krungthai NEXT streaming slip', () {
@@ -370,7 +370,7 @@ X XXXX XXXX6 48 2
 วันที่ทำรายการ 02 ส.ค. 2569 - 22:02
 ''';
 
-      final slip = KrungthaiSlipParser.parse(userSlipText);
+      final slip = BankSlipParser.parse(userSlipText);
 
       expect(slip.isKrungthai, isTrue);
       expect(slip.amount, equals(139.00));
@@ -390,7 +390,7 @@ X XXXX XXXX6 48 2
 
     test('14. Parses BOT EMVCo QR code payload from Krungthai NEXT slip', () {
       const qrText = '0038000600000101030060217A308e920c27594e4c5102TH91045259';
-      final slip = KrungthaiQrDecoder.parsePromptPaySlipQr(qrText);
+      final slip = BankQrDecoder.parsePromptPaySlipQr(qrText);
 
       expect(slip, isNotNull);
       expect(slip!.isKrungthai, isTrue);
@@ -410,12 +410,12 @@ Krungthai NEXT
 0.00 บาท
 02 ส.ค. 2569 - 22:02
 ''';
-      final slip1 = KrungthaiSlipParser.parse(columnarText);
+      final slip1 = BankSlipParser.parse(columnarText);
       expect(slip1.amount, equals(139.00));
 
       // Nikhahit Thai variant (U+0E4D + U+0E32)
       const nikhahitText = 'จ\u0E4D\u0E32นวนเงิน 139.00 บาท\nค่าธรรมเนียม 0.00 บาท';
-      final slip2 = KrungthaiSlipParser.parse(nikhahitText);
+      final slip2 = BankSlipParser.parse(nikhahitText);
       expect(slip2.amount, equals(139.00));
     });
 
@@ -429,12 +429,12 @@ X XXXX XXXX6 48 2
 0.00
 02 2569 - 22:02
 ''';
-      final slip = KrungthaiSlipParser.parse(latinOcrText);
+      final slip = BankSlipParser.parse(latinOcrText);
       expect(slip.amount, equals(139.00));
     });
 
     test('17. Allows custom amount override when saving slip transaction', () {
-      final slip = KrungthaiSlipData(
+      final slip = BankSlipData(
         amount: 0.0,
         transactionDate: DateTime(2026, 8, 2, 22, 2),
         referenceNo: 'A308e920c27594e4c',
@@ -449,7 +449,7 @@ X XXXX XXXX6 48 2
       // saveSlipTransaction with customAmount
       Get.reset();
       final controller = Get.put(DashboardController());
-      final service = KrungthaiSlipService();
+      final service = BankSlipService();
       final saved = service.saveSlipTransaction(slip, customAmount: 139.00, notify: false);
       expect(saved.amount, equals(139.00));
       expect(controller.transactions.first.amount, equals(139.00));
@@ -479,7 +479,7 @@ X XXXX XXXX6 48 2
 วันที่ทำรายการ 02 ส.ค. 2569 - 22:02
 ''';
 
-      final slip = KrungthaiSlipParser.parse(screenshotText);
+      final slip = BankSlipParser.parse(screenshotText);
       expect(slip.hasParsedDateTime, isTrue);
       expect(slip.transactionDate.year, equals(2026));
       expect(slip.transactionDate.month, equals(8));
@@ -492,7 +492,7 @@ X XXXX XXXX6 48 2
     test('19. Extracts diverse real-world slip date and time formats', () {
       // 1. Thai with "เวลา" and dot format (22.02 น.)
       const textWithDot = 'โอนเงินสำเร็จ\n2 ส.ค. 69 เวลา 22.02 น.\nรหัสอ้างอิง A308';
-      final slip1 = KrungthaiSlipParser.parse(textWithDot);
+      final slip1 = BankSlipParser.parse(textWithDot);
       expect(slip1.hasParsedDateTime, isTrue);
       expect(slip1.transactionDate.year, equals(2026));
       expect(slip1.transactionDate.month, equals(8));
@@ -502,14 +502,14 @@ X XXXX XXXX6 48 2
 
       // 2. Multi-line date and time
       const textMultiLine = 'วันที่ทำรายการ\n02 ส.ค. 2569\nเวลา 22:02 น.';
-      final slip2 = KrungthaiSlipParser.parse(textMultiLine);
+      final slip2 = BankSlipParser.parse(textMultiLine);
       expect(slip2.hasParsedDateTime, isTrue);
       expect(slip2.transactionDate.hour, equals(22));
       expect(slip2.transactionDate.minute, equals(2));
 
       // 3. English month with second
       const textEnglish = 'Transaction Successful\n02 Aug 2026 22:02:15';
-      final slip3 = KrungthaiSlipParser.parse(textEnglish);
+      final slip3 = BankSlipParser.parse(textEnglish);
       expect(slip3.hasParsedDateTime, isTrue);
       expect(slip3.transactionDate.hour, equals(22));
       expect(slip3.transactionDate.minute, equals(2));
@@ -517,7 +517,7 @@ X XXXX XXXX6 48 2
 
       // 4. Numeric Buddhist era format
       const textNumeric = '02/08/2569 22:02';
-      final slip4 = KrungthaiSlipParser.parse(textNumeric);
+      final slip4 = BankSlipParser.parse(textNumeric);
       expect(slip4.hasParsedDateTime, isTrue);
       expect(slip4.transactionDate.year, equals(2026));
       expect(slip4.transactionDate.month, equals(8));
@@ -535,7 +535,7 @@ X XXXX XXXX6 48 2
 รหัสอ้างอิง 202609120006999999
 จำนวนเงิน 500.00 บาท
 ''';
-      final slip = KrungthaiSlipParser.parse(text);
+      final slip = BankSlipParser.parse(text);
       expect(slip.hasParsedDateTime, isTrue);
       expect(slip.transactionDate.year, equals(2026));
       expect(slip.transactionDate.month, equals(9));
@@ -553,7 +553,7 @@ X XXXX XXXX6 48 2
 ค่าธรรมเนียม 0.00 บาท
 รหัสอ้างอิง 202609120006112233
 ''';
-      final slip = KrungthaiSlipParser.parse(text);
+      final slip = BankSlipParser.parse(text);
       expect(slip.hasParsedDateTime, isTrue);
       expect(slip.transactionDate.year, equals(2026));
       expect(slip.transactionDate.month, equals(9));
@@ -571,7 +571,7 @@ Krungthai NEXT
 รหัสอ้างอิง: 202609150006123456
 จำนวนเงิน 250.00 บาท
 ''';
-      final slip = KrungthaiSlipParser.parse(text);
+      final slip = BankSlipParser.parse(text);
       expect(slip.hasParsedDateTime, isTrue);
       expect(slip.transactionDate.year, equals(2026));
       expect(slip.transactionDate.month, equals(9));
@@ -581,16 +581,16 @@ Krungthai NEXT
       expect(slip.referenceNo, equals('202609150006123456'));
     });
 
-    test('23. KrungthaiSlipService.resolveAccurateDateTime fusions date and time correctly', () {
+    test('23. BankSlipService.resolveAccurateDateTime fusions date and time correctly', () {
       final fileModTime = DateTime(2026, 9, 12, 16, 45, 20);
 
       // กรณี OCR มีเฉพาะวันที่ (เวลา 00:00) แต่มีไฟล์ภาพ -> ผสานวันจาก OCR และเวลาจากไฟล์ภาพ
-      final ocrDateOnly = KrungthaiSlipData(
+      final ocrDateOnly = BankSlipData(
         amount: 300.0,
         transactionDate: DateTime(2026, 9, 10, 0, 0, 0),
         hasParsedDateTime: true,
       );
-      final fused1 = KrungthaiSlipService.resolveAccurateDateTime(
+      final fused1 = BankSlipService.resolveAccurateDateTime(
         ocrSlip: ocrDateOnly,
         fileModTime: fileModTime,
       );
@@ -601,12 +601,12 @@ Krungthai NEXT
       expect(fused1.minute, equals(45)); // จากไฟล์ภาพ
 
       // กรณี QR มีเวลาสมบูรณ์ -> ใช้เวลาจาก QR
-      final qrWithTime = KrungthaiSlipData(
+      final qrWithTime = BankSlipData(
         amount: 300.0,
         transactionDate: DateTime(2026, 9, 10, 11, 25, 0),
         hasParsedDateTime: true,
       );
-      final fused2 = KrungthaiSlipService.resolveAccurateDateTime(
+      final fused2 = BankSlipService.resolveAccurateDateTime(
         ocrSlip: ocrDateOnly,
         qrSlip: qrWithTime,
         fileModTime: fileModTime,
@@ -618,59 +618,59 @@ Krungthai NEXT
 
     test('24. Detects bank name for all major Thai banks, falling back to Krungthai NEXT as primary', () {
       expect(
-        KrungthaiSlipParser.detectBankName('K PLUS ธนาคารกสิกรไทย โอนเงินสำเร็จ'),
+        BankSlipParser.detectBankName('K PLUS ธนาคารกสิกรไทย โอนเงินสำเร็จ'),
         equals('ธนาคารกสิกรไทย (K PLUS)'),
       );
       expect(
-        KrungthaiSlipParser.detectBankName('SCB EASY ธนาคารไทยพาณิชย์ จำกัด (มหาชน)'),
+        BankSlipParser.detectBankName('SCB EASY ธนาคารไทยพาณิชย์ จำกัด (มหาชน)'),
         equals('ธนาคารไทยพาณิชย์ (SCB EASY)'),
       );
       expect(
-        KrungthaiSlipParser.detectBankName('Bangkok Bank ธนาคารกรุงเทพ โอนเงินเรียบร้อย'),
+        BankSlipParser.detectBankName('Bangkok Bank ธนาคารกรุงเทพ โอนเงินเรียบร้อย'),
         equals('ธนาคารกรุงเทพ (Bualuang mBanking)'),
       );
       expect(
-        KrungthaiSlipParser.detectBankName('KMA ธนาคารกรุงศรีอยุธยา krungsri'),
+        BankSlipParser.detectBankName('KMA ธนาคารกรุงศรีอยุธยา krungsri'),
         equals('ธนาคารกรุงศรีอยุธยา (KMA)'),
       );
       expect(
-        KrungthaiSlipParser.detectBankName('ttb touch ธนาคารทหารไทยธนชาต'),
+        BankSlipParser.detectBankName('ttb touch ธนาคารทหารไทยธนชาต'),
         equals('ทีเอ็มบีธนชาต (ttb touch)'),
       );
       expect(
-        KrungthaiSlipParser.detectBankName('MyMo ธนาคารออมสิน โอนเงินสำเร็จ'),
+        BankSlipParser.detectBankName('MyMo ธนาคารออมสิน โอนเงินสำเร็จ'),
         equals('ธนาคารออมสิน (MyMo)'),
       );
       expect(
-        KrungthaiSlipParser.detectBankName('BAAC A-Mobile ธ.ก.ส.'),
+        BankSlipParser.detectBankName('BAAC A-Mobile ธ.ก.ส.'),
         equals('ธ.ก.ส. (BAAC Mobile)'),
       );
       expect(
-        KrungthaiSlipParser.detectBankName('ทรูมันนี่ TrueMoney โอนเงินสำเร็จ'),
+        BankSlipParser.detectBankName('ทรูมันนี่ TrueMoney โอนเงินสำเร็จ'),
         equals('ทรูมันนี่ (TrueMoney Wallet)'),
       );
 
       // กรุงไทยและเป๋าตังยังคงเป็นหลัก
       expect(
-        KrungthaiSlipParser.detectBankName('Krungthai NEXT โอนเงินสำเร็จ'),
+        BankSlipParser.detectBankName('Krungthai NEXT โอนเงินสำเร็จ'),
         equals('ธนาคารกรุงไทย (Krungthai NEXT)'),
       );
       expect(
-        KrungthaiSlipParser.detectBankName('เป๋าตัง G-Wallet โอนเงิน'),
+        BankSlipParser.detectBankName('เป๋าตัง G-Wallet โอนเงิน'),
         equals('ธนาคารกรุงไทย (เป๋าตัง)'),
       );
 
       // กรณีไม่ระบุธนาคาร -> ตั้งต้นเป็นกรุงไทยเป็นหลัก
       expect(
-        KrungthaiSlipParser.detectBankName('โอนเงินสำเร็จ จำนวน 500 บาท วันที่ 12 ก.ย.'),
+        BankSlipParser.detectBankName('โอนเงินสำเร็จ จำนวน 500 บาท วันที่ 12 ก.ย.'),
         equals('ธนาคารกรุงไทย (Krungthai NEXT)'),
       );
 
       // isKrungthaiSlip vs isValidBankSlip
-      expect(KrungthaiSlipParser.isKrungthaiSlip('K PLUS โอนเงิน'), isFalse);
-      expect(KrungthaiSlipParser.isValidBankSlip('K PLUS โอนเงินสำเร็จ'), isTrue);
-      expect(KrungthaiSlipParser.isKrungthaiSlip('Krungthai NEXT โอนเงิน'), isTrue);
-      expect(KrungthaiSlipParser.isValidBankSlip('Krungthai NEXT โอนเงิน'), isTrue);
+      expect(BankSlipParser.isKrungthaiSlip('K PLUS โอนเงิน'), isFalse);
+      expect(BankSlipParser.isValidBankSlip('K PLUS โอนเงินสำเร็จ'), isTrue);
+      expect(BankSlipParser.isKrungthaiSlip('Krungthai NEXT โอนเงิน'), isTrue);
+      expect(BankSlipParser.isValidBankSlip('Krungthai NEXT โอนเงิน'), isTrue);
     });
 
     test('25. Parses Kasikornbank (K PLUS) and SCB EASY slip OCR accurately', () {
@@ -688,7 +688,7 @@ K PLUS
 บันทึกช่วยจำ: ชาเขียวปั่น
 ''';
 
-      final slip = KrungthaiSlipParser.parse(kplusText);
+      final slip = BankSlipParser.parse(kplusText);
       expect(slip.bankName, equals('ธนาคารกสิกรไทย (K PLUS)'));
       expect(slip.isKrungthai, isFalse);
       expect(slip.amount, equals(65.0));
@@ -702,7 +702,7 @@ K PLUS
     test('26. Decodes QR codes from various Thai banks using BOT codes', () {
       // PromptPay QR Tag 000201 พร้อม Sending Bank Tag 004 (KBank)
       const kbankQr = '00020101021229360016A00000067701011101120041234567895406150.005802TH5303764';
-      final kbankSlip = KrungthaiQrDecoder.decodeSlipQr(kbankQr);
+      final kbankSlip = BankQrDecoder.decodeSlipQr(kbankQr);
       expect(kbankSlip, isNotNull);
       expect(kbankSlip!.bankName, equals('ธนาคารกสิกรไทย (K PLUS)'));
       expect(kbankSlip.isKrungthai, isFalse);
@@ -710,7 +710,7 @@ K PLUS
 
       // Sending Bank Tag 014 (SCB)
       const scbQr = '00020101021229360016A000000677010111011201498765432154071250.005802TH5303764';
-      final scbSlip = KrungthaiQrDecoder.decodeSlipQr(scbQr);
+      final scbSlip = BankQrDecoder.decodeSlipQr(scbQr);
       expect(scbSlip, isNotNull);
       expect(scbSlip!.bankName, equals('ธนาคารไทยพาณิชย์ (SCB EASY)'));
       expect(scbSlip.isKrungthai, isFalse);
@@ -718,15 +718,15 @@ K PLUS
 
       // Sending Bank Tag 006 (Krungthai)
       const ktbQr = '00020101021229360016A00000067701011101120061122334455406500.005802TH5303764';
-      final ktbSlip = KrungthaiQrDecoder.decodeSlipQr(ktbQr);
+      final ktbSlip = BankQrDecoder.decodeSlipQr(ktbQr);
       expect(ktbSlip, isNotNull);
       expect(ktbSlip!.bankName, equals('ธนาคารกรุงไทย (Krungthai NEXT)'));
       expect(ktbSlip.isKrungthai, isTrue);
       expect(ktbSlip.amount, equals(500.0));
     });
 
-    test('27. KrungthaiSlipData.toTransactionItem prefixes ID and formats note dynamically', () {
-      final ktbSlip = KrungthaiSlipData(
+    test('27. BankSlipData.toTransactionItem prefixes ID and formats note dynamically', () {
+      final ktbSlip = BankSlipData(
         bankName: 'ธนาคารกรุงไทย (Krungthai NEXT)',
         amount: 250.0,
         transactionDate: DateTime(2026, 9, 12, 10, 0),
@@ -736,10 +736,10 @@ K PLUS
       );
       final ktbTx = ktbSlip.toTransactionItem();
       expect(ktbTx.id, startsWith('ktb_'));
-      expect(ktbTx.title, equals('โอนเงินกรุงไทย'));
+      expect(ktbTx.title, equals('รายการโอนเงิน'));
       expect(ktbTx.note, contains('สลิป: ธนาคารกรุงไทย (Krungthai NEXT)'));
 
-      final scbSlip = KrungthaiSlipData(
+      final scbSlip = BankSlipData(
         bankName: 'ธนาคารไทยพาณิชย์ (SCB EASY)',
         amount: 300.0,
         transactionDate: DateTime(2026, 9, 12, 11, 0),
@@ -749,7 +749,7 @@ K PLUS
       );
       final scbTx = scbSlip.toTransactionItem();
       expect(scbTx.id, startsWith('slip_'));
-      expect(scbTx.title, equals('โอนเงิน (ธนาคารไทยพาณิชย์ (SCB EASY))'));
+      expect(scbTx.title, equals('รายการโอนเงิน'));
       expect(scbTx.note, contains('สลิป: ธนาคารไทยพาณิชย์ (SCB EASY)'));
     });
 
@@ -772,7 +772,7 @@ X XXXX XXXX6 48 2
 วันที่ทำรายการ 02 ส.ค. 2569 - 22:02
 ''';
 
-      final slip = KrungthaiSlipParser.parse(realSlipText);
+      final slip = BankSlipParser.parse(realSlipText);
       expect(slip.amount, equals(139.0));
       expect(slip.hasParsedDateTime, isTrue);
       expect(slip.transactionDate.year, equals(2026));
@@ -781,6 +781,142 @@ X XXXX XXXX6 48 2
       expect(slip.transactionDate.hour, equals(22));
       expect(slip.transactionDate.minute, equals(2));
       expect(slip.referenceNo, equals('A308e920c27594e4c'));
+      expect(slip.receiverName, equals('บจก. เอ็นเอฟ สตรีมมิ่ง'));
+      expect(slip.defaultTitle, equals('โอนให้ บจก. เอ็นเอฟ สตรีมมิ่ง'));
+      expect(slip.defaultTitle, isNot(contains('โอนเงินกรุงไทย')));
+    });
+
+    test('29. resolveAccurateDateTime preserves slip date/time and does not overwrite with upload cache timestamp', () {
+      final slipDate = DateTime(2026, 8, 2, 22, 2);
+      final ocrSlip = BankSlipData(
+        amount: 139.0,
+        transactionDate: slipDate,
+        hasParsedDateTime: true,
+      );
+
+      // สมมติไฟล์ภาพถูกแคชโดย image_picker ณ เวลาปัจจุบัน
+      final uploadTimeNow = DateTime.now();
+
+      final resolvedDate = BankSlipService.resolveAccurateDateTime(
+        ocrSlip: ocrSlip,
+        fileModTime: uploadTimeNow,
+      );
+
+      // วันและเวลาต้องตรงกับสลิปจริง (2026-08-02 22:02:00) ไม่ใช่ uploadTimeNow
+      expect(resolvedDate.year, equals(2026));
+      expect(resolvedDate.month, equals(8));
+      expect(resolvedDate.day, equals(2));
+      expect(resolvedDate.hour, equals(22));
+      expect(resolvedDate.minute, equals(2));
+    });
+
+    test('30. Extracts amount with bracketed currency units (บาท / THB)', () {
+      const textWithBracketThai = '''
+ธนาคารกรุงไทย
+โอนเงินสำเร็จ
+จำนวนเงิน (บาท) 139.00
+ค่าธรรมเนียม (บาท) 0.00
+ไปยัง: นาย สมพงษ์ ใจดี
+''';
+      final slip1 = BankSlipParser.parse(textWithBracketThai);
+      expect(slip1.amount, equals(139.0));
+
+      const textWithBracketEng = '''
+K PLUS
+Transfer Successful
+Amount (THB) : 1,500.50
+Fee (THB) : 0.00
+To: Central Department Store
+''';
+      final slip2 = BankSlipParser.parse(textWithBracketEng);
+      expect(slip2.amount, equals(1500.50));
+    });
+
+    test('31. Skips bank name and channel between "ไปยัง" and actual receiver name', () {
+      const slipWithBankLine = '''
+SCB EASY
+โอนเงินสำเร็จ
+12 ก.ย. 2569 10:20 น.
+จาก: นาย ทดสอบ ระบบ
+ไปยัง:
+ธนาคารกสิกรไทย
+นาย สมชาย มีสุข
+xxx-x-xx888-x
+จำนวนเงิน 450.00 บาท
+''';
+      final slip = BankSlipParser.parse(slipWithBankLine);
+      expect(slip.receiverName, equals('นาย สมชาย มีสุข'));
+      expect(slip.defaultTitle, equals('โอนให้ นาย สมชาย มีสุข'));
+
+      const slipWithPromptPay = '''
+Krungthai NEXT
+ไปยัง
+พร้อมเพย์
+089-xxx-1234
+ร้านส้มตำแซ่บหลาย
+จำนวนเงิน 280.00 บาท
+''';
+      final slip2 = BankSlipParser.parse(slipWithPromptPay);
+      expect(slip2.receiverName, equals('ร้านส้มตำแซ่บหลาย'));
+    });
+
+    test('32. Normalizes OCR spaced decimals (139 . 00 -> 139.00)', () {
+      const spacedText = '''
+Krungthai NEXT
+โอนเงินสำเร็จ
+จำนวนเงิน 139 . 00 บาท
+ไปยัง: ร้านหนังสือซีเอ็ด
+''';
+      final slip = BankSlipParser.parse(spacedText);
+      expect(slip.amount, equals(139.0));
+      expect(slip.suggestedCategory, equals('การศึกษา'));
+    });
+
+    test('33. Detects income transfer slip and classifies salary / side income', () {
+      const incomeSalaryText = '''
+ธนาคารกรุงไทย
+เงินโอนเข้าสำเร็จ
+01 ก.ย. 2569 05:30 น.
+จาก: บจก. เทคโนโลยีล้ำหน้า
+ไปยัง: นาย ธนากร มั่งคั่ง
+จำนวนเงิน: 45,000.00 บาท
+บันทึก: เงินเดือนประจำเดือนสิงหาคม
+''';
+      final slip1 = BankSlipParser.parse(incomeSalaryText);
+      expect(slip1.suggestedType, equals(TransactionType.income));
+      expect(slip1.suggestedCategory, equals('เงินเดือน'));
+      expect(slip1.defaultTitle, equals('เงินเดือนประจำเดือนสิงหาคม'));
+      expect(slip1.formattedNote, contains('ผู้โอน: บจก. เทคโนโลยีล้ำหน้า'));
+
+      const incomeSideJobText = '''
+K PLUS
+เงินเข้า
+จาก: ร้านเจ๊ดาว
+จำนวนเงิน 1,200.00 บาท
+บันทึกช่วยจำ: ค่าแรงสอนพิเศษ
+''';
+      final slip2 = BankSlipParser.parse(incomeSideJobText);
+      expect(slip2.suggestedType, equals(TransactionType.income));
+    });
+
+    test('34. Detects expanded Thai banks (KKP, UOB, CIMB, TISCO, LH Bank, ShopeePay)', () {
+      expect(BankSlipParser.detectBankName('ธนาคารเกียรตินาคินภัทร KKP Dime โอนเงินสำเร็จ'), equals('ธนาคารเกียรตินาคินภัทร (KKP)'));
+      expect(BankSlipParser.detectBankName('UOB TMRW โอนเงินสำเร็จ'), equals('ธนาคารยูโอบี (UOB TMRW)'));
+      expect(BankSlipParser.detectBankName('ธนาคารซีไอเอ็มบี ไทย CIMB Transfer'), equals('ธนาคารซีไอเอ็มบี ไทย'));
+      expect(BankSlipParser.detectBankName('TISCO Bank โอนเงินสำเร็จ'), equals('ธนาคารทิสโก้'));
+      expect(BankSlipParser.detectBankName('ธนาคารแลนด์ แอนด์ เฮ้าส์ LHB You'), equals('ธนาคารแลนด์ แอนด์ เฮ้าส์ (LHB You)'));
+      expect(BankSlipParser.detectBankName('ShopeePay ช้อปปี้เพย์ วอลเล็ท'), equals('ช้อปปี้เพย์ (ShopeePay)'));
+    });
+
+    test('35. QR Category Prediction passes receiverName and leverages History Learning', () {
+      const clinicName = 'คลินิกทันตกรรมยิ้มสวย';
+      final lenStr = clinicName.length < 10 ? '0${clinicName.length}' : '${clinicName.length}';
+      final qrWithMerchant = '00020101021229360016A00000067701011101120141234567895406800.005802TH59$lenStr$clinicName';
+
+      final slip = BankQrDecoder.decodeSlipQr(qrWithMerchant);
+      expect(slip, isNotNull);
+      expect(slip!.receiverName, equals(clinicName));
+      expect(slip.suggestedCategory, equals('สุขภาพ/ยา'));
     });
   });
 }

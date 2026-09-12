@@ -2,24 +2,24 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
-import '../models/krungthai_slip_model.dart';
+import '../models/bank_slip_model.dart';
 import '../models/transaction_model.dart';
 import '../../modules/dashboard/controllers/dashboard_controller.dart';
 import '../../widgets/app_feedback.dart';
-import 'krungthai_ocr_service.dart';
-import 'krungthai_qr_decoder.dart';
-import 'krungthai_slip_parser.dart';
+import 'bank_ocr_service.dart';
+import 'bank_qr_decoder.dart';
+import 'bank_slip_parser.dart';
 import 'slip_category_predictor.dart';
 import 'storage_service.dart';
 
 /// ผลลัพธ์การประมวลผลสลิปแบบกลุ่ม (Batch Slip Result)
-class KrungthaiBatchResult {
-  final List<KrungthaiSlipData> validSlips;
+class BankBatchResult {
+  final List<BankSlipData> validSlips;
   final List<Map<String, dynamic>> duplicateSlips;
   final int invalidCount;
   final int totalCount;
 
-  const KrungthaiBatchResult({
+  const BankBatchResult({
     required this.validSlips,
     required this.duplicateSlips,
     required this.invalidCount,
@@ -36,11 +36,11 @@ class KrungthaiBatchResult {
 /// - โหมด B: บันทึกทันทีอัตโนมัติ (Instant Auto-Save) พร้อม In-App Notification และปุ่มแก้ไข
 /// - ระบบสแกนแบบกลุ่ม (Batch Processing)
 /// - ระบบตรวจจับสลิปใหม่อัตโนมัติจากโฟลเดอร์เป้าหมาย (Target Folder Auto-Scan)
-class KrungthaiSlipService {
-  static final KrungthaiSlipService _instance =
-      KrungthaiSlipService._internal();
-  factory KrungthaiSlipService() => _instance;
-  KrungthaiSlipService._internal();
+class BankSlipService {
+  static final BankSlipService _instance =
+      BankSlipService._internal();
+  factory BankSlipService() => _instance;
+  BankSlipService._internal();
 
   final ImagePicker _picker = ImagePicker();
   final StorageService _storageService = StorageService();
@@ -105,12 +105,12 @@ class KrungthaiSlipService {
   }
 
   /// ประมวลผลรูปภาพสลิปแบบกลุ่ม (Batch Processing)
-  Future<KrungthaiBatchResult> processBatchImages(
+  Future<BankBatchResult> processBatchImages(
     List<XFile> files, {
     List<TransactionItem>? existingTransactions,
     void Function(int current, int total)? onProgress,
   }) async {
-    final validSlips = <KrungthaiSlipData>[];
+    final validSlips = <BankSlipData>[];
     final duplicateSlips = <Map<String, dynamic>>[];
     int invalidCount = 0;
 
@@ -127,7 +127,7 @@ class KrungthaiSlipService {
       if (slip == null) {
         invalidCount++;
       } else {
-        final duplicate = KrungthaiSlipParser.findDuplicateTransaction(
+        final duplicate = BankSlipParser.findDuplicateTransaction(
           slip,
           transactions,
         );
@@ -139,7 +139,7 @@ class KrungthaiSlipService {
       }
     }
 
-    return KrungthaiBatchResult(
+    return BankBatchResult(
       validSlips: validSlips,
       duplicateSlips: duplicateSlips,
       invalidCount: invalidCount,
@@ -148,7 +148,7 @@ class KrungthaiSlipService {
   }
 
   /// ตรวจหาสลิปใหม่ในโฟลเดอร์เป้าหมาย
-  Future<List<KrungthaiSlipData>> scanTargetFolderForNewSlips({
+  Future<List<BankSlipData>> scanTargetFolderForNewSlips({
     List<TransactionItem>? existingTransactions,
   }) async {
     if (!isFolderAutoScanEnabled.value ||
@@ -192,12 +192,12 @@ class KrungthaiSlipService {
               ? Get.find<DashboardController>().transactions
               : <TransactionItem>[]);
 
-      final newSlips = <KrungthaiSlipData>[];
+      final newSlips = <BankSlipData>[];
 
       for (final f in filesToProcess) {
         final slip = await processSlipImage(XFile(f.path));
         if (slip != null) {
-          final isDup = KrungthaiSlipParser.isDuplicate(slip, transactions);
+          final isDup = BankSlipParser.isDuplicate(slip, transactions);
           if (!isDup) {
             newSlips.add(slip);
           }
@@ -278,7 +278,7 @@ class KrungthaiSlipService {
   }
 
   /// ประมวลผลรูปภาพสลิปจริง (ถอดรหัส QR Code + OCR Text Recognition)
-  Future<KrungthaiSlipData?> processSlipImage(XFile file) async {
+  Future<BankSlipData?> processSlipImage(XFile file) async {
     try {
       final bytes = await file.readAsBytes();
 
@@ -290,26 +290,26 @@ class KrungthaiSlipService {
       // 1. ลองถอดรหัส QR Code บนสลิปด้วย Pure Dart Engine
       String? qrString;
       try {
-        qrString = await KrungthaiQrDecoder.decodeQrFromImageBytes(bytes);
+        qrString = await BankQrDecoder.decodeQrFromImageBytes(bytes);
       } catch (_) {}
 
-      KrungthaiSlipData? qrSlip;
+      BankSlipData? qrSlip;
       if (qrString != null) {
-        qrSlip = KrungthaiQrDecoder.parsePromptPaySlipQr(qrString);
+        qrSlip = BankQrDecoder.parsePromptPaySlipQr(qrString);
       }
 
       // 2. ลองอ่านข้อความผ่าน Mobile On-Device OCR
       String? ocrText;
       try {
-        ocrText = await KrungthaiOcrService.recognizeTextFromImage(file.path);
+        ocrText = await BankOcrService.recognizeTextFromImage(file.path);
       } catch (_) {}
 
-      KrungthaiSlipData? ocrSlip;
+      BankSlipData? ocrSlip;
       if (ocrText != null && ocrText.trim().isNotEmpty) {
-        ocrSlip = KrungthaiSlipParser.parse(ocrText);
+        ocrSlip = BankSlipParser.parse(ocrText);
       }
 
-      KrungthaiSlipData? result;
+      BankSlipData? result;
       // 3. ผสานข้อมูล (Data Fusion) เพื่อความแม่นยำสูงสุด
       if (qrSlip != null && ocrSlip != null) {
         final qr = qrSlip;
@@ -329,7 +329,7 @@ class KrungthaiSlipService {
             qr.hasParsedDateTime ||
             fileModTime != null;
 
-        result = KrungthaiSlipData(
+        result = BankSlipData(
           amount: finalAmount,
           transactionDate: finalDate,
           senderName: ocr.senderName ?? qr.senderName,
@@ -413,9 +413,10 @@ class KrungthaiSlipService {
   }
 
   /// ผสานวันและเวลาจาก QR, OCR และเวลาไฟล์ภาพอย่างแม่นยำ (Time & Date Fusion Engine)
+  /// ป้องกันปัญหาเวลาอัปโหลดภาพ (Image Picker temp cache) มาทับเวลาจริงบนสลิป
   static DateTime resolveAccurateDateTime({
-    KrungthaiSlipData? qrSlip,
-    KrungthaiSlipData? ocrSlip,
+    BankSlipData? qrSlip,
+    BankSlipData? ocrSlip,
     DateTime? fileModTime,
   }) {
     // 1. ตรวจสอบว่าแต่ละแหล่งข้อมูลมีเวลาที่เจาะจง (ไม่ใช่ 00:00:00) หรือไม่
@@ -431,7 +432,13 @@ class KrungthaiSlipService {
             qrSlip.transactionDate.minute != 0 ||
             qrSlip.transactionDate.second != 0);
 
-    // 2. เลือกวันที่ (ปี, เดือน, วัน)
+    // ตรวจสอบว่า fileModTime เป็นเวลาแคชเพิ่งสร้างขึ้นชั่วคราวจากการอัปโหลดหรือไม่ (เช่น image_picker แคชรูปภาพ ณ เวลาปัจจุบัน)
+    // หากห่างจากเวลาปัจจุบันไม่เกิน 15 นาที และเรามีวันเวลาจาก OCR หรือ QR อยู่แล้ว ห้ามนำเวลาไฟล์มาทับ
+    final now = DateTime.now();
+    final isTempCacheTime = fileModTime != null &&
+        now.difference(fileModTime).abs().inMinutes < 15;
+
+    // 2. เลือกวันที่ (ปี, เดือน, วัน) โดยให้ความสำคัญกับสลิปจริงก่อนเสมอ
     int year;
     int month;
     int day;
@@ -444,32 +451,31 @@ class KrungthaiSlipService {
       year = qrSlip.transactionDate.year;
       month = qrSlip.transactionDate.month;
       day = qrSlip.transactionDate.day;
-    } else if (fileModTime != null) {
+    } else if (fileModTime != null && !isTempCacheTime) {
       year = fileModTime.year;
       month = fileModTime.month;
       day = fileModTime.day;
     } else {
-      final now = DateTime.now();
       year = now.year;
       month = now.month;
       day = now.day;
     }
 
-    // 3. เลือกเวลา (ชั่วโมง, นาที, วินาที)
+    // 3. เลือกเวลา (ชั่วโมง, นาที, วินาที) โดยให้ความสำคัญกับสลิปจริงก่อนเสมอ
     int hour = 0;
     int minute = 0;
     int second = 0;
 
-    if (ocrHasTime) {
+    if (ocrSlip != null && ocrHasTime) {
       hour = ocrSlip.transactionDate.hour;
       minute = ocrSlip.transactionDate.minute;
       second = ocrSlip.transactionDate.second;
-    } else if (qrHasTime) {
+    } else if (qrSlip != null && qrHasTime) {
       hour = qrSlip.transactionDate.hour;
       minute = qrSlip.transactionDate.minute;
       second = qrSlip.transactionDate.second;
-    } else if (fileModTime != null) {
-      // หาก OCR/QR ไม่มีเวลา แต่มีเวลาของไฟล์ภาพ ให้ใช้เวลาของไฟล์ภาพ
+    } else if (fileModTime != null && !isTempCacheTime) {
+      // หาก OCR/QR ไม่มีเวลา และเวลาของไฟล์ภาพไม่ใช่แคชที่เพิ่งสร้างตอนอัปโหลด ให้ใช้เวลาของไฟล์ภาพ
       hour = fileModTime.hour;
       minute = fileModTime.minute;
       second = fileModTime.second;
@@ -479,7 +485,7 @@ class KrungthaiSlipService {
   }
 
   /// นำประวัติรายการธุรกรรมในระบบมาช่วยเพิ่มความแม่นยำในการทำนายหมวดหมู่ (History-Based Learning)
-  KrungthaiSlipData enrichWithHistory(KrungthaiSlipData slip) {
+  BankSlipData enrichWithHistory(BankSlipData slip) {
     try {
       if (Get.isRegistered<DashboardController>()) {
         final controller = Get.find<DashboardController>();
@@ -508,15 +514,15 @@ class KrungthaiSlipService {
     return slip;
   }
 
-  /// แปลงข้อความสลิปเป็น `KrungthaiSlipData`
-  KrungthaiSlipData parseSlipText(String text) {
-    final parsed = KrungthaiSlipParser.parse(text);
+  /// แปลงข้อความสลิปเป็น `BankSlipData`
+  BankSlipData parseSlipText(String text) {
+    final parsed = BankSlipParser.parse(text);
     return enrichWithHistory(parsed);
   }
 
   /// บันทึกรายการสลิปลงระบบ (รองรับทั้งโหมดทันทีและแก้ไขก่อน)
   TransactionItem saveSlipTransaction(
-    KrungthaiSlipData slip, {
+    BankSlipData slip, {
     double? customAmount,
     String? customTitle,
     String? customCategory,
@@ -647,3 +653,8 @@ Memo: หูฟังบลูทูธไร้สาย
     ];
   }
 }
+
+
+/// Typedef สำหรับความเข้ากันได้ย้อนหลัง 100%
+typedef KrungthaiSlipService = BankSlipService;
+typedef KrungthaiBatchResult = BankBatchResult;

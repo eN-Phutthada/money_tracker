@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
-import 'package:money_tracker/app/data/models/krungthai_slip_model.dart';
+import 'package:money_tracker/app/data/models/bank_slip_model.dart';
 import 'package:money_tracker/app/data/models/transaction_model.dart';
-import 'package:money_tracker/app/data/services/krungthai_slip_service.dart';
+import 'package:money_tracker/app/data/services/bank_slip_service.dart';
 import 'package:money_tracker/app/data/services/storage_service.dart';
 import 'package:money_tracker/app/modules/dashboard/controllers/dashboard_controller.dart';
 import 'package:money_tracker/app/modules/dashboard/widgets/smart_auto_scan_slips_banner.dart';
-import 'package:money_tracker/app/modules/transactions/views/krungthai_batch_slip_sheet.dart';
+import 'package:money_tracker/app/modules/transactions/views/bank_batch_slip_sheet.dart';
 import 'package:money_tracker/app/theme/app_theme.dart';
 import 'package:money_tracker/app/translations/app_translations.dart';
 import 'package:money_tracker/app/widgets/app_feedback.dart';
@@ -63,9 +63,9 @@ void main() {
     });
   });
 
-  group('KrungthaiSlipService Batch & Folder Logic Tests', () {
-    test('KrungthaiBatchResult computes counts correctly', () {
-      final slip1 = KrungthaiSlipData(
+  group('BankSlipService Batch & Folder Logic Tests', () {
+    test('BankBatchResult computes counts correctly', () {
+      final slip1 = BankSlipData(
         bankName: 'Krungthai NEXT',
         amount: 250.0,
         transactionDate: DateTime(2026, 9, 12, 10, 0),
@@ -79,7 +79,7 @@ void main() {
         isKrungthai: true,
       );
 
-      final slip2 = KrungthaiSlipData(
+      final slip2 = BankSlipData(
         bankName: 'Krungthai NEXT',
         amount: 500.0,
         transactionDate: DateTime(2026, 9, 12, 11, 0),
@@ -93,7 +93,7 @@ void main() {
         isKrungthai: true,
       );
 
-      final result = KrungthaiBatchResult(
+      final result = BankBatchResult(
         validSlips: [slip1, slip2],
         duplicateSlips: [
           {'referenceNo': 'REF000', 'reason': 'เคยบันทึกไปแล้ว'}
@@ -111,7 +111,7 @@ void main() {
     });
 
     test('SlipService updates target folder and auto-scan toggle reactively', () async {
-      final service = KrungthaiSlipService();
+      final service = BankSlipService();
       await service.init();
 
       await service.toggleFolderAutoScan(true);
@@ -127,12 +127,12 @@ void main() {
     });
   });
 
-  group('KrungthaiBatchSlipSheet Widget Tests', () {
+  group('BankBatchSlipSheet Widget Tests', () {
     testWidgets('Renders batch slip sheet with items, totals, and exclusion toggling', (tester) async {
       await tester.binding.setSurfaceSize(const Size(430, 932));
       Get.put(DashboardController());
 
-      final slipA = KrungthaiSlipData(
+      final slipA = BankSlipData(
         bankName: 'Krungthai NEXT',
         amount: 320.0,
         transactionDate: DateTime(2026, 9, 12, 12, 15),
@@ -147,7 +147,7 @@ void main() {
         isKrungthai: true,
       );
 
-      final slipB = KrungthaiSlipData(
+      final slipB = BankSlipData(
         bankName: 'Krungthai NEXT',
         amount: 680.0,
         transactionDate: DateTime(2026, 9, 12, 12, 30),
@@ -162,7 +162,7 @@ void main() {
         isKrungthai: true,
       );
 
-      final slipDuplicate = KrungthaiSlipData(
+      final slipDuplicate = BankSlipData(
         bankName: 'Krungthai NEXT',
         amount: 100.0,
         transactionDate: DateTime(2026, 9, 12, 11, 0),
@@ -183,7 +183,7 @@ void main() {
           locale: const Locale('th', 'TH'),
           translations: AppTranslations(),
           home: Scaffold(
-            body: KrungthaiBatchSlipSheet(
+            body: BankBatchSlipSheet(
               initialSlips: [slipA, slipB],
               duplicateSlips: [
                 {'slip': slipDuplicate, 'reason': 'เคยบันทึกไปแล้ว'}
@@ -227,7 +227,7 @@ void main() {
       final controller = Get.put(DashboardController());
 
       final detectedSlips = [
-        KrungthaiSlipData(
+        BankSlipData(
           bankName: 'Krungthai NEXT',
           amount: 150.0,
           transactionDate: DateTime(2026, 9, 12, 8, 30),
@@ -240,7 +240,7 @@ void main() {
           rawText: '...',
           isKrungthai: true,
         ),
-        KrungthaiSlipData(
+        BankSlipData(
           bankName: 'Krungthai NEXT',
           amount: 450.0,
           transactionDate: DateTime(2026, 9, 12, 9, 0),

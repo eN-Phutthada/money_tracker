@@ -1,12 +1,12 @@
 import 'dart:typed_data';
 import 'package:image/image.dart' as img;
 import 'package:zxing2/qrcode.dart';
-import '../models/krungthai_slip_model.dart';
+import '../models/bank_slip_model.dart';
 import 'slip_category_predictor.dart';
 
 /// ตัวถอดรหัส QR Code บนสลิปธนาคารกรุงไทย (PromptPay / BOT Slip Verification Standard)
 /// ทำงานด้วย Pure Dart 100% รองรับทุกแพลตฟอร์ม (Android, iOS, Windows, macOS, Web)
-class KrungthaiQrDecoder {
+class BankQrDecoder {
   /// ถอดรหัส QR Code จากข้อมูลไบต์ของรูปภาพสลิป
   static Future<String?> decodeQrFromImageBytes(Uint8List bytes) async {
     try {
@@ -64,6 +64,40 @@ class KrungthaiQrDecoder {
         );
         final cropDecoded = _tryDecodeImage(cropped);
         if (cropDecoded != null) return cropDecoded;
+      }
+
+      // 5. หากยังไม่พบ ให้ลองครอบส่วนล่างขวา (ตำแหน่งยอดนิยมของ SCB EASY, Bangkok Bank, ttb)
+      final brX = (processed.width * 0.45).round();
+      final brY = (processed.height * 0.45).round();
+      final brW = processed.width - brX;
+      final brH = processed.height - brY;
+      if (brW > 50 && brH > 50) {
+        final brCropped = img.copyCrop(
+          processed,
+          x: brX,
+          y: brY,
+          width: brW,
+          height: brH,
+        );
+        final brDecoded = _tryDecodeImage(brCropped);
+        if (brDecoded != null) return brDecoded;
+      }
+
+      // 6. หากยังไม่พบ ให้ลองครอบกึ่งกลางส่วนล่าง (ตำแหน่งยอดนิยมของ GSB MyMo, BAAC, KKP)
+      final bcX = (processed.width * 0.15).round();
+      final bcY = (processed.height * 0.45).round();
+      final bcW = (processed.width * 0.70).round();
+      final bcH = (processed.height * 0.50).round();
+      if (bcW > 50 && bcH > 50) {
+        final bcCropped = img.copyCrop(
+          processed,
+          x: bcX,
+          y: bcY,
+          width: bcW,
+          height: bcH,
+        );
+        final bcDecoded = _tryDecodeImage(bcCropped);
+        if (bcDecoded != null) return bcDecoded;
       }
 
       return null;
@@ -125,12 +159,12 @@ class KrungthaiQrDecoder {
     '073': 'ธนาคารแลนด์ แอนด์ เฮ้าส์',
   };
 
-  /// ถอดรหัสข้อความ QR Code สลิปเป็นโมเดลข้อมูล KrungthaiSlipData (Alias สำหรับ parsePromptPaySlipQr)
-  static KrungthaiSlipData? decodeSlipQr(String qrText) =>
+  /// ถอดรหัสข้อความ QR Code สลิปเป็นโมเดลข้อมูล BankSlipData (Alias สำหรับ parsePromptPaySlipQr)
+  static BankSlipData? decodeSlipQr(String qrText) =>
       parsePromptPaySlipQr(qrText);
 
   /// วิเคราะห์ข้อมูลจากข้อความ QR Code สลิปธนาคาร (รองรับทุกธนาคารในไทย โดยมีกรุงไทยเป็นหลัก)
-  static KrungthaiSlipData? parsePromptPaySlipQr(String qrText) {
+  static BankSlipData? parsePromptPaySlipQr(String qrText) {
     if (qrText.trim().isEmpty) return null;
 
     final trimmed = qrText.trim();
@@ -199,6 +233,24 @@ class KrungthaiQrDecoder {
           }
         }
 
+        // สกัดชื่อผู้รับเงิน/ร้านค้า (ถ้ามี)
+        final receiverName = uri.queryParameters['receiver'] ??
+            uri.queryParameters['receiverName'] ??
+            uri.queryParameters['to'] ??
+            uri.queryParameters['merchant'] ??
+            uri.queryParameters['payee'];
+
+        // กรณีไม่มี date parameter แต่มี transRef ที่ขึ้นต้นด้วย 202x (YYYYMMDD)
+        if (!hasDate && transRef != null && transRef.length >= 8 && transRef.startsWith('202')) {
+          final y = int.tryParse(transRef.substring(0, 4));
+          final m = int.tryParse(transRef.substring(4, 6));
+          final d = int.tryParse(transRef.substring(6, 8));
+          if (y != null && m != null && d != null && m >= 1 && m <= 12 && d >= 1 && d <= 31) {
+            date = DateTime(y, m, d);
+            hasDate = true;
+          }
+        }
+
         String bankVariant = 'ธนาคารกรุงไทย (Krungthai NEXT)';
         if (lower.contains('paotang') || lower.contains('เป๋าตัง')) {
           bankVariant = 'ธนาคารกรุงไทย (เป๋าตัง)';
@@ -216,18 +268,43 @@ class KrungthaiQrDecoder {
           bankVariant = 'ธนาคารออมสิน (MyMo)';
         } else if (lower.contains('baac')) {
           bankVariant = 'ธ.ก.ส. (BAAC Mobile)';
+        } else if (lower.contains('kkp') || lower.contains('เกียรตินาคิน') || lower.contains('dime')) {
+          bankVariant = 'ธนาคารเกียรตินาคินภัทร (KKP)';
+        } else if (lower.contains('uob') || lower.contains('tmrw')) {
+          bankVariant = 'ธนาคารยูโอบี (UOB TMRW)';
+        } else if (lower.contains('cimb')) {
+          bankVariant = 'ธนาคารซีไอเอ็มบี ไทย';
+        } else if (lower.contains('tisco')) {
+          bankVariant = 'ธนาคารทิสโก้';
+        } else if (lower.contains('lhb') || lower.contains('lh bank')) {
+          bankVariant = 'ธนาคารแลนด์ แอนด์ เฮ้าส์ (LHB You)';
+        } else if (lower.contains('shopeepay')) {
+          bankVariant = 'ช้อปปี้เพย์ (ShopeePay)';
         }
 
         final isKtb = bankVariant.contains('กรุงไทย') || bankVariant.contains('เป๋าตัง');
 
-        return KrungthaiSlipData(
+        final prediction = SlipCategoryPredictor.predict(
+          receiverName: receiverName,
+          fullText: '${uri.path} ${receiverName ?? ''}',
           amount: amount,
           transactionDate: date,
+        );
+
+        return BankSlipData(
+          amount: amount,
+          transactionDate: date,
+          receiverName: receiverName,
           referenceNo: transRef,
           bankName: bankVariant,
           isKrungthai: isKtb,
           rawText: qrText,
           hasParsedDateTime: hasDate,
+          suggestedCategory: prediction.category,
+          suggestedCostNature: prediction.costNature,
+          suggestedType: prediction.type,
+          predictionConfidence: prediction.confidence,
+          predictionReason: prediction.reason.isNotEmpty ? prediction.reason : 'สแกน QR URL',
         );
       }
     }
@@ -261,6 +338,12 @@ class KrungthaiQrDecoder {
       if (amtMatch != null) {
         amount = double.tryParse(amtMatch.group(1)!) ?? 0.0;
       }
+    }
+
+    // สกัดชื่อร้านค้า/ผู้รับเงินจาก Tag 59 (Merchant Name ใน EMVCo Standard)
+    String? receiverName;
+    if (tlv.containsKey('59') && tlv['59']!.trim().isNotEmpty) {
+      receiverName = tlv['59']!.trim();
     }
 
     // สกัดรหัสอ้างอิงธุรกรรม (Transaction Reference)
@@ -384,14 +467,16 @@ class KrungthaiQrDecoder {
     final isKtb = bankName.contains('กรุงไทย') || bankName.contains('เป๋าตัง');
 
     final prediction = SlipCategoryPredictor.predict(
-      fullText: qrText,
+      receiverName: receiverName,
+      fullText: '$qrText ${receiverName ?? ''}',
       amount: amount,
       transactionDate: date,
     );
 
-    return KrungthaiSlipData(
+    return BankSlipData(
       amount: amount,
       transactionDate: date,
+      receiverName: receiverName,
       referenceNo: referenceNo,
       bankName: bankName,
       isKrungthai: isKtb,
@@ -421,3 +506,7 @@ class KrungthaiQrDecoder {
     return result;
   }
 }
+
+
+/// Typedef สำหรับความเข้ากันได้ย้อนหลัง 100%
+typedef KrungthaiQrDecoder = BankQrDecoder;

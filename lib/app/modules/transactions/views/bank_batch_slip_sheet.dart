@@ -3,18 +3,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
-import '../../../data/models/krungthai_slip_model.dart';
-import '../../../data/services/krungthai_slip_service.dart';
+import '../../../data/models/bank_slip_model.dart';
+import '../../../data/services/bank_slip_service.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_popup_decorations.dart';
 import '../../dashboard/controllers/dashboard_controller.dart';
 
 /// หน้าต่างพรีวิวและตรวจสอบสลิปแบบกลุ่ม (Krungthai Batch Slip Confirmation Sheet)
-class KrungthaiBatchSlipSheet extends StatefulWidget {
-  final List<KrungthaiSlipData> initialSlips;
+class BankBatchSlipSheet extends StatefulWidget {
+  final List<BankSlipData> initialSlips;
   final List<Map<String, dynamic>> duplicateSlips;
 
-  const KrungthaiBatchSlipSheet({
+  const BankBatchSlipSheet({
     super.key,
     required this.initialSlips,
     this.duplicateSlips = const [],
@@ -22,7 +22,7 @@ class KrungthaiBatchSlipSheet extends StatefulWidget {
 
   static void show({
     BuildContext? context,
-    required List<KrungthaiSlipData> slips,
+    required List<BankSlipData> slips,
     List<Map<String, dynamic>> duplicates = const [],
   }) {
     final activeContext = (context != null && context.mounted ? context : Get.context);
@@ -34,7 +34,7 @@ class KrungthaiBatchSlipSheet extends StatefulWidget {
         AppGlassDialog(
           maxWidth: 560,
           padding: const EdgeInsets.all(22),
-          child: KrungthaiBatchSlipSheet(
+          child: BankBatchSlipSheet(
             initialSlips: slips,
             duplicateSlips: duplicates,
           ),
@@ -44,7 +44,7 @@ class KrungthaiBatchSlipSheet extends StatefulWidget {
       Get.bottomSheet(
         BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-          child: KrungthaiBatchSlipSheet(
+          child: BankBatchSlipSheet(
             initialSlips: slips,
             duplicateSlips: duplicates,
           ),
@@ -56,11 +56,11 @@ class KrungthaiBatchSlipSheet extends StatefulWidget {
   }
 
   @override
-  State<KrungthaiBatchSlipSheet> createState() => _KrungthaiBatchSlipSheetState();
+  State<BankBatchSlipSheet> createState() => _BankBatchSlipSheetState();
 }
 
 class _BatchItemState {
-  final KrungthaiSlipData slip;
+  final BankSlipData slip;
   final bool isDuplicate;
   bool isSelected;
   String category;
@@ -73,9 +73,9 @@ class _BatchItemState {
   });
 }
 
-class _KrungthaiBatchSlipSheetState extends State<KrungthaiBatchSlipSheet> {
+class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
   final DashboardController controller = Get.find<DashboardController>();
-  final KrungthaiSlipService slipService = KrungthaiSlipService();
+  final BankSlipService slipService = BankSlipService();
   final currencyFormat = NumberFormat('#,##0.00', 'en_US');
 
   late List<_BatchItemState> _items;
@@ -113,7 +113,7 @@ class _KrungthaiBatchSlipSheetState extends State<KrungthaiBatchSlipSheet> {
 
     // เพิ่มสลิปที่ตรวจพบซ้ำ (ไม่ติ๊กเลือกไว้ เพื่อป้องกันการบันทึกซ้ำโดยไม่ตั้งใจ)
     for (final entry in widget.duplicateSlips) {
-      final slip = entry['slip'] as KrungthaiSlipData?;
+      final slip = entry['slip'] as BankSlipData?;
       if (slip == null) continue;
       _items.add(
         _BatchItemState(
@@ -544,3 +544,7 @@ class _KrungthaiBatchSlipSheetState extends State<KrungthaiBatchSlipSheet> {
     );
   }
 }
+
+
+/// Typedef สำหรับความเข้ากันได้ย้อนหลัง 100%
+typedef KrungthaiBatchSlipSheet = BankBatchSlipSheet;

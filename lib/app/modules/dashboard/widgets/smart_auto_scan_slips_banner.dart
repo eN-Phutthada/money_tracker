@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import '../../../theme/app_colors.dart';
-import '../../transactions/views/krungthai_batch_slip_sheet.dart';
+import '../../transactions/views/bank_batch_slip_sheet.dart';
 import '../controllers/dashboard_controller.dart';
 
 /// แบนเนอร์อัจฉริยะแจ้งเตือนเมื่อตรวจพบสลิปใหม่ในโฟลเดอร์เป้าหมาย (Smart Auto-Scan Slips Banner)
@@ -167,7 +167,7 @@ class SmartAutoScanSlipsBanner extends GetView<DashboardController> {
                       ),
                       onPressed: () {
                         HapticFeedback.selectionClick();
-                        KrungthaiBatchSlipSheet.show(
+                        BankBatchSlipSheet.show(
                           context: context,
                           slips: slips.toList(),
                         );

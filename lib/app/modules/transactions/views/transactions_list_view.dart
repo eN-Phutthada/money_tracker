@@ -10,7 +10,7 @@ import '../../../widgets/liquid_glass_nav_dock.dart';
 import '../../../widgets/modern_app_bar.dart';
 import '../../../routes/app_routes.dart';
 import 'quick_add_bottom_sheet.dart';
-import 'krungthai_slip_sheet.dart';
+import 'bank_slip_sheet.dart';
 
 /// หน้าจอประวัติรายการธุรกรรมทั้งหมด (FinTech 2026 Transaction Command Hub)
 class TransactionsListView extends StatefulWidget {
@@ -437,7 +437,7 @@ class _TransactionsListViewState extends State<TransactionsListView> {
                 child: InkWell(
                   onTap: () {
                     HapticFeedback.selectionClick();
-                    KrungthaiSlipScanModal.show(context);
+                    BankSlipScanModal.show(context);
                   },
                   borderRadius: BorderRadius.circular(16),
                   child: Container(
@@ -456,7 +456,7 @@ class _TransactionsListViewState extends State<TransactionsListView> {
                         const Icon(Icons.receipt_long_rounded, size: 18, color: Color(0xFF00A3E0)),
                         const SizedBox(width: 6),
                         Text(
-                          'scan_krungthai_slip'.tr,
+                          'scan_bank_slip'.tr,
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,

@@ -3,9 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import '../../../data/models/budget_plan_model.dart';
-import '../../../data/models/krungthai_slip_model.dart';
+import '../../../data/models/bank_slip_model.dart';
 import '../../../data/models/transaction_model.dart';
-import '../../../data/services/krungthai_slip_service.dart';
+import '../../../data/services/bank_slip_service.dart';
 import '../../../data/services/storage_service.dart';
 import '../../../widgets/app_feedback.dart';
 
@@ -23,7 +23,7 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
   ).obs;
 
   // Folder Auto-Scan State
-  final RxList<KrungthaiSlipData> detectedFolderSlips = <KrungthaiSlipData>[].obs;
+  final RxList<BankSlipData> detectedFolderSlips = <BankSlipData>[].obs;
   final RxBool isScanningFolder = false.obs;
 
   final Rx<TimeFilterPeriod> currentPeriod = TimeFilterPeriod.monthly.obs;
@@ -61,7 +61,7 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
   }
 
   Future<void> checkFolderSlipsOnAppOpen() async {
-    final slipService = KrungthaiSlipService();
+    final slipService = BankSlipService();
     if (!slipService.isFolderAutoScanEnabled.value) return;
 
     try {
@@ -80,7 +80,7 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
 
   Future<void> saveAllDetectedSlips() async {
     if (detectedFolderSlips.isEmpty) return;
-    final slipService = KrungthaiSlipService();
+    final slipService = BankSlipService();
     final count = detectedFolderSlips.length;
     double totalAmount = 0.0;
 

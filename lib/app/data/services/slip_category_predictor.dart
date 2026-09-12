@@ -64,9 +64,26 @@ class SlipCategoryPredictor {
     final combined =
         '${memo ?? ''} ${receiverName ?? ''} $fullText'.toLowerCase();
 
+    // ตรวจสอบสัญญาณรายการเงินเข้า (Income Signal)
+    final isIncomeSignal = combined.contains('เงินเข้า') ||
+        combined.contains('โอนเงินเข้า') ||
+        combined.contains('รับเงินสำเร็จ') ||
+        combined.contains('ได้รับเงิน') ||
+        combined.contains('เงินโอนเข้า') ||
+        combined.contains('receive money') ||
+        combined.contains('money in') ||
+        combined.contains('received') ||
+        combined.contains('โอนเข้าบัญชีคุณ');
+
     // Score map: category → accumulated score
     final scores = <String, int>{for (final d in _defs) d.category: 0};
     final hints = <String, String>{};
+
+    if (isIncomeSignal) {
+      scores['ขายของ/รายได้เสริม'] = (scores['ขายของ/รายได้เสริม'] ?? 0) + 12;
+      scores['เงินเดือน'] = (scores['เงินเดือน'] ?? 0) + 8;
+      scores['เงินคืน/โอนคืน'] = (scores['เงินคืน/โอนคืน'] ?? 0) + 8;
+    }
 
     // ── 1. Keyword Scoring ───────────────────────────────────────────
     for (final def in _defs) {
@@ -121,9 +138,11 @@ class SlipCategoryPredictor {
       }
     }
 
+    final fallback = isIncomeSignal ? _fallbackIncomeDef : _fallbackDef;
+
     final def = _defs.firstWhere(
       (d) => d.category == best,
-      orElse: () => _fallbackDef,
+      orElse: () => fallback,
     );
 
     final confidence = _toConfidence(
@@ -133,14 +152,18 @@ class SlipCategoryPredictor {
     );
 
     final reason = hints[best] ??
-        (amount > 0
-            ? 'ประมาณจากยอดเงิน ฿${amount.toStringAsFixed(0)}'
-            : 'ค่าเริ่มต้น');
+        (isIncomeSignal
+            ? 'ตรวจพบสัญญาณเงินโอนเข้า'
+            : (amount > 0
+                ? 'ประมาณจากยอดเงิน ฿${amount.toStringAsFixed(0)}'
+                : 'ค่าเริ่มต้น'));
 
     return SlipPrediction(
       category: best,
-      type: def.type,
-      costNature: def.costNature,
+      type: isIncomeSignal && def.type == TransactionType.expense
+          ? TransactionType.income
+          : def.type,
+      costNature: isIncomeSignal ? CostNature.notApplicable : def.costNature,
       confidence: confidence,
       reason: reason,
     );
@@ -264,25 +287,73 @@ class SlipCategoryPredictor {
     keywords: [],
   );
 
+  static const _fallbackIncomeDef = _CatDef(
+    category: 'อื่นๆ',
+    type: TransactionType.income,
+    costNature: CostNature.notApplicable,
+    keywords: [],
+  );
+
   static const _defs = [
+    // ── Income (รายรับ) ──────────────────────────────────────────
+    _CatDef(
+      category: 'เงินเดือน',
+      type: TransactionType.income,
+      costNature: CostNature.notApplicable,
+      amountMin: 5000,
+      amountMax: 1000000,
+      keywords: [
+        'เงินเดือน', 'payroll', 'salary', 'ค่าจ้าง', 'โบนัส', 'bonus',
+        'สวัสดิการ', 'เบี้ยเลี้ยง', 'เงินปันผล', 'dividend', 'บำนาญ',
+      ],
+    ),
+    _CatDef(
+      category: 'ขายของ/รายได้เสริม',
+      type: TransactionType.income,
+      costNature: CostNature.notApplicable,
+      amountMin: 50,
+      amountMax: 500000,
+      keywords: [
+        'ขายของ', 'รายได้เสริม', 'ค่าสอน', 'คอมมิชชั่น', 'commission',
+        'freelance', 'ฟรีแลนซ์', 'รับจ้าง', 'ค่าบริการ', 'ค่าแรง', 'ยอดขาย',
+      ],
+    ),
+    _CatDef(
+      category: 'เงินคืน/โอนคืน',
+      type: TransactionType.income,
+      costNature: CostNature.notApplicable,
+      amountMin: 10,
+      amountMax: 100000,
+      keywords: [
+        'คืนเงิน', 'โอนคืน', 'refund', 'เงินคืน', 'คืนค่า', 'cashback', 'แคชแบ็ค',
+      ],
+    ),
+
+    // ── Expense (รายจ่าย) ──────────────────────────────────────────
     _CatDef(
       category: 'อาหาร/ของกิน',
       type: TransactionType.expense,
       costNature: CostNature.variable,
-      amountMin: 30, amountMax: 1500,
+      amountMin: 30,
+      amountMax: 1500,
       keywords: [
         'ข้าว', 'อาหาร', 'กิน', 'ก๋วยเตี๋ยว', 'ขนม', 'ชาบู',
         'ส้มตำ', 'lunch', 'dinner', 'food', 'meal', 'กะเพรา',
         'หมูกระทะ', 'เซเว่น', '7-eleven', '7-11', 'breakfast',
         'ร้านอาหาร', 'pizza', 'sushi', 'ข้าวมันไก่', 'ยำ',
-        'ต้มยำ', 'ผัดไทย', 'ลาบ',
+        'ต้มยำ', 'ผัดไทย', 'ลาบ', 'line man', 'lineman', 'grabfood',
+        'grab food', 'foodpanda', 'robinhood', 'kfc', 'mcdonald',
+        'chester', 'bar b q', 'mk', 'bonchon', 'yayoi', 'hachiban',
+        'swensen', 'swensens', 'dairy queen', 'ชาบูชิ', 'บุฟเฟ่ต์',
+        'เบเกอรี่', 'ขนมปัง', 'ไอศกรีม', 'ไอติม', 'delivery',
       ],
     ),
     _CatDef(
       category: 'กาแฟ/เครื่องดื่ม',
       type: TransactionType.expense,
       costNature: CostNature.variable,
-      amountMin: 30, amountMax: 350,
+      amountMin: 30,
+      amountMax: 350,
       keywords: [
         'กาแฟ', 'ชา', 'cafe', 'coffee', 'starbucks', 'amazon',
         'tea', 'ชานม', 'เต่าบิน', 'แบล็คแคนยอน', 'คาเฟ่',
@@ -293,18 +364,22 @@ class SlipCategoryPredictor {
       category: 'การเดินทาง',
       type: TransactionType.expense,
       costNature: CostNature.variable,
-      amountMin: 20, amountMax: 1200,
+      amountMin: 20,
+      amountMax: 1200,
       keywords: [
         'bts', 'mrt', 'grab', 'bolt', 'น้ำมัน', 'แท็กซี่',
         'ค่าทางด่วน', 'ตั๋ว', 'ปตท', 'บางจาก', 'shell',
-        'caltex', 'วิน', 'รถไฟ', 'lyft', 'uber',
+        'caltex', 'วิน', 'รถไฟ', 'lyft', 'uber', 'm-flow', 'mflow',
+        'easypass', 'easy pass', 'ทางด่วน', 'bems', 'srtet',
+        'airport rail link', 'ปั๊ม', 'esso', 'ptg', 'susco', 'เติมน้ำมัน',
       ],
     ),
     _CatDef(
       category: 'ที่อยู่อาศัย',
       type: TransactionType.expense,
       costNature: CostNature.fixed,
-      amountMin: 1500, amountMax: 30000,
+      amountMin: 1500,
+      amountMax: 30000,
       keywords: [
         'ค่าห้อง', 'ค่าเช่า', 'หอ', 'คอนโด', 'rent', 'นิติ',
         'อาคาร', 'หมู่บ้าน', 'apartment',
@@ -314,19 +389,22 @@ class SlipCategoryPredictor {
       category: 'สาธารณูปโภค',
       type: TransactionType.expense,
       costNature: CostNature.fixed,
-      amountMin: 100, amountMax: 10000,
+      amountMin: 100,
+      amountMax: 10000,
       keywords: [
         'ค่าน้ำ', 'ค่าไฟ', 'การไฟฟ้านครหลวง', 'การประปา',
         'pea', 'mea', 'เน็ต', 'internet', 'โทรศัพท์',
         'ais', 'true', 'dtac', 'nt broadband', 'tot',
-        'wifi', 'broadband',
+        'wifi', 'broadband', 'กฟน.', 'กฟภ.', 'กปน.', 'กปภ.',
+        'ค่าโทร', 'ais fibre', 'true online', '3bb', 'nt',
       ],
     ),
     _CatDef(
       category: 'สุขภาพ/ยา',
       type: TransactionType.expense,
       costNature: CostNature.variable,
-      amountMin: 100, amountMax: 20000,
+      amountMin: 100,
+      amountMax: 20000,
       keywords: [
         'ยา', 'หมอ', 'คลินิก', 'โรงพยาบาล', 'hospital',
         'pharmacy', 'ทันตกรรม', 'ฟัน', 'แพทย์', 'รักษา',
@@ -337,7 +415,8 @@ class SlipCategoryPredictor {
       category: 'การศึกษา',
       type: TransactionType.expense,
       costNature: CostNature.variable,
-      amountMin: 200, amountMax: 50000,
+      amountMin: 200,
+      amountMax: 50000,
       keywords: [
         'เรียน', 'หนังสือ', 'คอร์ส', 'course', 'tuition',
         'ค่าเทอม', 'มหาลัย', 'university', 'school',
@@ -348,30 +427,38 @@ class SlipCategoryPredictor {
       category: 'เงินออม/DCA',
       type: TransactionType.savingsInvestment,
       costNature: CostNature.notApplicable,
-      amountMin: 500, amountMax: 500000,
+      amountMin: 500,
+      amountMax: 500000,
       keywords: [
         'ออม', 'dca', 'กองทุน', 'หุ้น', 'savings', 'invest',
         'สลาก', 'ทอง', 'crypto', 'binance', 'innovestx',
         'dime', 'ลงทุน', 'พันธบัตร', 'ssf', 'rmf',
+        'ซื้อกองทุน', 'ซื้อหุ้น', 'เปิดพอร์ต', 'dime!',
+        'krungthai xspring', 'k-cyber', 'scb easy invest',
       ],
     ),
     _CatDef(
       category: 'ช้อปปิ้ง',
       type: TransactionType.expense,
       costNature: CostNature.variable,
-      amountMin: 100, amountMax: 15000,
+      amountMin: 100,
+      amountMax: 15000,
       keywords: [
         'shopee', 'lazada', 'tiktok', 'เสื้อ', 'กางเกง',
         'รองเท้า', 'ของเล่น', 'uniqlo', 'zara', 'shop',
         'หูฟัง', 'samsung', 'apple', 'แว่น', 'กระเป๋า',
-        'เครื่องสำอาง', 'ชุด',
+        'เครื่องสำอาง', 'ชุด', 'tiktok shop', 'line man mart',
+        'lotus', 'big c', 'cj express', 'makro', 'watson',
+        'watsons', 'boots', 'ikea', 'homepro', 'mr.diy', 'diy',
+        'decathlon', 'supermarket', 'ซูเปอร์มาร์เก็ต', 'ตลาด',
       ],
     ),
     _CatDef(
       category: 'บันเทิง/พักผ่อน',
       type: TransactionType.expense,
       costNature: CostNature.variable,
-      amountMin: 100, amountMax: 5000,
+      amountMin: 100,
+      amountMax: 5000,
       keywords: [
         'netflix', 'spotify', 'youtube', 'สตรีมมิ่ง',
         'streaming', 'เอ็นเอฟ', 'nf', 'disney', 'prime',

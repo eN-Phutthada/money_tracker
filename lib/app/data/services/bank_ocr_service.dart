@@ -3,8 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 
 /// บริการสแกนและอ่านข้อความด้วยเทคโนโลยี Optical Character Recognition (OCR) บนมือถือ
-/// ทำงานแบบ On-Device บนสมาร์ตโฟน Android และ iOS
-class KrungthaiOcrService {
+/// ทำงานแบบ On-Device บนสมาร์ตโฟน Android และ iOS สำหรับสลิปธนาคารทุกแห่ง
+class BankOcrService {
   /// สกัดข้อความจากไฟล์รูปภาพสลิป
   static Future<String?> recognizeTextFromImage(String filePath) async {
     // จำกัดการทำงานเฉพาะบนอุปกรณ์มือถือ (Android และ iOS)
@@ -25,3 +25,6 @@ class KrungthaiOcrService {
     }
   }
 }
+
+/// Typedef สำหรับความเข้ากันได้ย้อนหลัง 100%
+typedef KrungthaiOcrService = BankOcrService;

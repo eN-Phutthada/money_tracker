@@ -1,7 +1,7 @@
 import 'transaction_model.dart';
 
-/// โมเดลข้อมูลสลิปโอนเงินธนาคารกรุงไทย (Krungthai NEXT / เป๋าตัง / KTB)
-class KrungthaiSlipData {
+/// โมเดลข้อมูลสลิปโอนเงินธนาคารไทยทุกแห่ง (K PLUS, SCB EASY, Krungthai NEXT, เป๋าตัง, Bualuang, ttb, MyMo, BAAC ฯลฯ)
+class BankSlipData {
   final double amount;
   final DateTime transactionDate;
   final String? senderName;
@@ -24,7 +24,7 @@ class KrungthaiSlipData {
   /// เหตุผลสั้นๆ ที่ระบบทำนายหมวดหมู่นี้ สำหรับแสดง UI
   final String predictionReason;
 
-  const KrungthaiSlipData({
+  const BankSlipData({
     required this.amount,
     required this.transactionDate,
     this.senderName,
@@ -35,7 +35,7 @@ class KrungthaiSlipData {
     this.memo,
     this.bankName = 'ธนาคารกรุงไทย',
     this.isKrungthai = true,
-    this.suggestedCategory = 'อาหาร/ของกิน',
+    this.suggestedCategory = 'อื่นๆ',
     this.suggestedType = TransactionType.expense,
     this.suggestedCostNature = CostNature.variable,
     this.rawText = '',
@@ -45,7 +45,7 @@ class KrungthaiSlipData {
   });
 
   /// สร้างสำเนาที่มีค่าบางฟิลด์ถูกแทนที่ (สำหรับ history-based enhancement)
-  KrungthaiSlipData copyWith({
+  BankSlipData copyWith({
     double? amount,
     DateTime? transactionDate,
     String? senderName,
@@ -64,7 +64,7 @@ class KrungthaiSlipData {
     double? predictionConfidence,
     String? predictionReason,
   }) {
-    return KrungthaiSlipData(
+    return BankSlipData(
       amount: amount ?? this.amount,
       transactionDate: transactionDate ?? this.transactionDate,
       senderName: senderName ?? this.senderName,
@@ -85,15 +85,35 @@ class KrungthaiSlipData {
     );
   }
 
-  /// ชื่อรายการเริ่มต้นที่กระชับและเข้าใจง่าย
+  /// ชื่อรายการเริ่มต้นที่กระชับและเข้าใจง่าย (รองรับทั้งรายรับและรายจ่าย)
   String get defaultTitle {
     if (memo != null && memo!.trim().isNotEmpty) {
       return memo!.trim();
     }
-    if (receiverName != null && receiverName!.trim().isNotEmpty) {
-      return 'โอนให้ ${receiverName!.trim()}';
+    if (suggestedType == TransactionType.income) {
+      if (senderName != null && senderName!.trim().isNotEmpty) {
+        final name = senderName!.trim();
+        if (name.startsWith('รับจาก') || name.startsWith('รับเงินจาก')) {
+          return name;
+        }
+        return 'รับเงินจาก $name';
+      }
+      if (suggestedCategory.isNotEmpty && suggestedCategory != 'อื่นๆ' && suggestedCategory != 'โอนเงิน/ธุรกรรม') {
+        return 'เงินได้ $suggestedCategory';
+      }
+      return 'เงินโอนเข้า';
     }
-    return isKrungthai ? 'โอนเงินกรุงไทย' : 'โอนเงิน ($bankName)';
+    if (receiverName != null && receiverName!.trim().isNotEmpty) {
+      final name = receiverName!.trim();
+      if (name.startsWith('โอนให้') || name.startsWith('โอนไปยัง') || name.startsWith('จ่าย')) {
+        return name;
+      }
+      return 'โอนให้ $name';
+    }
+    if (suggestedCategory.isNotEmpty && suggestedCategory != 'อื่นๆ' && suggestedCategory != 'โอนเงิน/ธุรกรรม') {
+      return 'ค่า$suggestedCategory';
+    }
+    return 'รายการโอนเงิน';
   }
 
   /// บันทึกประกอบรายการที่มีรหัสอ้างอิงธุรกรรมกำกับ
@@ -101,6 +121,9 @@ class KrungthaiSlipData {
     final parts = <String>[];
     if (memo != null && memo!.trim().isNotEmpty) {
       parts.add('บันทึก: ${memo!.trim()}');
+    }
+    if (suggestedType == TransactionType.income && senderName != null && senderName!.trim().isNotEmpty) {
+      parts.add('ผู้โอน: ${senderName!.trim()}');
     }
     if (receiverName != null && receiverName!.trim().isNotEmpty) {
       parts.add('ผู้รับ: ${receiverName!.trim()}');
@@ -164,8 +187,8 @@ class KrungthaiSlipData {
     };
   }
 
-  factory KrungthaiSlipData.fromJson(Map<String, dynamic> json) {
-    return KrungthaiSlipData(
+  factory BankSlipData.fromJson(Map<String, dynamic> json) {
+    return BankSlipData(
       amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
       transactionDate: json['transactionDate'] != null
           ? DateTime.tryParse(json['transactionDate'] as String) ?? DateTime.now()
@@ -178,7 +201,7 @@ class KrungthaiSlipData {
       memo: json['memo'] as String?,
       bankName: json['bankName'] as String? ?? 'ธนาคารกรุงไทย',
       isKrungthai: json['isKrungthai'] as bool? ?? true,
-      suggestedCategory: json['suggestedCategory'] as String? ?? 'อาหาร/ของกิน',
+      suggestedCategory: json['suggestedCategory'] as String? ?? 'อื่นๆ',
       suggestedType: TransactionType.values.firstWhere(
         (e) => e.name == json['suggestedType'],
         orElse: () => TransactionType.expense,
@@ -194,3 +217,6 @@ class KrungthaiSlipData {
     );
   }
 }
+
+/// Typedef สำหรับความเข้ากันได้ย้อนหลัง 100% กับโค้ดเดิมที่เรียก KrungthaiSlipData
+typedef KrungthaiSlipData = BankSlipData;

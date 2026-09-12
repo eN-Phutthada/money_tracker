@@ -6,7 +6,7 @@ import '../../../data/models/transaction_model.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_popup_decorations.dart';
 import '../../dashboard/controllers/dashboard_controller.dart';
-import 'krungthai_slip_sheet.dart';
+import 'bank_slip_sheet.dart';
 
 /// Quick Add & Edit BottomSheet พร้อม Ergonomic Numpad และระบบเลือกวันที่ (FinTech 2026 Edition)
 class QuickAddBottomSheet extends StatefulWidget {
@@ -478,7 +478,7 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
                           onTap: () {
                             HapticFeedback.selectionClick();
                             Get.back();
-                            KrungthaiSlipScanModal.show(context);
+                            BankSlipScanModal.show(context);
                           },
                           borderRadius: BorderRadius.circular(12),
                           child: Container(
@@ -497,7 +497,7 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
                                 const Icon(Icons.receipt_long_rounded, size: 15, color: Color(0xFF00A3E0)),
                                 const SizedBox(width: 5),
                                 Text(
-                                  'scan_krungthai_slip'.tr,
+                                  'scan_bank_slip'.tr,
                                   style: const TextStyle(
                                     fontSize: 11.5,
                                     fontWeight: FontWeight.w700,
