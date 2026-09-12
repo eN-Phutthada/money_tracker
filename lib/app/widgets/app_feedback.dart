@@ -544,7 +544,12 @@ class _AppFeedbackHudState extends State<_AppFeedbackHud> with TickerProviderSta
                                                     ),
                                                     if (widget.amount != null) ...[
                                                       const SizedBox(width: 6),
-                                                      _buildAmountBadge(currencyFmt),
+                                                      Flexible(
+                                                        child: FittedBox(
+                                                          fit: BoxFit.scaleDown,
+                                                          child: _buildAmountBadge(currencyFmt),
+                                                        ),
+                                                      ),
                                                     ],
                                                   ],
                                                 ),

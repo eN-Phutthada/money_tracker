@@ -6,6 +6,7 @@ import '../../../data/models/transaction_model.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_popup_decorations.dart';
 import '../../dashboard/controllers/dashboard_controller.dart';
+import 'krungthai_slip_sheet.dart';
 
 /// Quick Add & Edit BottomSheet พร้อม Ergonomic Numpad และระบบเลือกวันที่ (FinTech 2026 Edition)
 class QuickAddBottomSheet extends StatefulWidget {
@@ -471,7 +472,43 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
                         onPressed: _delete,
                         tooltip: 'delete_this_item'.tr,
                       )
-                    : null,
+                    : Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            Get.back();
+                            KrungthaiSlipScanModal.show(context);
+                          },
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF00A3E0).withValues(alpha: 0.14),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: const Color(0xFF00A3E0).withValues(alpha: 0.35),
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.receipt_long_rounded, size: 15, color: Color(0xFF00A3E0)),
+                                const SizedBox(width: 5),
+                                Text(
+                                  'scan_krungthai_slip'.tr,
+                                  style: const TextStyle(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF00A3E0),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
               ),
               const SizedBox(height: 14),
 

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import '../../../data/models/budget_plan_model.dart';
+import '../../../data/models/krungthai_slip_model.dart';
 import '../../../data/models/transaction_model.dart';
+import '../../../data/services/krungthai_slip_service.dart';
 import '../../../data/services/storage_service.dart';
 import '../../../widgets/app_feedback.dart';
 
@@ -18,6 +21,10 @@ class DashboardController extends GetxController {
     targetMonthlySavings: 10000.0,
     plannedFixedCosts: 12500.0,
   ).obs;
+
+  // Folder Auto-Scan State
+  final RxList<KrungthaiSlipData> detectedFolderSlips = <KrungthaiSlipData>[].obs;
+  final RxBool isScanningFolder = false.obs;
 
   final Rx<TimeFilterPeriod> currentPeriod = TimeFilterPeriod.monthly.obs;
   final Rx<DateTime> selectedDate = DateTime.now().obs;
@@ -42,6 +49,58 @@ class DashboardController extends GetxController {
   void onInit() {
     super.onInit();
     _loadData();
+  }
+
+  @override
+  void onReady() {
+    super.onReady();
+    checkFolderSlipsOnAppOpen();
+  }
+
+  Future<void> checkFolderSlipsOnAppOpen() async {
+    final slipService = KrungthaiSlipService();
+    if (!slipService.isFolderAutoScanEnabled.value) return;
+
+    try {
+      isScanningFolder.value = true;
+      final newSlips = await slipService.scanTargetFolderForNewSlips(
+        existingTransactions: transactions,
+      );
+      if (newSlips.isNotEmpty) {
+        detectedFolderSlips.assignAll(newSlips);
+      }
+    } catch (_) {
+    } finally {
+      isScanningFolder.value = false;
+    }
+  }
+
+  Future<void> saveAllDetectedSlips() async {
+    if (detectedFolderSlips.isEmpty) return;
+    final slipService = KrungthaiSlipService();
+    final count = detectedFolderSlips.length;
+    double totalAmount = 0.0;
+
+    for (final slip in detectedFolderSlips) {
+      slipService.saveSlipTransaction(slip, notify: false);
+      totalAmount += slip.amount;
+    }
+
+    detectedFolderSlips.clear();
+
+    try {
+      HapticFeedback.mediumImpact();
+    } catch (_) {}
+
+    AppFeedback.showSuccess(
+      title: 'บันทึกสลิปที่ตรวจพบสำเร็จ',
+      message: 'บันทึกเรียบร้อย $count รายการ ยอดรวม ฿${NumberFormat('#,##0.00').format(totalAmount)}',
+      amount: totalAmount,
+    );
+  }
+
+  void dismissDetectedSlips() {
+    detectedFolderSlips.clear();
   }
 
   @override

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'app/data/services/krungthai_slip_service.dart';
 import 'app/data/services/security_service.dart';
 import 'app/data/services/storage_service.dart';
 import 'app/modules/security/controllers/security_controller.dart';
@@ -11,6 +12,7 @@ import 'app/translations/app_translations.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SecurityService().init();
+  await KrungthaiSlipService().init();
   final savedLang = await StorageService().loadLanguage();
   final initialLocale = savedLang == 'en' ? const Locale('en', 'US') : const Locale('th', 'TH');
   runApp(MoneyTrackerApp(initialLocale: initialLocale));

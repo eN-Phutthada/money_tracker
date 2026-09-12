@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import '../../../routes/app_routes.dart';
 import '../../../theme/app_colors.dart';
+import '../../../theme/app_popup_decorations.dart';
 import '../../transactions/views/quick_add_bottom_sheet.dart';
 import '../controllers/dashboard_controller.dart';
 
@@ -275,16 +276,50 @@ class RecentTransactionsCard extends GetView<DashboardController> {
                         direction: DismissDirection.endToStart,
                         background: Container(
                           alignment: Alignment.centerRight,
-                          padding: const EdgeInsets.only(right: 16),
+                          padding: const EdgeInsets.only(right: 20),
                           decoration: BoxDecoration(
-                            color: AppColors.deficitText.withValues(alpha: 0.15),
+                            color: AppColors.deficitText.withValues(alpha: isDark ? 0.22 : 0.15),
                             borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: AppColors.deficitText.withValues(alpha: 0.3),
+                              width: 1,
+                            ),
                           ),
-                          child: const Icon(Icons.delete_outline_rounded, color: AppColors.deficitText),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              const Icon(
+                                Icons.delete_forever_rounded,
+                                color: AppColors.deficitText,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                isEn ? 'Delete' : 'ลบรายการ',
+                                style: const TextStyle(
+                                  color: AppColors.deficitText,
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                         onDismissed: (_) {
                           HapticFeedback.mediumImpact();
                           controller.deleteTransaction(item.id);
+                          AppFeedback.showSuccess(
+                            title: isEn ? 'Transaction Deleted' : 'ลบรายการเรียบร้อย',
+                            message: item.title,
+                            amount: item.amount,
+                            transactionType: item.type,
+                            actionLabel: isEn ? 'Undo' : 'เลิกทำ',
+                            duration: const Duration(milliseconds: 4500),
+                            onAction: () {
+                              HapticFeedback.mediumImpact();
+                              controller.addTransaction(item, notify: true);
+                            },
+                          );
                         },
                         child: Material(
                           color: isDark ? AppColors.darkSurfaceSecondary.withValues(alpha: 0.6) : AppColors.surfaceSecondary.withValues(alpha: 0.6),
@@ -371,12 +406,17 @@ class RecentTransactionsCard extends GetView<DashboardController> {
                                             const SizedBox(width: 4),
 
                                             // Date & Time
-                                            Text(
-                                              '• ${item.date.day}/${item.date.month}/$yearNum $timeStr',
-                                              style: TextStyle(
-                                                fontSize: 10.5,
-                                                fontWeight: FontWeight.w500,
-                                                color: isDark ? AppColors.darkTextTertiary : AppColors.textSecondary,
+                                            Flexible(
+                                              flex: 2,
+                                              child: Text(
+                                                '• ${item.date.day}/${item.date.month}/$yearNum $timeStr',
+                                                style: TextStyle(
+                                                  fontSize: 10.5,
+                                                  fontWeight: FontWeight.w500,
+                                                  color: isDark ? AppColors.darkTextTertiary : AppColors.textSecondary,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
                                               ),
                                             ),
                                           ],

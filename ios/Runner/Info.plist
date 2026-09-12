@@ -6,6 +6,10 @@
 	<true/>
 	<key>NSFaceIDUsageDescription</key>
 	<string>ยืนยันตัวตนด้วย Face ID เพื่อปลดล็อกการเข้าใช้งาน Money Tracker</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>เข้าถึงคลังรูปภาพเพื่อเลือกรูปสลิปธนาคารกรุงไทยสำหรับบันทึกรายการอัตโนมัติ</string>
+	<key>NSCameraUsageDescription</key>
+	<string>ใช้กล้องเพื่อถ่ายภาพสลิปธนาคารกรุงไทยสำหรับบันทึกรายการอัตโนมัติ</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
@@ -17,7 +21,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>money_tracker</string>
+	<string>Money Tracker</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>

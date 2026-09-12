@@ -127,7 +127,7 @@ class BalanceCard extends GetView<DashboardController> {
 
               // 4. Main Card Content
               Container(
-                padding: const EdgeInsets.all(22),
+                padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(color: cardBorderColor, width: 1.2),
@@ -207,53 +207,51 @@ class BalanceCard extends GetView<DashboardController> {
                         ),
                         const SizedBox(width: 8),
 
-                        // Dynamic Status Pill (Safe Zone / Caution)
-                        Flexible(
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            alignment: Alignment.centerRight,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                              decoration: BoxDecoration(
-                                color: statusPillBg,
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: statusPillBorder, width: 1),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  // Pulsing Status Dot
-                                  Container(
-                                    width: 6,
-                                    height: 6,
-                                    decoration: BoxDecoration(
-                                      color: accentColor,
-                                      shape: BoxShape.circle,
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: accentColor.withValues(alpha: 0.6),
-                                          blurRadius: 4,
-                                          spreadRadius: 1,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    isSurplus ? 'safe_zone_surplus'.tr : 'caution_deficit'.tr,
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w700,
-                                      color: statusPillText,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                              ),
+                        // Dynamic Status Pill (Safe Zone / Caution) - Right-Aligned
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerRight,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: statusPillBg,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: statusPillBorder, width: 1),
                             ),
-                          ).animate().shimmer(duration: const Duration(seconds: 2), delay: const Duration(seconds: 1)),
-                        ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                // Pulsing Status Dot
+                                Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: BoxDecoration(
+                                    color: accentColor,
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: accentColor.withValues(alpha: 0.6),
+                                        blurRadius: 4,
+                                        spreadRadius: 1,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  isSurplus ? 'safe_zone_surplus'.tr : 'caution_deficit'.tr,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: statusPillText,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ).animate().shimmer(duration: const Duration(seconds: 2), delay: const Duration(seconds: 1)),
                       ],
                     ),
                     const SizedBox(height: 18),

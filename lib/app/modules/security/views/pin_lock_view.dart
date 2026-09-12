@@ -24,7 +24,7 @@ class PinLockView extends StatefulWidget {
   State<PinLockView> createState() => _PinLockViewState();
 }
 
-class _PinLockViewState extends State<PinLockView> with SingleTickerProviderStateMixin {
+class _PinLockViewState extends State<PinLockView> with TickerProviderStateMixin {
   final SecurityController controller = Get.find<SecurityController>();
 
   String _enteredPin = '';
@@ -34,6 +34,13 @@ class _PinLockViewState extends State<PinLockView> with SingleTickerProviderStat
   int _failCount = 0;
   String _errorMessage = '';
   late AnimationController _shakeController;
+  late AnimationController _successAnimationController;
+  late Animation<double> _ring1Scale;
+  late Animation<double> _ring1Opacity;
+  late Animation<double> _ring2Scale;
+  late Animation<double> _ring2Opacity;
+  late Animation<double> _crestPopScale;
+  late Animation<double> _checkIconRotation;
   final FocusNode _keyboardFocusNode = FocusNode();
 
   // In-stack recovery and scanning overlay states
@@ -48,6 +55,60 @@ class _PinLockViewState extends State<PinLockView> with SingleTickerProviderStat
     _shakeController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 380),
+    );
+
+    _successAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 650),
+    );
+
+    _ring1Scale = Tween<double>(begin: 0.6, end: 1.85).animate(
+      CurvedAnimation(
+        parent: _successAnimationController,
+        curve: const Interval(0.0, 0.80, curve: Curves.easeOutCubic),
+      ),
+    );
+    _ring1Opacity = Tween<double>(begin: 0.85, end: 0.0).animate(
+      CurvedAnimation(
+        parent: _successAnimationController,
+        curve: const Interval(0.0, 0.80, curve: Curves.easeOut),
+      ),
+    );
+
+    _ring2Scale = Tween<double>(begin: 0.45, end: 2.3).animate(
+      CurvedAnimation(
+        parent: _successAnimationController,
+        curve: const Interval(0.12, 0.98, curve: Curves.easeOutCubic),
+      ),
+    );
+    _ring2Opacity = Tween<double>(begin: 0.70, end: 0.0).animate(
+      CurvedAnimation(
+        parent: _successAnimationController,
+        curve: const Interval(0.12, 0.98, curve: Curves.easeOut),
+      ),
+    );
+
+    _crestPopScale = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.0, end: 1.25).chain(CurveTween(curve: Curves.easeOutCubic)),
+        weight: 35,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.25, end: 1.0).chain(CurveTween(curve: Curves.elasticOut)),
+        weight: 65,
+      ),
+    ]).animate(
+      CurvedAnimation(
+        parent: _successAnimationController,
+        curve: const Interval(0.0, 0.90),
+      ),
+    );
+
+    _checkIconRotation = Tween<double>(begin: -0.20, end: 0.0).animate(
+      CurvedAnimation(
+        parent: _successAnimationController,
+        curve: const Interval(0.05, 0.75, curve: Curves.elasticOut),
+      ),
     );
 
     final isTest = WidgetsBinding.instance.runtimeType.toString().contains('Test') ||
@@ -68,6 +129,7 @@ class _PinLockViewState extends State<PinLockView> with SingleTickerProviderStat
     _countdownTimer?.cancel();
     _keyboardFocusNode.dispose();
     _shakeController.dispose();
+    _successAnimationController.dispose();
     super.dispose();
   }
 
@@ -136,7 +198,13 @@ class _PinLockViewState extends State<PinLockView> with SingleTickerProviderStat
         _isSuccess = true;
         _isError = false;
       });
+      _successAnimationController.forward(from: 0.0);
       HapticFeedback.mediumImpact();
+      Timer(const Duration(milliseconds: 220), () {
+        if (mounted && _isSuccess) {
+          HapticFeedback.lightImpact();
+        }
+      });
 
       // Show the animated success state (glowing open lock & bouncing green dots)
       await Future.delayed(const Duration(milliseconds: 500));
@@ -187,7 +255,13 @@ class _PinLockViewState extends State<PinLockView> with SingleTickerProviderStat
         _errorMessage = '';
         _enteredPin = '••••';
       });
+      _successAnimationController.forward(from: 0.0);
       HapticFeedback.mediumImpact();
+      Timer(const Duration(milliseconds: 220), () {
+        if (mounted && _isSuccess) {
+          HapticFeedback.lightImpact();
+        }
+      });
       await Future.delayed(const Duration(milliseconds: 350));
       if (!mounted) return;
       setState(() {
@@ -796,14 +870,14 @@ class _PinLockViewState extends State<PinLockView> with SingleTickerProviderStat
             children: [
               // Ambient Vault Glow Orb behind the crest (expands and illuminates on success)
               Positioned(
-                top: _isSuccess ? -80 : -60,
-                left: MediaQuery.of(context).size.width / 2 - (_isSuccess ? 200 : 140),
+                top: _isSuccess ? -100 : -60,
+                left: MediaQuery.of(context).size.width / 2 - (_isSuccess ? 220 : 140),
                 child: IgnorePointer(
                   child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 500),
+                    duration: const Duration(milliseconds: 550),
                     curve: Curves.easeOutCubic,
-                    width: _isSuccess ? 400 : 280,
-                    height: _isSuccess ? 400 : 280,
+                    width: _isSuccess ? 440 : 280,
+                    height: _isSuccess ? 440 : 280,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       gradient: RadialGradient(
@@ -811,9 +885,9 @@ class _PinLockViewState extends State<PinLockView> with SingleTickerProviderStat
                           (_isSuccess
                                   ? const Color(0xFF10B981)
                                   : (_isError ? AppColors.deficitText : AppColors.primary))
-                              .withValues(alpha: _isSuccess ? (isDark ? 0.30 : 0.22) : (isDark ? 0.16 : 0.08)),
+                              .withValues(alpha: _isSuccess ? (isDark ? 0.35 : 0.25) : (isDark ? 0.16 : 0.08)),
                           (_isSuccess
-                                  ? const Color(0xFF059669).withValues(alpha: isDark ? 0.12 : 0.08)
+                                  ? const Color(0xFF059669).withValues(alpha: isDark ? 0.16 : 0.10)
                                   : Colors.transparent),
                           Colors.transparent,
                         ],
@@ -836,348 +910,563 @@ class _PinLockViewState extends State<PinLockView> with SingleTickerProviderStat
                     child: Center(
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 380),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              if (widget.canCancel)
-                                Align(
-                                  alignment: Alignment.topLeft,
-                                  child: IconButton(
-                                    icon: const Icon(Icons.close_rounded),
-                                    onPressed: () => Get.back(),
-                                  ),
-                                ),
-                              const Spacer(),
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            final availableHeight = constraints.maxHeight;
+                            final isCompact = availableHeight < 680;
+                            final badgeSize = _isSuccess
+                                ? (isCompact ? 58.0 : 68.0)
+                                : (isCompact ? 50.0 : 60.0);
 
-                              // Shield / Unlocked Success Icon Crest Badge
-                              AnimatedContainer(
-                                duration: const Duration(milliseconds: 380),
-                                curve: Curves.easeOutBack,
-                                width: _isSuccess ? 68 : 60,
-                                height: _isSuccess ? 68 : 60,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                    colors: _isSuccess
-                                        ? [
-                                            const Color(0xFF10B981),
-                                            const Color(0xFF059669),
-                                          ]
-                                        : [
-                                            AppColors.primary.withValues(alpha: isDark ? 0.20 : 0.14),
-                                            AppColors.accent.withValues(alpha: isDark ? 0.12 : 0.06),
-                                          ],
-                                  ),
-                                  border: Border.all(
-                                    color: _isSuccess
-                                        ? Colors.white.withValues(alpha: 0.45)
-                                        : AppColors.primary.withValues(alpha: 0.35),
-                                    width: _isSuccess ? 2.2 : 1.5,
-                                  ),
-                                  boxShadow: [
-                                    if (_isSuccess)
-                                      BoxShadow(
-                                        color: const Color(0xFF10B981).withValues(alpha: 0.35),
-                                        blurRadius: 28,
-                                        spreadRadius: 6,
-                                      ),
-                                    BoxShadow(
-                                      color: (_isSuccess ? const Color(0xFF10B981) : AppColors.primary)
-                                          .withValues(alpha: _isSuccess ? 0.50 : 0.18),
-                                      blurRadius: _isSuccess ? 20 : 12,
-                                      offset: _isSuccess ? const Offset(0, 3) : Offset.zero,
+                            return SingleChildScrollView(
+                              physics: const BouncingScrollPhysics(),
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(minHeight: availableHeight),
+                                child: IntrinsicHeight(
+                                  child: Padding(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 20,
+                                      vertical: isCompact ? 4 : 8,
                                     ),
-                                  ],
-                                ),
-                                child: AnimatedSwitcher(
-                                  duration: const Duration(milliseconds: 280),
-                                  transitionBuilder: (child, anim) => ScaleTransition(
-                                    scale: CurvedAnimation(parent: anim, curve: Curves.elasticOut),
-                                    child: child,
-                                  ),
-                                  child: Icon(
-                                    _isSuccess ? Icons.check_rounded : Icons.lock_outline_rounded,
-                                    key: ValueKey(_isSuccess),
-                                    color: _isSuccess ? Colors.white : AppColors.primary,
-                                    size: _isSuccess ? 34 : 28,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-
-                              // Security Vault Tag Pill
-                              AnimatedContainer(
-                                duration: const Duration(milliseconds: 300),
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: _isSuccess ? 10 : 8,
-                                  vertical: _isSuccess ? 3.5 : 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: (_isSuccess ? const Color(0xFF10B981) : AppColors.primary)
-                                      .withValues(alpha: _isSuccess ? 0.15 : 0.10),
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: (_isSuccess ? const Color(0xFF10B981) : AppColors.primary)
-                                        .withValues(alpha: _isSuccess ? 0.45 : 0.25),
-                                    width: _isSuccess ? 1.0 : 0.8,
-                                  ),
-                                  boxShadow: _isSuccess
-                                      ? [
-                                          BoxShadow(
-                                            color: const Color(0xFF10B981).withValues(alpha: 0.22),
-                                            blurRadius: 10,
-                                            spreadRadius: 1,
-                                          ),
-                                        ]
-                                      : null,
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    AnimatedContainer(
-                                      duration: const Duration(milliseconds: 300),
-                                      width: _isSuccess ? 5 : 4,
-                                      height: _isSuccess ? 5 : 4,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: _isSuccess ? const Color(0xFF10B981) : AppColors.primary,
-                                        boxShadow: _isSuccess
-                                            ? [
-                                                BoxShadow(
-                                                  color: const Color(0xFF10B981),
-                                                  blurRadius: 6,
-                                                  spreadRadius: 1.5,
-                                                ),
-                                              ]
-                                            : null,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 5),
-                                    AnimatedSwitcher(
-                                      duration: const Duration(milliseconds: 250),
-                                      child: Text(
-                                        _isSuccess ? 'pin_access_granted'.tr : 'pin_vault_active'.tr,
-                                        key: ValueKey(_isSuccess),
-                                        style: TextStyle(
-                                          fontSize: 8.5,
-                                          fontWeight: FontWeight.w800,
-                                          letterSpacing: 0.5,
-                                          color: _isSuccess ? const Color(0xFF10B981) : AppColors.primary,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-
-                              AnimatedSwitcher(
-                                duration: const Duration(milliseconds: 300),
-                                transitionBuilder: (child, anim) => FadeTransition(
-                                  opacity: anim,
-                                  child: SlideTransition(
-                                    position: Tween<Offset>(
-                                      begin: const Offset(0, 0.15),
-                                      end: Offset.zero,
-                                    ).animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic)),
-                                    child: child,
-                                  ),
-                                ),
-                                child: _isSuccess
-                                    ? Column(
-                                        key: const ValueKey('success_state'),
-                                        children: [
-                                          Text(
-                                            'pin_success'.tr,
-                                            style: TextStyle(
-                                              fontSize: 20,
-                                              fontWeight: FontWeight.w800,
-                                              letterSpacing: -0.3,
-                                              color: isDark ? const Color(0xFF34D399) : const Color(0xFF059669),
-                                            ),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            'pin_welcome'.tr,
-                                            textAlign: TextAlign.center,
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w600,
-                                              color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                                            ),
-                                          ),
-                                        ],
-                                      )
-                                    : Column(
-                                        key: const ValueKey('normal_state'),
-                                         children: [
-                                           const Text(
-                                             'Money Tracker Security',
-                                             style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: -0.3),
-                                           ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            _isError ? _errorMessage : 'enter_pin'.tr,
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              fontWeight: _isError ? FontWeight.w700 : FontWeight.w500,
-                                              color: _isError ? AppColors.deficitText : AppColors.textSecondary,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                              ),
-                              const SizedBox(height: 16),
-
-                              // 4 Dots with staggered scale bounce & ripple wave animation on success
-                              AnimatedBuilder(
-                                animation: _shakeController,
-                                builder: (context, child) {
-                                  final dx = _shakeController.value == 0
-                                      ? 0.0
-                                      : (1.0 - _shakeController.value) *
-                                          12.0 *
-                                          (1.0 - (2.0 * ((_shakeController.value * 6) % 1)));
-                                  return Transform.translate(
-                                    offset: Offset(dx, 0),
-                                    child: Row(
+                                    child: Column(
                                       mainAxisAlignment: MainAxisAlignment.center,
-                                      children: List.generate(4, (index) {
-                                        final isFilled = index < _enteredPin.length;
-                                        final color = _isSuccess
-                                            ? const Color(0xFF10B981)
-                                            : (_isError ? AppColors.deficitText : AppColors.primary);
-
-                                        Widget dot = AnimatedContainer(
-                                          duration: const Duration(milliseconds: 220),
-                                          margin: const EdgeInsets.symmetric(horizontal: 8),
-                                          width: _isSuccess ? 16 : 14,
-                                          height: _isSuccess ? 16 : 14,
-                                          decoration: BoxDecoration(
-                                            shape: BoxShape.circle,
-                                            color: isFilled ? color : Colors.transparent,
-                                            border: Border.all(
-                                              color: isFilled
-                                                  ? color
-                                                  : (isDark ? AppColors.darkBorder : AppColors.border),
-                                              width: 2,
+                                      children: [
+                                        if (widget.canCancel)
+                                          Align(
+                                            alignment: Alignment.topLeft,
+                                            child: IconButton(
+                                              icon: const Icon(Icons.close_rounded),
+                                              padding: isCompact ? EdgeInsets.zero : const EdgeInsets.all(8),
+                                              constraints: isCompact ? const BoxConstraints() : null,
+                                              onPressed: () => Get.back(),
                                             ),
-                                            boxShadow: isFilled
+                                          ),
+                                        const Spacer(),
+
+                                        // Shield Crest / Success Badge Stack with Concentric Liquid Rings & LiquidGlassLens
+                                        Stack(
+                                          alignment: Alignment.center,
+                                          clipBehavior: Clip.none,
+                                          children: [
+                                            // Outer Liquid Shockwave Ring 2
+                                            if (_isSuccess)
+                                              AnimatedBuilder(
+                                                animation: _successAnimationController,
+                                                builder: (context, child) {
+                                                  return FadeTransition(
+                                                    opacity: _ring2Opacity,
+                                                    child: ScaleTransition(
+                                                      scale: _ring2Scale,
+                                                      child: Container(
+                                                        width: badgeSize,
+                                                        height: badgeSize,
+                                                        decoration: BoxDecoration(
+                                                          shape: BoxShape.circle,
+                                                          border: Border.all(
+                                                            color: const Color(0xFF10B981).withValues(alpha: 0.55),
+                                                            width: 1.8,
+                                                          ),
+                                                          boxShadow: [
+                                                            BoxShadow(
+                                                              color: const Color(0xFF10B981).withValues(alpha: 0.25),
+                                                              blurRadius: 14,
+                                                              spreadRadius: 2,
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
+                                              ),
+
+                                            // Inner Liquid Shockwave Ring 1
+                                            if (_isSuccess)
+                                              AnimatedBuilder(
+                                                animation: _successAnimationController,
+                                                builder: (context, child) {
+                                                  return FadeTransition(
+                                                    opacity: _ring1Opacity,
+                                                    child: ScaleTransition(
+                                                      scale: _ring1Scale,
+                                                      child: Container(
+                                                        width: badgeSize,
+                                                        height: badgeSize,
+                                                        decoration: BoxDecoration(
+                                                          shape: BoxShape.circle,
+                                                          border: Border.all(
+                                                            color: const Color(0xFF34D399).withValues(alpha: 0.80),
+                                                            width: 2.2,
+                                                          ),
+                                                          boxShadow: [
+                                                            BoxShadow(
+                                                              color: const Color(0xFF10B981).withValues(alpha: 0.35),
+                                                              blurRadius: 18,
+                                                              spreadRadius: 2.5,
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
+                                              ),
+
+                                            // Pop-Scale Animated LiquidGlassLens Crest Badge (Pure Icon, Zero Text)
+                                            AnimatedBuilder(
+                                              animation: _successAnimationController,
+                                              builder: (context, child) {
+                                                return ScaleTransition(
+                                                  scale: _crestPopScale,
+                                                  child: child,
+                                                );
+                                              },
+                                              child: SizedBox(
+                                                width: badgeSize,
+                                                height: badgeSize,
+                                                child: LiquidGlassLens(
+                                                  style: LiquidGlassStyle(
+                                                    shape: LiquidGlassShape.squircle(
+                                                      cornerRadius: badgeSize / 2,
+                                                      borderWidth: _isSuccess ? 1.6 : 1.1,
+                                                      lightIntensity: 1.35,
+                                                      lightDirection: 65,
+                                                      borderType: const OpticalBorder(
+                                                        borderSaturation: 1.4,
+                                                        ambientIntensity: 1.2,
+                                                        borderSolidity: 0.25,
+                                                      ),
+                                                    ),
+                                                    appearance: LiquidGlassAppearance(
+                                                      color: _isSuccess
+                                                          ? const Color(0xFF10B981).withValues(alpha: isDark ? 0.35 : 0.28)
+                                                          : (isDark
+                                                              ? AppColors.darkSurfaceSecondary.withValues(alpha: 0.35)
+                                                              : Colors.white.withValues(alpha: 0.50)),
+                                                      blur: const LiquidGlassBlur(sigmaX: 14, sigmaY: 14),
+                                                    ),
+                                                    refraction: const LiquidGlassRefraction(
+                                                      distortion: 0.08,
+                                                      distortionWidth: 16,
+                                                      chromaticAberration: 0.002,
+                                                    ),
+                                                  ),
+                                                  child: Container(
+                                                    decoration: BoxDecoration(
+                                                      shape: BoxShape.circle,
+                                                      gradient: LinearGradient(
+                                                        begin: Alignment.topLeft,
+                                                        end: Alignment.bottomRight,
+                                                        colors: _isSuccess
+                                                            ? [
+                                                                const Color(0xFF10B981).withValues(alpha: 0.88),
+                                                                const Color(0xFF059669).withValues(alpha: 0.95),
+                                                              ]
+                                                            : [
+                                                                AppColors.primary.withValues(alpha: isDark ? 0.22 : 0.16),
+                                                                AppColors.accent.withValues(alpha: isDark ? 0.14 : 0.08),
+                                                              ],
+                                                      ),
+                                                      border: Border.all(
+                                                        color: _isSuccess
+                                                            ? Colors.white.withValues(alpha: 0.55)
+                                                            : AppColors.primary.withValues(alpha: 0.35),
+                                                        width: _isSuccess ? 2.0 : 1.3,
+                                                      ),
+                                                      boxShadow: [
+                                                        if (_isSuccess)
+                                                          BoxShadow(
+                                                            color: const Color(0xFF10B981).withValues(alpha: 0.45),
+                                                            blurRadius: 28,
+                                                            spreadRadius: 6,
+                                                          ),
+                                                        BoxShadow(
+                                                          color: (_isSuccess ? const Color(0xFF10B981) : AppColors.primary)
+                                                              .withValues(alpha: _isSuccess ? 0.50 : 0.18),
+                                                          blurRadius: _isSuccess ? 20 : 12,
+                                                          offset: _isSuccess ? const Offset(0, 3) : Offset.zero,
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    alignment: Alignment.center,
+                                                    child: AnimatedBuilder(
+                                                      animation: _successAnimationController,
+                                                      builder: (context, child) {
+                                                        return RotationTransition(
+                                                          turns: _checkIconRotation,
+                                                          child: child,
+                                                        );
+                                                      },
+                                                      child: AnimatedSwitcher(
+                                                        duration: const Duration(milliseconds: 280),
+                                                        transitionBuilder: (child, anim) => ScaleTransition(
+                                                          scale: CurvedAnimation(parent: anim, curve: Curves.elasticOut),
+                                                          child: child,
+                                                        ),
+                                                        child: Icon(
+                                                          _isSuccess ? Icons.check_rounded : Icons.lock_outline_rounded,
+                                                          key: ValueKey(_isSuccess),
+                                                          color: _isSuccess ? Colors.white : AppColors.primary,
+                                                          size: _isSuccess ? (isCompact ? 28 : 34) : (isCompact ? 24 : 28),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        SizedBox(height: isCompact ? 6 : 10),
+
+                                        // Security Vault Tag Pill
+                                        AnimatedContainer(
+                                          duration: const Duration(milliseconds: 300),
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: _isSuccess ? 10 : 8,
+                                            vertical: isCompact ? 2.0 : (_isSuccess ? 3.5 : 2.0),
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: (_isSuccess ? const Color(0xFF10B981) : AppColors.primary)
+                                                .withValues(alpha: _isSuccess ? 0.15 : 0.10),
+                                            borderRadius: BorderRadius.circular(20),
+                                            border: Border.all(
+                                              color: (_isSuccess ? const Color(0xFF10B981) : AppColors.primary)
+                                                  .withValues(alpha: _isSuccess ? 0.45 : 0.25),
+                                              width: _isSuccess ? 1.0 : 0.8,
+                                            ),
+                                            boxShadow: _isSuccess
                                                 ? [
                                                     BoxShadow(
-                                                      color: color.withValues(alpha: _isSuccess ? 0.70 : 0.4),
-                                                      blurRadius: _isSuccess ? 14 : 8,
-                                                      spreadRadius: _isSuccess ? 2.5 : 1.5,
+                                                      color: const Color(0xFF10B981).withValues(alpha: 0.22),
+                                                      blurRadius: 10,
+                                                      spreadRadius: 1,
                                                     ),
                                                   ]
                                                 : null,
                                           ),
-                                        );
-
-                                        if (_isSuccess) {
-                                          dot = dot
-                                              .animate(delay: Duration(milliseconds: index * 60))
-                                              .scale(
-                                                begin: const Offset(0.8, 0.8),
-                                                end: const Offset(1.3, 1.3),
-                                                duration: const Duration(milliseconds: 220),
-                                                curve: Curves.easeOutBack,
-                                              )
-                                              .then()
-                                              .scale(
-                                                begin: const Offset(1.3, 1.3),
-                                                end: const Offset(1.0, 1.0),
-                                                duration: const Duration(milliseconds: 180),
-                                              );
-                                        }
-                                        return dot;
-                                      }),
-                                    ),
-                                  );
-                                },
-                              ),
-
-                              // Prompt if multiple failed attempts
-                              if (_failCount >= 3 && !_isSuccess) ...[
-                                const SizedBox(height: 12),
-                                GestureDetector(
-                                  onTap: _showForgotPinDialog,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.deficitText.withValues(alpha: 0.10),
-                                      borderRadius: BorderRadius.circular(20),
-                                      border: Border.all(
-                                        color: AppColors.deficitText.withValues(alpha: 0.30),
-                                        width: 0.8,
-                                      ),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        const Icon(Icons.info_outline_rounded, size: 14, color: AppColors.deficitText),
-                                        const SizedBox(width: 6),
-                                        Text(
-                                          'forgot_pin_hint'.tr,
-                                          style: const TextStyle(
-                                            fontSize: 11.5,
-                                            fontWeight: FontWeight.w600,
-                                            color: AppColors.deficitText,
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              AnimatedContainer(
+                                                duration: const Duration(milliseconds: 300),
+                                                width: _isSuccess ? 5 : 4,
+                                                height: _isSuccess ? 5 : 4,
+                                                decoration: BoxDecoration(
+                                                  shape: BoxShape.circle,
+                                                  color: _isSuccess ? const Color(0xFF10B981) : AppColors.primary,
+                                                  boxShadow: _isSuccess
+                                                      ? [
+                                                          BoxShadow(
+                                                            color: const Color(0xFF10B981),
+                                                            blurRadius: 6,
+                                                            spreadRadius: 1.5,
+                                                          ),
+                                                        ]
+                                                      : null,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 5),
+                                              AnimatedSwitcher(
+                                                duration: const Duration(milliseconds: 250),
+                                                child: Text(
+                                                  _isSuccess ? 'pin_access_granted'.tr : 'pin_vault_active'.tr,
+                                                  key: ValueKey(_isSuccess),
+                                                  style: TextStyle(
+                                                    fontSize: isCompact ? 8.0 : 8.5,
+                                                    fontWeight: FontWeight.w800,
+                                                    letterSpacing: 0.5,
+                                                    color: _isSuccess ? const Color(0xFF10B981) : AppColors.primary,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                              const Spacer(),
+                                        SizedBox(height: isCompact ? 6 : 10),
 
-                              // FinTech Numpad & Recovery (Smoothly slides down & fades out on success)
-                              AnimatedSlide(
-                                duration: const Duration(milliseconds: 320),
-                                curve: Curves.easeInCubic,
-                                offset: _isSuccess ? const Offset(0, 0.25) : Offset.zero,
-                                child: AnimatedOpacity(
-                                  opacity: _isSuccess ? 0.0 : 1.0,
-                                  duration: const Duration(milliseconds: 250),
-                                  curve: Curves.easeOut,
-                                  child: IgnorePointer(
-                                    ignoring: _isSuccess,
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        _buildNumpad(isDark),
-                                        const SizedBox(height: 10),
-
-                                        // Forgot PIN Recovery Trigger Button
-                                        TextButton.icon(
-                                          onPressed: _showForgotPinDialog,
-                                          icon: const Icon(Icons.help_outline_rounded, size: 15),
-                                          label: Text(
-                                            'forgot_pin'.tr,
-                                            style: TextStyle(
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w600,
-                                              color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                                        AnimatedSwitcher(
+                                          duration: const Duration(milliseconds: 300),
+                                          transitionBuilder: (child, anim) => FadeTransition(
+                                            opacity: anim,
+                                            child: SlideTransition(
+                                              position: Tween<Offset>(
+                                                begin: const Offset(0, 0.15),
+                                                end: Offset.zero,
+                                              ).animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic)),
+                                              child: child,
                                             ),
                                           ),
-                                          style: TextButton.styleFrom(
-                                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                          child: _isSuccess
+                                              ? Column(
+                                                  key: const ValueKey('success_state'),
+                                                  children: [
+                                                    Text(
+                                                      'pin_success'.tr,
+                                                      style: TextStyle(
+                                                        fontSize: isCompact ? 18 : 20,
+                                                        fontWeight: FontWeight.w800,
+                                                        letterSpacing: -0.3,
+                                                        color: isDark ? const Color(0xFF34D399) : const Color(0xFF059669),
+                                                      ),
+                                                    ),
+                                                    SizedBox(height: isCompact ? 2 : 4),
+                                                    Text(
+                                                      'pin_welcome'.tr,
+                                                      textAlign: TextAlign.center,
+                                                      style: TextStyle(
+                                                        fontSize: isCompact ? 11 : 12,
+                                                        fontWeight: FontWeight.w600,
+                                                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                )
+                                              : Column(
+                                                  key: const ValueKey('normal_state'),
+                                                  children: [
+                                                    Text(
+                                                      'Money Tracker Security',
+                                                      style: TextStyle(
+                                                        fontSize: isCompact ? 16 : 18,
+                                                        fontWeight: FontWeight.w800,
+                                                        letterSpacing: -0.3,
+                                                      ),
+                                                    ),
+                                                    SizedBox(height: isCompact ? 2 : 4),
+                                                    Text(
+                                                      _isError ? _errorMessage : 'enter_pin'.tr,
+                                                      style: TextStyle(
+                                                        fontSize: isCompact ? 11 : 12,
+                                                        fontWeight: _isError ? FontWeight.w700 : FontWeight.w500,
+                                                        color: _isError ? AppColors.deficitText : AppColors.textSecondary,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                        ),
+                                        SizedBox(height: isCompact ? 10 : 16),
+
+                                        // 4 Dots with staggered scale bounce & ripple wave inside Liquid Glass Pod (Pure Visual, Zero Text)
+                                        AnimatedBuilder(
+                                          animation: _shakeController,
+                                          builder: (context, child) {
+                                            final dx = _shakeController.value == 0
+                                                ? 0.0
+                                                : (1.0 - _shakeController.value) *
+                                                    12.0 *
+                                                    (1.0 - (2.0 * ((_shakeController.value * 6) % 1)));
+                                            return Transform.translate(
+                                              offset: Offset(dx, 0),
+                                              child: LiquidGlassLens(
+                                                style: LiquidGlassStyle(
+                                                  shape: const LiquidGlassShape.squircle(
+                                                    cornerRadius: 22,
+                                                    borderWidth: 1.0,
+                                                    lightIntensity: 1.25,
+                                                    lightDirection: 60,
+                                                    borderType: OpticalBorder(
+                                                      borderSaturation: 1.3,
+                                                      ambientIntensity: 1.15,
+                                                      borderSolidity: 0.25,
+                                                    ),
+                                                  ),
+                                                  appearance: LiquidGlassAppearance(
+                                                    color: isDark
+                                                        ? const Color(0xFF111726).withValues(alpha: 0.35)
+                                                        : Colors.white.withValues(alpha: 0.45),
+                                                    blur: const LiquidGlassBlur(sigmaX: 12, sigmaY: 12),
+                                                  ),
+                                                  refraction: const LiquidGlassRefraction(
+                                                    distortion: 0.06,
+                                                    distortionWidth: 16,
+                                                    chromaticAberration: 0.002,
+                                                  ),
+                                                ),
+                                                child: Container(
+                                                  padding: EdgeInsets.symmetric(
+                                                    horizontal: isCompact ? 14 : 18,
+                                                    vertical: isCompact ? 8 : 11,
+                                                  ),
+                                                  decoration: BoxDecoration(
+                                                    borderRadius: BorderRadius.circular(22),
+                                                    border: Border.all(
+                                                      color: _isSuccess
+                                                          ? const Color(0xFF10B981).withValues(alpha: 0.40)
+                                                          : (_isError
+                                                              ? AppColors.deficitText.withValues(alpha: 0.40)
+                                                              : (isDark
+                                                                  ? AppColors.darkBorder.withValues(alpha: 0.35)
+                                                                  : AppColors.border.withValues(alpha: 0.50))),
+                                                      width: 1.0,
+                                                    ),
+                                                    boxShadow: [
+                                                      BoxShadow(
+                                                        color: (_isSuccess
+                                                                ? const Color(0xFF10B981)
+                                                                : (_isError ? AppColors.deficitText : Colors.black))
+                                                            .withValues(alpha: _isSuccess ? 0.20 : (isDark ? 0.20 : 0.04)),
+                                                        blurRadius: 16,
+                                                        offset: const Offset(0, 4),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    mainAxisAlignment: MainAxisAlignment.center,
+                                                    children: List.generate(4, (index) {
+                                                      final isFilled = index < _enteredPin.length;
+                                                      final color = _isSuccess
+                                                          ? const Color(0xFF10B981)
+                                                          : (_isError ? AppColors.deficitText : AppColors.primary);
+
+                                                      final dotSize = _isSuccess
+                                                          ? (isCompact ? 14.0 : 16.0)
+                                                          : (isCompact ? 12.0 : 14.0);
+
+                                                      Widget dot = AnimatedContainer(
+                                                        duration: const Duration(milliseconds: 220),
+                                                        margin: EdgeInsets.symmetric(horizontal: isCompact ? 6 : 8),
+                                                        width: dotSize,
+                                                        height: dotSize,
+                                                        decoration: BoxDecoration(
+                                                          shape: BoxShape.circle,
+                                                          color: isFilled ? color : Colors.transparent,
+                                                          border: Border.all(
+                                                            color: isFilled
+                                                                ? color
+                                                                : (isDark ? AppColors.darkBorder : AppColors.border),
+                                                            width: 2,
+                                                          ),
+                                                          boxShadow: isFilled
+                                                              ? [
+                                                                  BoxShadow(
+                                                                    color: color.withValues(alpha: _isSuccess ? 0.70 : 0.4),
+                                                                    blurRadius: _isSuccess ? 14 : 8,
+                                                                    spreadRadius: _isSuccess ? 2.5 : 1.5,
+                                                                  ),
+                                                                ]
+                                                              : null,
+                                                        ),
+                                                      );
+
+                                                      if (_isSuccess) {
+                                                        dot = dot
+                                                            .animate(delay: Duration(milliseconds: index * 60))
+                                                            .scale(
+                                                              begin: const Offset(0.8, 0.8),
+                                                              end: const Offset(1.3, 1.3),
+                                                              duration: const Duration(milliseconds: 220),
+                                                              curve: Curves.easeOutBack,
+                                                            )
+                                                            .then()
+                                                            .scale(
+                                                              begin: const Offset(1.3, 1.3),
+                                                              end: const Offset(1.0, 1.0),
+                                                              duration: const Duration(milliseconds: 180),
+                                                            );
+                                                      }
+                                                      return dot;
+                                                    }),
+                                                  ),
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        ),
+
+                                        // Prompt if multiple failed attempts
+                                        if (_failCount >= 3 && !_isSuccess) ...[
+                                          SizedBox(height: isCompact ? 8 : 12),
+                                          GestureDetector(
+                                            onTap: _showForgotPinDialog,
+                                            child: Container(
+                                              padding: EdgeInsets.symmetric(
+                                                horizontal: isCompact ? 10 : 14,
+                                                vertical: isCompact ? 4 : 6,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: AppColors.deficitText.withValues(alpha: 0.10),
+                                                borderRadius: BorderRadius.circular(20),
+                                                border: Border.all(
+                                                  color: AppColors.deficitText.withValues(alpha: 0.30),
+                                                  width: 0.8,
+                                                ),
+                                              ),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  const Icon(Icons.info_outline_rounded, size: 14, color: AppColors.deficitText),
+                                                  const SizedBox(width: 6),
+                                                  Text(
+                                                    'forgot_pin_hint'.tr,
+                                                    style: TextStyle(
+                                                      fontSize: isCompact ? 10.5 : 11.5,
+                                                      fontWeight: FontWeight.w600,
+                                                      color: AppColors.deficitText,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                        const Spacer(),
+
+                                        // FinTech Numpad & Recovery (Smoothly slides down & fades out on success)
+                                        AnimatedSlide(
+                                          duration: const Duration(milliseconds: 320),
+                                          curve: Curves.easeInCubic,
+                                          offset: _isSuccess ? const Offset(0, 0.25) : Offset.zero,
+                                          child: AnimatedOpacity(
+                                            opacity: _isSuccess ? 0.0 : 1.0,
+                                            duration: const Duration(milliseconds: 250),
+                                            curve: Curves.easeOut,
+                                            child: IgnorePointer(
+                                              ignoring: _isSuccess,
+                                              child: Column(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  _buildNumpad(
+                                                    isDark,
+                                                    keySize: isCompact ? 54.0 : 62.0,
+                                                    verticalPadding: isCompact ? 1.5 : 3.0,
+                                                  ),
+                                                  SizedBox(height: isCompact ? 4 : 10),
+
+                                                  // Forgot PIN Recovery Trigger Button
+                                                  TextButton.icon(
+                                                    onPressed: _showForgotPinDialog,
+                                                    icon: Icon(Icons.help_outline_rounded, size: isCompact ? 14 : 15),
+                                                    label: Text(
+                                                      'forgot_pin'.tr,
+                                                      style: TextStyle(
+                                                        fontSize: isCompact ? 12 : 13,
+                                                        fontWeight: FontWeight.w600,
+                                                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                                                      ),
+                                                    ),
+                                                    style: TextButton.styleFrom(
+                                                      padding: EdgeInsets.symmetric(
+                                                        horizontal: isCompact ? 12 : 16,
+                                                        vertical: isCompact ? 4 : 8,
+                                                      ),
+                                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                                    ),
+                                                  ),
+                                                  SizedBox(height: isCompact ? 2 : 6),
+                                                ],
+                                              ),
+                                            ),
                                           ),
                                         ),
-                                        const SizedBox(height: 6),
                                       ],
                                     ),
                                   ),
                                 ),
                               ),
-                            ],
-                          ),
+                            );
+                          },
                         ),
                       ),
                     ),
@@ -1197,7 +1486,7 @@ class _PinLockViewState extends State<PinLockView> with SingleTickerProviderStat
     );
   }
 
-  Widget _buildNumpad(bool isDark) {
+  Widget _buildNumpad(bool isDark, {double keySize = 62.0, double verticalPadding = 3.0}) {
     final rows = [
       ['1', '2', '3'],
       ['4', '5', '6'],
@@ -1212,39 +1501,127 @@ class _PinLockViewState extends State<PinLockView> with SingleTickerProviderStat
     return Column(
       children: rows.map((row) {
         return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 3),
+          padding: EdgeInsets.symmetric(vertical: verticalPadding),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: row.map((key) {
-              if (key.isEmpty) return const SizedBox(width: 62, height: 62);
+              if (key.isEmpty) return SizedBox(width: keySize, height: keySize);
 
               if (key == 'BIO') {
                 return InkWell(
                   onTap: _authenticateWithBiometrics,
-                  borderRadius: BorderRadius.circular(31),
-                  child: Container(
-                    width: 62,
-                    height: 62,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.10),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: AppColors.primary.withValues(alpha: 0.25),
-                        width: 1,
+                  borderRadius: BorderRadius.circular(keySize / 2),
+                  child: SizedBox(
+                    width: keySize,
+                    height: keySize,
+                    child: LiquidGlassLens(
+                      style: LiquidGlassStyle(
+                        shape: LiquidGlassShape.squircle(
+                          cornerRadius: keySize / 2,
+                          borderWidth: 1.0,
+                          lightIntensity: 1.25,
+                          lightDirection: 60,
+                          borderType: const OpticalBorder(
+                            borderSaturation: 1.3,
+                            ambientIntensity: 1.15,
+                            borderSolidity: 0.25,
+                          ),
+                        ),
+                        appearance: LiquidGlassAppearance(
+                          color: AppColors.primary.withValues(alpha: isDark ? 0.16 : 0.10),
+                          blur: const LiquidGlassBlur(sigmaX: 10, sigmaY: 10),
+                        ),
+                        refraction: const LiquidGlassRefraction(
+                          distortion: 0.05,
+                          distortionWidth: 14,
+                          chromaticAberration: 0.002,
+                        ),
+                      ),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: AppColors.primary.withValues(alpha: 0.28),
+                            width: 1,
+                          ),
+                        ),
+                        alignment: Alignment.center,
+                        child: Icon(
+                          Icons.fingerprint_rounded,
+                          size: keySize * 0.42,
+                          color: AppColors.primary,
+                        ),
                       ),
                     ),
-                    alignment: Alignment.center,
-                    child: const Icon(Icons.fingerprint_rounded, size: 26, color: AppColors.primary),
+                  ),
+                );
+              }
+
+              if (key == '⌫') {
+                return InkWell(
+                  onTap: () => _onKeyPress(key),
+                  borderRadius: BorderRadius.circular(keySize / 2),
+                  child: SizedBox(
+                    width: keySize,
+                    height: keySize,
+                    child: LiquidGlassLens(
+                      style: LiquidGlassStyle(
+                        shape: LiquidGlassShape.squircle(
+                          cornerRadius: keySize / 2,
+                          borderWidth: 1.0,
+                          lightIntensity: 1.25,
+                          lightDirection: 60,
+                          borderType: const OpticalBorder(
+                            borderSaturation: 1.3,
+                            ambientIntensity: 1.15,
+                            borderSolidity: 0.25,
+                          ),
+                        ),
+                        appearance: LiquidGlassAppearance(
+                          color: isDark
+                              ? AppColors.darkSurfaceSecondary.withValues(alpha: 0.45)
+                              : Colors.white.withValues(alpha: 0.55),
+                          blur: const LiquidGlassBlur(sigmaX: 10, sigmaY: 10),
+                        ),
+                        refraction: const LiquidGlassRefraction(
+                          distortion: 0.05,
+                          distortionWidth: 14,
+                          chromaticAberration: 0.002,
+                        ),
+                      ),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isDark ? AppColors.darkBorder.withValues(alpha: 0.55) : AppColors.border.withValues(alpha: 0.65),
+                            width: 1,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.03),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        alignment: Alignment.center,
+                        child: Icon(
+                          Icons.backspace_outlined,
+                          size: keySize * 0.30,
+                          color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                        ),
+                      ),
+                    ),
                   ),
                 );
               }
 
               return InkWell(
                 onTap: () => _onKeyPress(key),
-                borderRadius: BorderRadius.circular(31),
+                borderRadius: BorderRadius.circular(keySize / 2),
                 child: Container(
-                  width: 62,
-                  height: 62,
+                  width: keySize,
+                  height: keySize,
                   decoration: BoxDecoration(
                     color: isDark ? AppColors.darkSurfaceSecondary.withValues(alpha: 0.85) : AppColors.surfaceSecondary,
                     shape: BoxShape.circle,
@@ -1261,20 +1638,14 @@ class _PinLockViewState extends State<PinLockView> with SingleTickerProviderStat
                     ],
                   ),
                   alignment: Alignment.center,
-                  child: key == '⌫'
-                      ? Icon(
-                          Icons.backspace_outlined,
-                          size: 18,
-                          color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                        )
-                      : Text(
-                          key,
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                          ),
-                        ),
+                  child: Text(
+                    key,
+                    style: TextStyle(
+                      fontSize: keySize * 0.32,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                    ),
+                  ),
                 ),
               );
             }).toList(),

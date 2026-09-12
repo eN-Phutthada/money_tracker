@@ -6,6 +6,7 @@ import '../widgets/daily_allowance_card.dart';
 import '../widgets/dashboard_header.dart';
 import '../widgets/fl_finance_chart_card.dart';
 import '../widgets/recent_transactions_card.dart';
+import '../widgets/smart_auto_scan_slips_banner.dart';
 
 /// Single-Column Mobile Dashboard View
 class MobileDashboardView extends GetView<DashboardController> {
@@ -20,6 +21,7 @@ class MobileDashboardView extends GetView<DashboardController> {
         children: const [
           DashboardHeader(),
           SizedBox(height: 14),
+          SmartAutoScanSlipsBanner(),
           BalanceCard(),
           SizedBox(height: 14),
           DailyAllowanceCard(),

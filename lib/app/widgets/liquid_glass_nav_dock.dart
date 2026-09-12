@@ -5,6 +5,7 @@ import 'package:liquid_glass_easy/liquid_glass_easy.dart';
 import '../modules/dashboard/controllers/dashboard_controller.dart';
 import '../modules/security/controllers/security_controller.dart';
 import '../modules/transactions/views/quick_add_bottom_sheet.dart';
+import '../modules/transactions/views/krungthai_slip_sheet.dart';
 import '../routes/app_routes.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_popup_decorations.dart';
@@ -326,7 +327,9 @@ class LiquidGlassNavDock extends StatelessWidget {
         elevation: 14,
         onSelected: (val) {
           HapticFeedback.selectionClick();
-          if (val == 'theme') {
+          if (val == 'slip') {
+            KrungthaiSlipScanModal.show(context);
+          } else if (val == 'theme') {
             showThemePickerDialog(context);
           } else if (val == 'language') {
             showLanguagePickerDialog(context);
@@ -562,7 +565,40 @@ class LiquidGlassNavDock extends StatelessWidget {
               ),
             ),
 
-            // 5. Lock Screen Now (if PIN enabled)
+            // 5. Scan Krungthai Slip
+            PopupMenuItem<String>(
+              value: 'slip',
+              child: Row(
+                children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00A3E0).withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.document_scanner_rounded,
+                      size: 17,
+                      color: Color(0xFF00A3E0),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'scan_krungthai_slip'.tr,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // 6. Lock Screen Now (if PIN enabled)
             if (isPinOn)
               PopupMenuItem<String>(
                 value: 'lock',

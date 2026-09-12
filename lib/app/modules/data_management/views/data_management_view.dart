@@ -11,6 +11,7 @@ import '../../../theme/app_colors.dart';
 import '../../../theme/app_popup_decorations.dart';
 import '../../../widgets/modern_app_bar.dart';
 import '../../dashboard/controllers/dashboard_controller.dart';
+import '../../security/controllers/security_controller.dart';
 
 /// หน้าจอจัดการข้อมูล (Data Management) สไตล์ Modern FinTech 2026
 /// ศูนย์กลางการสำรอง กู้คืน และส่งออกข้อมูลระดับสถาบันการเงิน:
@@ -578,29 +579,18 @@ class _DataManagementViewState extends State<DataManagementView> {
   }
 
   // ==========================================
-  // CONFIRM CLEAR ALL
+  // CONFIRM CLEAR ALL (SECURE ANTI-ACCIDENTAL CONFIRMATION)
   // ==========================================
   void _confirmClearAll() {
     HapticFeedback.heavyImpact();
     Get.dialog(
-      AppConfirmDialog(
-        title: controller.isEnglish
-            ? 'Clear All Transactions?'
-            : 'ยืนยันล้างข้อมูลธุรกรรมทั้งหมด?',
-        message: controller.isEnglish
-            ? 'All transactions will be cleared from this device. Budget plan will be kept. You cannot undo this action without a backup.'
-            : 'ระบบจะลบรายการธุรกรรมทั้งหมดออกจากเครื่องเพื่อเริ่มต้นใหม่ รายการที่ถูกลบจะไม่สามารถกู้คืนได้เว้นแต่คุณจะมีไฟล์สำรองข้อมูล',
-        icon: Icons.delete_sweep_rounded,
-        iconColor: AppColors.deficitText,
-        confirmButtonColor: AppColors.deficitText,
-        confirmText: controller.isEnglish
-            ? 'Clear to 0'
-            : 'ยืนยันล้างข้อมูลเป็น 0',
-        onConfirm: () async {
-          Get.back();
+      SecureClearAllDialog(
+        controller: controller,
+        onConfirmed: () async {
           await controller.clearAllToEmpty();
         },
       ),
+      barrierDismissible: false,
     );
   }
 
@@ -1098,6 +1088,572 @@ class _DataManagementViewState extends State<DataManagementView> {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Modal ยืนยันการล้างข้อมูลธุรกรรมระดับความปลอดภัยสูงสุด (Anti-Accidental Clear Dialog)
+/// ป้องกันการเผลอกดโดยไม่ได้ตั้งใจ 100%:
+/// 1. สรุปผลกระทบและจำนวนรายการธุรกรรมที่จะถูกลบ
+/// 2. บังคับพิมพ์ข้อความยืนยันความตั้งใจจริง ("ล้างข้อมูล" หรือ "CLEAR")
+/// 3. มีกล่อง Checkbox รับทราบความเสี่ยงถาวร
+/// 4. ตรวจสอบรหัส PIN 4 หลักของเครื่อง (กรณีผู้ใช้เปิดใช้งานระบบความปลอดภัย PIN)
+/// 5. ปุ่มยืนยันจะถูกล็อกปิดการใช้งาน (Disabled) จนกว่าจะผ่านเงื่อนไขทั้งหมดครบถ้วน
+class SecureClearAllDialog extends StatefulWidget {
+  final DashboardController controller;
+  final Future<void> Function() onConfirmed;
+
+  const SecureClearAllDialog({
+    super.key,
+    required this.controller,
+    required this.onConfirmed,
+  });
+
+  @override
+  State<SecureClearAllDialog> createState() => _SecureClearAllDialogState();
+}
+
+class _SecureClearAllDialogState extends State<SecureClearAllDialog> {
+  final TextEditingController _keywordController = TextEditingController();
+  final TextEditingController _pinController = TextEditingController();
+  bool _understandRisk = false;
+  bool _isExecuting = false;
+  String? _pinErrorMessage;
+
+  bool get _isPinEnabled {
+    if (Get.isRegistered<SecurityController>()) {
+      return Get.find<SecurityController>().isPinEnabled.value;
+    }
+    return false;
+  }
+
+  bool get _isKeywordMatched {
+    final text = _keywordController.text.trim().toLowerCase();
+    if (widget.controller.isEnglish) {
+      return text == 'clear' || text == 'delete';
+    } else {
+      return text == 'ล้างข้อมูล' ||
+          text == 'ล้าง' ||
+          text == 'clear' ||
+          text == 'delete' ||
+          text == 'ลบ';
+    }
+  }
+
+  bool get _isPinValid {
+    if (!_isPinEnabled) return true;
+    final pin = _pinController.text.trim();
+    if (pin.length != 4) return false;
+    return Get.find<SecurityController>().verifyPin(pin, autoUnlock: false);
+  }
+
+  bool get _canSubmit {
+    return _isKeywordMatched && _understandRisk && _isPinValid && !_isExecuting;
+  }
+
+  @override
+  void dispose() {
+    _keywordController.dispose();
+    _pinController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _executeClear() async {
+    if (!_canSubmit) return;
+
+    // Double check PIN if enabled
+    if (_isPinEnabled) {
+      final pin = _pinController.text.trim();
+      final sec = Get.find<SecurityController>();
+      if (!sec.verifyPin(pin, autoUnlock: false)) {
+        HapticFeedback.vibrate();
+        setState(() {
+          _pinErrorMessage = widget.controller.isEnglish
+              ? 'Incorrect PIN code'
+              : 'รหัส PIN ไม่ถูกต้อง';
+        });
+        return;
+      }
+    }
+
+    setState(() {
+      _isExecuting = true;
+    });
+
+    try {
+      HapticFeedback.heavyImpact();
+      Get.back(); // close dialog
+      await widget.onConfirmed();
+      AppFeedback.showSuccess(
+        title: widget.controller.isEnglish ? 'Cleared Successfully' : 'ล้างข้อมูลสำเร็จ',
+        message: widget.controller.isEnglish
+            ? 'All transactions have been reset to 0.'
+            : 'ประวัติรายการธุรกรรมทั้งหมดถูกล้างเป็น 0 เรียบร้อยแล้ว',
+      );
+    } catch (e) {
+      setState(() {
+        _isExecuting = false;
+      });
+      AppFeedback.showError(
+        title: widget.controller.isEnglish ? 'Error' : 'เกิดข้อผิดพลาด',
+        message: e.toString(),
+      );
+    }
+  }
+
+  Widget _buildWarningItem({
+    required IconData icon,
+    required String text,
+    required bool isDark,
+    Color? color,
+  }) {
+    final effectiveColor = color ?? AppColors.deficitText;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 14, color: effectiveColor),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w500,
+              color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+              height: 1.35,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isEn = widget.controller.isEnglish;
+    final itemCount = widget.controller.transactions.length;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final targetKeyword = isEn ? 'CLEAR' : 'ล้างข้อมูล';
+
+    return AppGlassDialog(
+      maxWidth: 440,
+      maxHeight: screenHeight * 0.88,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+          // 1. Header with Danger Shield Icon
+          AppPopupHeader(
+            title: isEn ? 'Clear All Transactions?' : 'ยืนยันล้างข้อมูลธุรกรรมทั้งหมด?',
+            subtitle: isEn
+                ? 'High Security Anti-Accidental Confirmation'
+                : 'ระบบยืนยันความปลอดภัย ป้องกันการเผลอกด',
+            icon: Icons.warning_amber_rounded,
+            iconColor: AppColors.deficitText,
+            onClose: _isExecuting ? null : () => Get.back(),
+          ),
+          const SizedBox(height: 16),
+
+          // 2. Impact Warning Box
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: AppColors.deficitText.withValues(alpha: isDark ? 0.12 : 0.08),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: AppColors.deficitText.withValues(alpha: isDark ? 0.35 : 0.25),
+                width: 1,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.deficitText,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        isEn ? 'DANGER ZONE' : 'คำเตือนสำคัญ',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        isEn
+                            ? 'Will delete $itemCount transactions'
+                            : 'จะลบประวัติธุรกรรมทั้งหมด $itemCount รายการ',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.deficitText,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                _buildWarningItem(
+                  icon: Icons.remove_circle_outline_rounded,
+                  text: isEn
+                      ? 'All expense and income history will be permanently deleted.'
+                      : 'ประวัติรายรับ รายจ่าย และการออมทั้งหมดจะถูกลบออกจากเครื่อง',
+                  isDark: isDark,
+                ),
+                const SizedBox(height: 6),
+                _buildWarningItem(
+                  icon: Icons.check_circle_outline_rounded,
+                  text: isEn
+                      ? 'Your budget plan and settings will remain safe.'
+                      : 'แผนงบประมาณและการตั้งค่าต่างๆ จะยังคงอยู่ ไม่ถูกลบ',
+                  isDark: isDark,
+                  color: AppColors.primary,
+                ),
+                const SizedBox(height: 6),
+                _buildWarningItem(
+                  icon: Icons.history_rounded,
+                  text: isEn
+                      ? 'Cannot be undone without a JSON backup file.'
+                      : 'ไม่สามารถกู้คืนได้ เว้นแต่คุณจะมีไฟล์สำรอง JSON',
+                  isDark: isDark,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // 3. Step 1: Type-to-Confirm Prompt
+          Text.rich(
+            TextSpan(
+              text: isEn ? '1. Type ' : '1. พิมพ์คำว่า ',
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+                color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+              ),
+              children: [
+                TextSpan(
+                  text: '"$targetKeyword"',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.deficitText,
+                  ),
+                ),
+                TextSpan(
+                  text: isEn ? ' to confirm intent:' : ' เพื่อยืนยันความตั้งใจจริง:',
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _keywordController,
+            enabled: !_isExecuting,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+            ),
+            decoration: InputDecoration(
+              hintText: isEn ? 'Type "$targetKeyword"' : 'พิมพ์ "$targetKeyword"',
+              hintStyle: TextStyle(
+                fontSize: 13,
+                color: isDark
+                    ? AppColors.darkTextSecondary.withValues(alpha: 0.5)
+                    : AppColors.textSecondary.withValues(alpha: 0.5),
+              ),
+              prefixIcon: Icon(
+                Icons.edit_note_rounded,
+                color: _isKeywordMatched
+                    ? AppColors.primary
+                    : (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
+                size: 20,
+              ),
+              suffixIcon: _isKeywordMatched
+                  ? const Icon(Icons.check_circle_rounded, color: AppColors.primary, size: 20)
+                  : null,
+              filled: true,
+              fillColor: isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(
+                  color: _isKeywordMatched
+                      ? AppColors.primary
+                      : (isDark ? AppColors.darkBorder : AppColors.border),
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(
+                  color: _isKeywordMatched
+                      ? AppColors.primary
+                      : (isDark ? AppColors.darkBorder : AppColors.border),
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(
+                  color: _isKeywordMatched ? AppColors.primary : AppColors.deficitText,
+                  width: 1.5,
+                ),
+              ),
+            ),
+            onChanged: (_) {
+              setState(() {});
+            },
+          ),
+          const SizedBox(height: 12),
+
+          // 4. Step 2 (Optional): PIN Verification if PIN is enabled
+          if (_isPinEnabled) ...[
+            Text(
+              isEn
+                  ? '2. Enter your 4-digit Security PIN:'
+                  : '2. ใส่รหัส PIN 4 หลักของระบบความปลอดภัย:',
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+                color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _pinController,
+              enabled: !_isExecuting,
+              obscureText: true,
+              keyboardType: TextInputType.number,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(4),
+              ],
+              style: TextStyle(
+                fontSize: 16,
+                letterSpacing: 6,
+                fontWeight: FontWeight.w800,
+                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+              ),
+              decoration: InputDecoration(
+                hintText: '••••',
+                hintStyle: TextStyle(
+                  letterSpacing: 6,
+                  color: isDark
+                      ? AppColors.darkTextSecondary.withValues(alpha: 0.5)
+                      : AppColors.textSecondary.withValues(alpha: 0.5),
+                ),
+                prefixIcon: Icon(
+                  Icons.shield_outlined,
+                  color: _isPinValid
+                      ? AppColors.primary
+                      : (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
+                  size: 20,
+                ),
+                suffixIcon: _isPinValid
+                    ? const Icon(Icons.check_circle_rounded, color: AppColors.primary, size: 20)
+                    : null,
+                filled: true,
+                fillColor: isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(
+                    color: _isPinValid
+                        ? AppColors.primary
+                        : (isDark ? AppColors.darkBorder : AppColors.border),
+                  ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(
+                    color: _isPinValid
+                        ? AppColors.primary
+                        : (isDark ? AppColors.darkBorder : AppColors.border),
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(
+                    color: _isPinValid ? AppColors.primary : AppColors.deficitText,
+                    width: 1.5,
+                  ),
+                ),
+              ),
+              onChanged: (_) {
+                setState(() {
+                  _pinErrorMessage = null;
+                });
+              },
+            ),
+            if (_pinErrorMessage != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                _pinErrorMessage!,
+                style: const TextStyle(
+                  fontSize: 11.5,
+                  color: AppColors.deficitText,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+            const SizedBox(height: 12),
+          ],
+
+          // 5. Risk Acknowledgment Checkbox
+          InkWell(
+            onTap: _isExecuting
+                ? null
+                : () {
+                    HapticFeedback.selectionClick();
+                    setState(() {
+                      _understandRisk = !_understandRisk;
+                    });
+                  },
+            borderRadius: BorderRadius.circular(10),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: Checkbox(
+                      value: _understandRisk,
+                      activeColor: AppColors.deficitText,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                      onChanged: _isExecuting
+                          ? null
+                          : (val) {
+                              HapticFeedback.selectionClick();
+                              setState(() {
+                                _understandRisk = val ?? false;
+                              });
+                            },
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      isEn
+                          ? 'I understand all transactions will be permanently lost'
+                          : 'ฉันเข้าใจว่าข้อมูลธุรกรรมจะถูกลบถาวรและไม่สามารถกู้คืนได้',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 18),
+
+          // 6. Action Buttons
+          Row(
+            children: [
+              Expanded(
+                child: TextButton(
+                  onPressed: _isExecuting ? null : () => Get.back(),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  child: Text(
+                    isEn ? 'Cancel (Keep Data)' : 'ยกเลิก (เก็บข้อมูลไว้)',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: _canSubmit
+                        ? [
+                            BoxShadow(
+                              color: AppColors.deficitText.withValues(alpha: 0.35),
+                              blurRadius: 14,
+                              offset: const Offset(0, 4),
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: ElevatedButton(
+                    onPressed: _canSubmit ? _executeClear : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.deficitText,
+                      disabledBackgroundColor: isDark
+                          ? AppColors.darkSurfaceSecondary
+                          : Colors.black.withValues(alpha: 0.08),
+                      foregroundColor: Colors.white,
+                      disabledForegroundColor: isDark
+                          ? AppColors.darkTextSecondary.withValues(alpha: 0.4)
+                          : AppColors.textSecondary.withValues(alpha: 0.4),
+                      elevation: _canSubmit ? 2 : 0,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                    child: _isExecuting
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                _canSubmit
+                                    ? Icons.delete_forever_rounded
+                                    : Icons.lock_outline_rounded,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 6),
+                              FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  _canSubmit
+                                      ? (isEn ? 'Clear to 0' : 'ล้างเป็น 0')
+                                      : (isEn ? 'Locked' : 'ถูกล็อกไว้'),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+      ),
     );
   }
 }

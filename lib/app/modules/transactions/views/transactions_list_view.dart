@@ -4,11 +4,13 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import '../../../data/models/transaction_model.dart';
 import '../../../theme/app_colors.dart';
+import '../../../theme/app_popup_decorations.dart';
 import '../../dashboard/controllers/dashboard_controller.dart';
 import '../../../widgets/liquid_glass_nav_dock.dart';
 import '../../../widgets/modern_app_bar.dart';
 import '../../../routes/app_routes.dart';
 import 'quick_add_bottom_sheet.dart';
+import 'krungthai_slip_sheet.dart';
 
 /// หน้าจอประวัติรายการธุรกรรมทั้งหมด (FinTech 2026 Transaction Command Hub)
 class TransactionsListView extends StatefulWidget {
@@ -355,75 +357,118 @@ class _TransactionsListViewState extends State<TransactionsListView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Frosted Glass Search Input
-          TextField(
-            controller: _searchController,
-            onChanged: (val) => setState(() => _searchQuery = val.trim()),
-            style: TextStyle(
-              fontSize: 13.5,
-              fontWeight: FontWeight.w500,
-              color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-            ),
-            decoration: InputDecoration(
-              hintText: 'search_transactions_hint'.tr,
-              hintStyle: const TextStyle(
-                fontSize: 13,
-                color: AppColors.textSecondary,
-              ),
-              prefixIcon: Icon(
-                Icons.search_rounded,
-                size: 20,
-                color: _searchQuery.isNotEmpty
-                    ? AppColors.primary
-                    : AppColors.textSecondary,
-              ),
-              suffixIcon: _searchQuery.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(
-                        Icons.cancel_rounded,
-                        size: 18,
-                        color: AppColors.textSecondary,
+          // Frosted Glass Search Input with Krungthai Slip Scan Button
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: (val) => setState(() => _searchQuery = val.trim()),
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w500,
+                    color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'search_transactions_hint'.tr,
+                    hintStyle: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textSecondary,
+                    ),
+                    prefixIcon: Icon(
+                      Icons.search_rounded,
+                      size: 20,
+                      color: _searchQuery.isNotEmpty
+                          ? AppColors.primary
+                          : AppColors.textSecondary,
+                    ),
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(
+                              Icons.cancel_rounded,
+                              size: 18,
+                              color: AppColors.textSecondary,
+                            ),
+                            onPressed: () {
+                              HapticFeedback.lightImpact();
+                              _searchController.clear();
+                              setState(() => _searchQuery = '');
+                            },
+                          )
+                        : null,
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 11,
+                    ),
+                    filled: true,
+                    fillColor: isDark
+                        ? AppColors.darkBackground
+                        : AppColors.surfaceSecondary,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(
+                        color: isDark
+                            ? AppColors.darkBorder
+                            : AppColors.border.withValues(alpha: 0.6),
                       ),
-                      onPressed: () {
-                        HapticFeedback.lightImpact();
-                        _searchController.clear();
-                        setState(() => _searchQuery = '');
-                      },
-                    )
-                  : null,
-              isDense: true,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 11,
-              ),
-              filled: true,
-              fillColor: isDark
-                  ? AppColors.darkBackground
-                  : AppColors.surfaceSecondary,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide(
-                  color: isDark
-                      ? AppColors.darkBorder
-                      : AppColors.border.withValues(alpha: 0.6),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(
+                        color: isDark
+                            ? AppColors.darkBorder
+                            : AppColors.border.withValues(alpha: 0.6),
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: const BorderSide(
+                        color: AppColors.primary,
+                        width: 1.5,
+                      ),
+                    ),
+                  ),
                 ),
               ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide(
-                  color: isDark
-                      ? AppColors.darkBorder
-                      : AppColors.border.withValues(alpha: 0.6),
+              const SizedBox(width: 8),
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    KrungthaiSlipScanModal.show(context);
+                  },
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00A3E0).withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: const Color(0xFF00A3E0).withValues(alpha: 0.35),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.receipt_long_rounded, size: 18, color: Color(0xFF00A3E0)),
+                        const SizedBox(width: 6),
+                        Text(
+                          'scan_krungthai_slip'.tr,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF00A3E0),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: const BorderSide(
-                  color: AppColors.primary,
-                  width: 1.5,
-                ),
-              ),
-            ),
+            ],
           ),
           const SizedBox(height: 10),
 
@@ -1116,19 +1161,50 @@ class _TransactionsListViewState extends State<TransactionsListView> {
       background: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 16),
+        padding: const EdgeInsets.only(right: 20),
         decoration: BoxDecoration(
-          color: AppColors.deficitText.withValues(alpha: 0.15),
+          color: AppColors.deficitText.withValues(alpha: isDark ? 0.22 : 0.15),
           borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: AppColors.deficitText.withValues(alpha: 0.3),
+            width: 1,
+          ),
         ),
-        child: const Icon(
-          Icons.delete_outline_rounded,
-          color: AppColors.deficitText,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            const Icon(
+              Icons.delete_forever_rounded,
+              color: AppColors.deficitText,
+              size: 20,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              isEn ? 'Delete' : 'ลบรายการ',
+              style: const TextStyle(
+                color: AppColors.deficitText,
+                fontWeight: FontWeight.w800,
+                fontSize: 13,
+              ),
+            ),
+          ],
         ),
       ),
       onDismissed: (_) {
         HapticFeedback.mediumImpact();
         controller.deleteTransaction(item.id);
+        AppFeedback.showSuccess(
+          title: isEn ? 'Transaction Deleted' : 'ลบรายการเรียบร้อย',
+          message: item.title,
+          amount: item.amount,
+          transactionType: item.type,
+          actionLabel: isEn ? 'Undo' : 'เลิกทำ',
+          duration: const Duration(milliseconds: 4500),
+          onAction: () {
+            HapticFeedback.mediumImpact();
+            controller.addTransaction(item, notify: true);
+          },
+        );
       },
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -1236,14 +1312,19 @@ class _TransactionsListViewState extends State<TransactionsListView> {
                             const SizedBox(width: 4),
 
                             // Date & Time
-                            Text(
-                              '• ${item.date.day}/${item.date.month}/$yearNum $timeStr',
-                              style: TextStyle(
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.w500,
-                                color: isDark
-                                    ? AppColors.darkTextTertiary
-                                    : AppColors.textSecondary,
+                            Flexible(
+                              flex: 2,
+                              child: Text(
+                                '• ${item.date.day}/${item.date.month}/$yearNum $timeStr',
+                                style: TextStyle(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w500,
+                                  color: isDark
+                                      ? AppColors.darkTextTertiary
+                                      : AppColors.textSecondary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],

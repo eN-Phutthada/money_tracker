@@ -11,6 +11,7 @@ import '../widgets/balance_card.dart';
 import '../widgets/daily_allowance_card.dart';
 import '../widgets/fl_finance_chart_card.dart';
 import '../widgets/recent_transactions_card.dart';
+import '../widgets/smart_auto_scan_slips_banner.dart';
 import '../../../widgets/modern_app_bar.dart';
 import '../../../theme/app_popup_decorations.dart';
 
@@ -44,6 +45,7 @@ class DesktopDashboardView extends GetView<DashboardController> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
+                          const SmartAutoScanSlipsBanner(),
                           if (isCompact) ...[
                             const BalanceCard(),
                             const SizedBox(height: 18),
