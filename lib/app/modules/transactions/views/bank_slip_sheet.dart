@@ -274,7 +274,10 @@ class BankSlipScanModal extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 3,
+                          crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
                             Text(
                               'gemini_ai_option_title'.tr,
@@ -284,46 +287,63 @@ class BankSlipScanModal extends StatelessWidget {
                                 color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                               ),
                             ),
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                              decoration: BoxDecoration(
-                                color: hasKey
-                                    ? const Color(0xFF10B981).withValues(alpha: 0.15)
-                                    : const Color(0xFFF59E0B).withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                hasKey ? 'gemini_key_ready'.tr : 'gemini_key_missing'.tr,
-                                style: TextStyle(
-                                  fontSize: 9.5,
-                                  fontWeight: FontWeight.w700,
-                                  color: hasKey ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
+                            InkWell(
+                              onTap: () => GeminiApiKeySettingsDialog.show(context),
+                              borderRadius: BorderRadius.circular(6),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: hasKey
+                                      ? const Color(0xFF10B981).withValues(alpha: 0.15)
+                                      : const Color(0xFFF59E0B).withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      hasKey
+                                          ? 'gemini_key_ready'.trParams({'model': ConfigService().geminiModel})
+                                          : 'gemini_key_missing'.tr,
+                                      style: TextStyle(
+                                        fontSize: 9.5,
+                                        fontWeight: FontWeight.w700,
+                                        color: hasKey ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 3),
+                                    Icon(
+                                      Icons.tune_rounded,
+                                      size: 10,
+                                      color: hasKey ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 1),
+                        const SizedBox(height: 2),
                         Text(
                           'gemini_ai_option_desc'.tr,
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: 10.5,
                             color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
                           ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),
                   ),
+                  const SizedBox(width: 6),
                   Switch.adaptive(
                     value: isGemini,
                     activeTrackColor: const Color(0xFF6366F1),
                     onChanged: (val) {
                       if (val && !hasKey) {
-                        AppFeedback.showWarning(
-                          title: 'gemini_key_missing'.tr,
-                          message: 'gemini_key_hint'.tr,
-                        );
+                        GeminiApiKeySettingsDialog.show(context);
+                        return;
                       }
                       slipService.toggleGemini(val);
                     },
@@ -1785,6 +1805,497 @@ class _BankSlipSheetState extends State<BankSlipSheet> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+
+/// หน้าต่างสำหรับตั้งค่าและทดสอบ Google Gemini API Key ในแอป
+class GeminiApiKeySettingsDialog extends StatefulWidget {
+  const GeminiApiKeySettingsDialog({super.key});
+
+  static void show(BuildContext context) {
+    Get.dialog(
+      const GeminiApiKeySettingsDialog(),
+      barrierDismissible: true,
+    );
+  }
+
+  @override
+  State<GeminiApiKeySettingsDialog> createState() => _GeminiApiKeySettingsDialogState();
+}
+
+class _GeminiApiKeySettingsDialogState extends State<GeminiApiKeySettingsDialog> {
+  final TextEditingController _customKeyController = TextEditingController();
+  bool _obscureCustomKey = true;
+  String _selectedModel = 'gemini-3.6-flash';
+  bool _isTesting = false;
+  bool? _testSuccess;
+  String? _testMessage;
+  bool _showCustomInput = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedModel = ConfigService().geminiModel;
+    _showCustomInput = !ConfigService().isUsingBuiltInKey;
+  }
+
+  @override
+  void dispose() {
+    _customKeyController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pasteFromClipboard() async {
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    if (data?.text != null && data!.text!.trim().isNotEmpty) {
+      setState(() {
+        _customKeyController.text = data.text!.trim();
+        _testSuccess = null;
+        _testMessage = null;
+      });
+      HapticFeedback.lightImpact();
+    }
+  }
+
+  Future<void> _testConnection() async {
+    setState(() {
+      _isTesting = true;
+      _testSuccess = null;
+      _testMessage = null;
+    });
+
+    final customKey = _customKeyController.text.trim();
+    final testKey = customKey.isNotEmpty ? customKey : ConfigService().geminiApiKey;
+
+    final success = await ConfigService().testConnection(
+      testKey: testKey,
+      testModel: _selectedModel,
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _isTesting = false;
+      _testSuccess = success;
+      _testMessage = success ? 'connection_success'.tr : 'connection_failed'.tr;
+    });
+  }
+
+  Future<void> _resetToBuiltIn() async {
+    await ConfigService().resetToDefault();
+    setState(() {
+      _customKeyController.clear();
+      _selectedModel = ConfigService().geminiModel;
+      _showCustomInput = false;
+      _testSuccess = null;
+      _testMessage = null;
+    });
+    AppFeedback.showSuccess(
+      title: 'gemini_reset_default_btn'.tr,
+      message: 'gemini_reset_default_confirm'.tr,
+    );
+  }
+
+  Future<void> _save() async {
+    final newKey = _customKeyController.text.trim();
+    if (newKey.isNotEmpty) {
+      await ConfigService().saveApiKey(newKey, model: _selectedModel);
+    } else {
+      if (!ConfigService().isUsingBuiltInKey) {
+        await ConfigService().resetToDefault();
+      }
+      await ConfigService().setModel(_selectedModel);
+    }
+    BankSlipService().toggleGemini(true);
+    AppFeedback.showSuccess(
+      title: 'save_key_success'.tr,
+      message: _selectedModel,
+    );
+    Get.back();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isBuiltIn = ConfigService().isUsingBuiltInKey && _customKeyController.text.isEmpty;
+
+    return AppGlassDialog(
+      maxWidth: 440,
+      padding: const EdgeInsets.all(22),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF6366F1), Color(0xFFA855F7)],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 22),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'gemini_settings_title'.tr,
+                      style: TextStyle(
+                        fontSize: 16.5,
+                        fontWeight: FontWeight.w800,
+                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'gemini_settings_desc'.tr,
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close_rounded, size: 20),
+                onPressed: () => Get.back(),
+                visualDensity: VisualDensity.compact,
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Status Card: Built-in vs Custom (Never exposes the actual key string)
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: isBuiltIn
+                  ? const Color(0xFF10B981).withValues(alpha: 0.1)
+                  : const Color(0xFF6366F1).withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: isBuiltIn
+                    ? const Color(0xFF10B981).withValues(alpha: 0.3)
+                    : const Color(0xFF6366F1).withValues(alpha: 0.3),
+              ),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: isBuiltIn ? const Color(0xFF10B981) : const Color(0xFF6366F1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    isBuiltIn ? Icons.verified_rounded : Icons.shield_rounded,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              isBuiltIn
+                                  ? 'gemini_status_ready_secure'.tr
+                                  : 'gemini_status_custom_secure'.tr,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: isBuiltIn
+                                    ? const Color(0xFF10B981)
+                                    : (isDark ? const Color(0xFFA5B4FC) : const Color(0xFF4F46E5)),
+                              ),
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: (isBuiltIn ? const Color(0xFF10B981) : const Color(0xFF6366F1))
+                                  .withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              'protected_and_encrypted'.tr,
+                              style: TextStyle(
+                                fontSize: 8.5,
+                                fontWeight: FontWeight.w700,
+                                color: isBuiltIn ? const Color(0xFF10B981) : const Color(0xFF6366F1),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        isBuiltIn
+                            ? 'gemini_mode_builtin_desc'.tr
+                            : 'gemini_mode_custom_desc'.tr,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          // Optional Custom Key Toggle & Section
+          InkWell(
+            onTap: () => setState(() => _showCustomInput = !_showCustomInput),
+            borderRadius: BorderRadius.circular(10),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  Icon(
+                    _showCustomInput ? Icons.keyboard_arrow_down_rounded : Icons.keyboard_arrow_right_rounded,
+                    size: 18,
+                    color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'gemini_mode_custom'.tr,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                    ),
+                  ),
+                  const Spacer(),
+                  if (!isBuiltIn)
+                    TextButton.icon(
+                      onPressed: _resetToBuiltIn,
+                      icon: const Icon(Icons.restart_alt_rounded, size: 14),
+                      label: Text(
+                        'gemini_reset_default_btn'.tr,
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+                      ),
+                      style: TextButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 0),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+
+          // Custom Key Input (Obscured bullets only, never prints secret string)
+          if (_showCustomInput) ...[
+            const SizedBox(height: 6),
+            Container(
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: isDark ? AppColors.darkBorder : AppColors.border,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _customKeyController,
+                      obscureText: _obscureCustomKey,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontFamily: 'monospace',
+                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'gemini_api_key_hint'.tr,
+                        hintStyle: TextStyle(
+                          fontSize: 12,
+                          color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        border: InputBorder.none,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      _obscureCustomKey ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+                      size: 18,
+                      color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                    ),
+                    onPressed: () => setState(() => _obscureCustomKey = !_obscureCustomKey),
+                    tooltip: 'Show/Hide',
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.paste_rounded, size: 18, color: Color(0xFF6366F1)),
+                    onPressed: _pasteFromClipboard,
+                    tooltip: 'gemini_paste_key_btn'.tr,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  if (_customKeyController.text.isNotEmpty)
+                    IconButton(
+                      icon: const Icon(Icons.clear_rounded, size: 18),
+                      onPressed: () => setState(() => _customKeyController.clear()),
+                      tooltip: 'clear_key'.tr,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                ],
+              ),
+            ),
+          ],
+          const SizedBox(height: 14),
+
+          // Model Selection
+          Text(
+            'gemini_model_label'.tr,
+            style: TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w700,
+              color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              _buildModelChip('gemini-3.6-flash', 'gemini_model_flash_36'.tr, isDark),
+              const SizedBox(width: 8),
+              _buildModelChip('gemini-3.5-flash', 'gemini_model_flash_35'.tr, isDark),
+            ],
+          ),
+
+          // Test Connection Status Message
+          if (_testMessage != null) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: (_testSuccess == true ? const Color(0xFF10B981) : const Color(0xFFEF4444))
+                    .withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: (_testSuccess == true ? const Color(0xFF10B981) : const Color(0xFFEF4444))
+                      .withValues(alpha: 0.3),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    _testSuccess == true ? Icons.check_circle_rounded : Icons.error_rounded,
+                    size: 16,
+                    color: _testSuccess == true ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _testMessage!,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: _testSuccess == true ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          const SizedBox(height: 18),
+
+          // Action Buttons
+          Row(
+            children: [
+              OutlinedButton.icon(
+                onPressed: _isTesting ? null : _testConnection,
+                icon: _isTesting
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.network_check_rounded, size: 16),
+                label: Text(
+                  _isTesting ? 'connection_testing'.tr : 'test_connection'.tr,
+                  style: const TextStyle(fontSize: 12),
+                ),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+              const Spacer(),
+              ElevatedButton.icon(
+                onPressed: _save,
+                icon: const Icon(Icons.check_rounded, size: 16, color: Colors.white),
+                label: Text(
+                  'save_key'.tr,
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF6366F1),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModelChip(String modelValue, String label, bool isDark) {
+    final isSelected = _selectedModel == modelValue;
+    return Expanded(
+      child: InkWell(
+        onTap: () => setState(() => _selectedModel = modelValue),
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? const Color(0xFF6366F1).withValues(alpha: 0.15)
+                : (isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isSelected
+                  ? const Color(0xFF6366F1)
+                  : (isDark ? AppColors.darkBorder : AppColors.border),
+            ),
+          ),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+              color: isSelected
+                  ? const Color(0xFF6366F1)
+                  : (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
       ),
     );
   }

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/widgets.dart';
 import 'package:path_provider/path_provider.dart';
 import '../models/budget_plan_model.dart';
@@ -352,11 +353,11 @@ class StorageService {
   Future<bool> loadGeminiEnabledPref() async {
     try {
       final file = await _getGeminiEnabledPrefFile();
-      if (!await file.exists()) return false;
+      if (!await file.exists()) return true;
       final content = await file.readAsString();
       return content.trim() == 'true';
     } catch (_) {
-      return false;
+      return true;
     }
   }
 
@@ -364,6 +365,91 @@ class StorageService {
     try {
       final file = await _getGeminiEnabledPrefFile();
       await file.writeAsString(enabled ? 'true' : 'false', flush: true);
+    } catch (_) {}
+  }
+
+  static const List<int> _cipherSalt = [
+    0x4D, 0x6F, 0x6E, 0x65, 0x79, 0x54, 0x72, 0x61,
+    0x63, 0x6B, 0x65, 0x72, 0x32, 0x30, 0x32, 0x36,
+    0x47, 0x65, 0x6D, 0x69, 0x6E, 0x69, 0x53, 0x65,
+    0x63, 0x75, 0x72, 0x69, 0x74, 0x79, 0x4B, 0x65,
+  ];
+
+  static String _encryptSecret(String plainText) {
+    if (plainText.isEmpty) return '';
+    final bytes = utf8.encode(plainText);
+    final encrypted = Uint8List(bytes.length);
+    for (int i = 0; i < bytes.length; i++) {
+      final k = _cipherSalt[i % _cipherSalt.length];
+      encrypted[i] = bytes[i] ^ k ^ ((i * 17 + 31) & 0xFF);
+    }
+    return base64Encode(encrypted);
+  }
+
+  static String _decryptSecret(String cipherText) {
+    if (cipherText.isEmpty) return '';
+    try {
+      final bytes = base64Decode(cipherText);
+      final decrypted = Uint8List(bytes.length);
+      for (int i = 0; i < bytes.length; i++) {
+        final k = _cipherSalt[i % _cipherSalt.length];
+        decrypted[i] = bytes[i] ^ k ^ ((i * 17 + 31) & 0xFF);
+      }
+      return utf8.decode(decrypted);
+    } catch (_) {
+      // Fallback: กรณีข้อมูลเดิมยังไม่ได้ถูกเข้ารหัส
+      return cipherText;
+    }
+  }
+
+  Future<File> _getGeminiApiKeyFile() async {
+    final dir = await getStorageDirectory();
+    return File('${dir.path}/gemini_api_key.sec');
+  }
+
+  Future<String?> loadGeminiApiKey() async {
+    try {
+      final file = await _getGeminiApiKeyFile();
+      if (!await file.exists()) return null;
+      final content = await file.readAsString();
+      final trimmed = content.trim();
+      if (trimmed.isEmpty) return null;
+      final decrypted = _decryptSecret(trimmed);
+      return decrypted.isNotEmpty ? decrypted : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> saveGeminiApiKey(String apiKey) async {
+    try {
+      final file = await _getGeminiApiKeyFile();
+      final encrypted = _encryptSecret(apiKey.trim());
+      await file.writeAsString(encrypted, flush: true);
+    } catch (_) {}
+  }
+
+  Future<File> _getGeminiModelFile() async {
+    final dir = await getStorageDirectory();
+    return File('${dir.path}/gemini_model.pref');
+  }
+
+  Future<String?> loadGeminiModel() async {
+    try {
+      final file = await _getGeminiModelFile();
+      if (!await file.exists()) return null;
+      final content = await file.readAsString();
+      final trimmed = content.trim();
+      return trimmed.isNotEmpty ? trimmed : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> saveGeminiModel(String model) async {
+    try {
+      final file = await _getGeminiModelFile();
+      await file.writeAsString(model.trim(), flush: true);
     } catch (_) {}
   }
 }

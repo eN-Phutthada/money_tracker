@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'app/data/services/bank_slip_service.dart';
+import 'app/data/services/config_service.dart';
 import 'app/data/services/security_service.dart';
 import 'app/data/services/storage_service.dart';
 import 'app/modules/security/controllers/security_controller.dart';
@@ -28,6 +29,7 @@ Locale resolveInitialLocale(String? savedLang) {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await ConfigService().init();
   await SecurityService().init();
   await BankSlipService().init();
   final savedLang = await StorageService().loadLanguage();

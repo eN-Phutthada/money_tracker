@@ -16,9 +16,13 @@ migrate_working_dir/
 config.json
 config.*.json
 !config.example.json
+assets/config/
+*.sec
 .env
 .env.*
 !.env.example
+lib/app/data/services/secret_vault.dart
+!lib/app/data/services/secret_vault.example.dart
 
 # IntelliJ related
 *.iml
