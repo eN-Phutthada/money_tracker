@@ -9,8 +9,6 @@ import '../../widgets/app_feedback.dart';
 import 'bank_ocr_service.dart';
 import 'bank_qr_decoder.dart';
 import 'bank_slip_parser.dart';
-import 'config_service.dart';
-import 'gemini_slip_service.dart';
 import 'slip_category_predictor.dart';
 import 'storage_service.dart';
 
@@ -47,24 +45,14 @@ class BankSlipService {
   final StorageService _storageService = StorageService();
 
   final RxBool isInstantAutoSave = false.obs;
-  final RxBool isGeminiEnabled = false.obs;
-
   Future<void> init() async {
-    await ConfigService().init();
     final pref = await _storageService.loadSlipAutoSavePref();
     isInstantAutoSave.value = pref;
-    final geminiPref = await _storageService.loadGeminiEnabledPref();
-    isGeminiEnabled.value = geminiPref;
   }
 
   Future<void> toggleAutoSave(bool value) async {
     isInstantAutoSave.value = value;
     await _storageService.saveSlipAutoSavePref(value);
-  }
-
-  Future<void> toggleGemini(bool value) async {
-    isGeminiEnabled.value = value;
-    await _storageService.saveGeminiEnabledPref(value);
   }
 
   /// เลือกรูปสลิปหลายรูปพร้อมกันจากอัลบั้ม (Multi-Image Pick)
@@ -194,43 +182,22 @@ class BankSlipService {
         return enrichWithHistory(completedSlip);
       }
 
-      // 2. ลองอ่านข้อความผ่าน Mobile On-Device OCR
+      // 2. ลองอ่านข้อความผ่าน Mobile On-Device OCR (เร็วและแม่นยำสูง ~0.1-0.2 วินาที)
       String? ocrText;
       try {
         ocrText = await BankOcrService.recognizeTextFromImage(file.path);
       } catch (_) {}
 
-      // 3. วิเคราะห์ด้วย Gemini AI (หากผู้ใช้เปิดใช้งานตัวเลือกนี้ไว้ และมี API Key ใน config.json)
-      if (isGeminiEnabled.value && ConfigService().hasGeminiKey) {
-        final geminiSlip = await GeminiSlipService().analyzeSlip(
-          file: file,
-          existingOcrText: ocrText,
-        );
-        if (geminiSlip != null && geminiSlip.amount > 0) {
-          final finalRef = qrSlip?.referenceNo ?? geminiSlip.referenceNo;
-          final finalDate = resolveAccurateDateTime(
-            qrSlip: qrSlip,
-            fileModTime: fileModTime,
-          );
-          final fusedSlip = geminiSlip.copyWith(
-            referenceNo: finalRef,
-            transactionDate: geminiSlip.hasParsedTime ? geminiSlip.transactionDate : finalDate,
-            hasParsedDateTime: true,
-          );
-          return enrichWithHistory(fusedSlip);
-        }
-      }
-
       BankSlipData? ocrSlip;
       if (ocrText != null && ocrText.trim().isNotEmpty) {
-        // หากไม่มี QR Code ต้องตรวจสอบก่อนว่าเป็นสลิปธนาคารจริงเพื่อข้ามรูปภาพทั่วไปได้อย่างรวดเร็ว
+        // หากไม่มี QR Code ต้องตรวจสอบก่อนว่าเป็นสลิปธนาคารหรือใบเสร็จจริงเพื่อข้ามรูปภาพทั่วไปได้อย่างรวดเร็ว
         if (qrSlip != null || BankSlipParser.isValidBankSlip(ocrText)) {
           ocrSlip = BankSlipParser.parse(ocrText, userProfileName: userProfileName);
         }
       }
 
       BankSlipData? result;
-      // 3. ผสานข้อมูล (Data Fusion) เพื่อความแม่นยำสูงสุด
+      // 3. ผสานข้อมูล (Data Fusion) จาก QR + Local OCR ในเครื่อง
       if (qrSlip != null && ocrSlip != null) {
         final qr = qrSlip;
         final ocr = ocrSlip;
@@ -515,6 +482,7 @@ class BankSlipService {
     DateTime? customDate,
     DateTime? customTime,
     TimeOfDay? customTimeOfDay,
+    String? customNote,
     bool notify = true,
   }) {
     final controller = Get.find<DashboardController>();
@@ -527,6 +495,7 @@ class BankSlipService {
       customDate: customDate,
       customTime: customTime,
       customTimeOfDay: customTimeOfDay,
+      customNote: customNote,
     );
 
     controller.addTransaction(transactionItem, notify: false);

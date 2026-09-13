@@ -164,73 +164,63 @@ class BankSlipData {
     final activeType = type ?? suggestedType;
 
     // ── 0. กรณีใบเสร็จรับเงิน 7-Eleven หรือร้านค้าปลีก (Retail / 7-Eleven Receipts) ──
-    // กำหนดชื่อรายการอย่างเป็นระบบ ไม่ให้ข้อความ memo หรือชื่อรายการชิ้นแรกที่สับสนมากลืนชื่อรายการทั้งหมด
+    // กำหนดชื่อรายการอย่างเป็นระบบ ให้เข้าใจง่าย เช่น "7-Eleven: ข้าวกะเพราไก่" หรือ "7-Eleven: ข้าวกะเพราไก่ และอื่นๆ (3 รายการ)"
     if (is7Eleven) {
-      // ดึงข้อมูลสาขาที่สะอาด (ถ้ามี)
+      final cleanItems = receiptItems.map(_cleanReceiptItemName).where((s) => s.isNotEmpty).toList();
+
+      if (cleanItems.isNotEmpty) {
+        if (cleanItems.length == 1) {
+          return '7-Eleven: ${cleanItems.first}';
+        } else if (cleanItems.length == 2) {
+          return '7-Eleven: ${cleanItems[0]}, ${cleanItems[1]}';
+        } else {
+          return isEnglish
+              ? '7-Eleven: ${cleanItems.first} & others (${cleanItems.length} items)'
+              : '7-Eleven: ${cleanItems.first} และอื่นๆ (${cleanItems.length} รายการ)';
+        }
+      }
+
+      // หากไม่มีรายการสินค้า หรืออ่านรายการย่อยไม่ออก
       String? cleanBranch;
       if (receiverName != null && receiverName!.isNotEmpty) {
         final rName = receiverName!;
         final bMatch = RegExp(r'(?:สาขา|Branch|Store\s*#?)\s*([0-9A-Za-zก-๙\s\.\-_]+)', caseSensitive: false).firstMatch(rName);
         if (bMatch != null) {
-          final bText = bMatch.group(1)?.trim() ?? '';
-          if (bText.isNotEmpty && !bText.contains('ซีพี') && !bText.contains('cp all')) {
-            cleanBranch = isEnglish ? 'Branch $bText' : 'สาขา $bText';
+          var bText = bMatch.group(1)?.trim() ?? '';
+          bText = bText.replaceAll(RegExp(r'\b(?:cp all|ซีพี ออลล์|ซีพีออลล์)\b', caseSensitive: false), '').trim();
+          final hasNamedLocation = RegExp(r'[ก-๙a-zA-Z]{3,}').hasMatch(bText.replaceAll(RegExp(r'^\d+\s*'), ''));
+          if (hasNamedLocation) {
+            final locOnly = bText.replaceFirst(RegExp(r'^\d{3,6}\s*'), '').trim();
+            if (locOnly.isNotEmpty) {
+              cleanBranch = locOnly;
+            }
           }
         }
       }
 
-      final storeLabel = cleanBranch != null ? '7-Eleven $cleanBranch' : '7-Eleven';
-
-      // กรณีมีสินค้าหลายรายการ (> 1)
-      if (receiptItems.length > 1) {
-        return isEnglish
-            ? '$storeLabel (${receiptItems.length} items)'
-            : 'slip_receipt_multiple_items'.trParams({
-                'store': storeLabel,
-                'count': '${receiptItems.length}',
-              });
+      if (cleanBranch != null && cleanBranch.isNotEmpty) {
+        return isEnglish ? '7-Eleven ($cleanBranch)' : 'ซื้อของ 7-Eleven ($cleanBranch)';
       }
 
-      // กรณีมีสินค้าชิ้นเดียว (= 1)
-      if (receiptItems.length == 1) {
-        final item = receiptItems.first.trim();
-        return '$storeLabel - $item';
-      }
-
-      // กรณีตรวจไม่พบรายการย่อย ให้ใช้ชื่อร้านพร้อมสาขา
-      return storeLabel;
+      return isEnglish ? '7-Eleven' : 'ซื้อของ 7-Eleven';
     }
 
     // กรณีใบเสร็จร้านค้าอื่นที่มีรายการสินค้า
     if (isReceipt && receiptItems.isNotEmpty) {
-      final storeName = (receiverName != null && receiverName!.trim().isNotEmpty)
+      final cleanItems = receiptItems.map(_cleanReceiptItemName).where((s) => s.isNotEmpty).toList();
+      var storeName = (receiverName != null && receiverName!.trim().isNotEmpty && !receiverName!.contains('ซีพี'))
           ? receiverName!.trim()
-          : bankName;
-      if (receiptItems.length > 1) {
-        return isEnglish
-            ? '$storeName (${receiptItems.length} items)'
-            : 'slip_receipt_multiple_items'.trParams({
-                'store': storeName,
-                'count': '${receiptItems.length}',
-              });
-      } else {
-        return '$storeName - ${receiptItems.first.trim()}';
-      }
-    }
+          : (bankName.contains('7-Eleven') ? '7-Eleven' : bankName);
+      storeName = storeName.replaceAll(RegExp(r'\s*\([^\)]*\)'), '').trim();
 
-    // หากผู้ใช้มีบันทึกช่วยจำที่ไม่ใช่ข้อความทั่วไปของระบบ ให้ใช้ข้อความบันทึกเป็นชื่อรายการ
-    final cleanMemo = memo?.trim();
-    if (cleanMemo != null && cleanMemo.isNotEmpty) {
-      final lowerMemo = cleanMemo.toLowerCase();
-      final isGenericMemo = lowerMemo == 'โอนเงิน' ||
-          lowerMemo == 'เงินโอน' ||
-          lowerMemo == 'พร้อมเพย์' ||
-          lowerMemo == 'promptpay' ||
-          lowerMemo == 'transfer' ||
-          lowerMemo == 'payment' ||
-          lowerMemo == 'qr payment';
-      if (!isGenericMemo) {
-        return cleanMemo;
+      if (cleanItems.length == 1) {
+        return '$storeName: ${cleanItems.first}';
+      } else if (cleanItems.length == 2) {
+        return '$storeName: ${cleanItems[0]}, ${cleanItems[1]}';
+      } else if (cleanItems.length > 2) {
+        return isEnglish
+            ? '$storeName: ${cleanItems.first} & others (${cleanItems.length} items)'
+            : '$storeName: ${cleanItems.first} และอื่นๆ (${cleanItems.length} รายการ)';
       }
     }
 
@@ -431,6 +421,17 @@ class BankSlipData {
     return category;
   }
 
+  static String _cleanReceiptItemName(String raw) {
+    var s = raw.trim();
+    // ตัดเลขลำดับ/จำนวนนำหน้า เช่น "1 ", "1. ", "01 ", "1x "
+    s = s.replaceFirst(RegExp(r'^(?:\d{1,2}[\.\s\:\-xX]+)+'), '').trim();
+    // ตัดราคาต่อท้าย เช่น " 47.00", " (47.-)", " 47.-", " 47"
+    s = s.replaceAll(RegExp(r'\s*\(?\s*\d{1,5}(?:\.\d{1,2})?\s*(?:บาท|บ\.|THB|\.-|-)?\s*\)?$'), '').trim();
+    // ตัดเครื่องหมายขยะที่หัวท้าย
+    s = s.replaceAll(RegExp(r'^[\.\-\:\s,]+|[\.\-\:\s,]+$'), '').trim();
+    return s;
+  }
+
   static bool _isBusinessOrMerchant(String name) {
     final lower = name.toLowerCase();
     final businessPrefixes = [
@@ -462,23 +463,14 @@ class BankSlipData {
   /// บันทึกประกอบรายการที่มีรหัสอ้างอิงธุรกรรมกำกับ
   String get formattedNote => getFormattedNote();
 
-  /// บันทึกประกอบรายการพร้อมระบุภาษา (th หรือ en)
+  /// คืนค่า note ที่เหมาะสมสำหรับบันทึกรายการธุรกรรม
+  /// = memo ที่พิมพ์บนสลิป/ใบเสร็จเท่านั้น (ถ้ามี) แยกออกจาก Title อย่างชัดเจน
+  /// ข้อมูล sender/receiver/ref เป็น metadata ของสลิปที่ไม่ควรรวมใน note
   String getFormattedNote({String? langCode}) {
-    final parts = <String>[];
     if (memo != null && memo!.trim().isNotEmpty) {
-      parts.add('note_prefix'.trParams({'memo': memo!.trim()}));
+      return memo!.trim();
     }
-    if (suggestedType == TransactionType.income && senderName != null && senderName!.trim().isNotEmpty) {
-      parts.add('sender_prefix'.trParams({'sender': senderName!.trim()}));
-    }
-    if (receiverName != null && receiverName!.trim().isNotEmpty) {
-      parts.add('receiver_prefix'.trParams({'receiver': receiverName!.trim()}));
-    }
-    if (referenceNo != null && referenceNo!.trim().isNotEmpty) {
-      parts.add('ref_prefix'.trParams({'ref': referenceNo!.trim()}));
-    }
-    parts.add('slip_prefix'.trParams({'slip': bankName}));
-    return parts.join(' | ');
+    return '';
   }
 
   /// แปลงข้อมูลสลิปเป็น TransactionItem สำหรับบันทึกลงระบบ (รองรับการกำหนดวันและเวลาที่บันทึกรายการ)
@@ -491,6 +483,7 @@ class BankSlipData {
     DateTime? customDate,
     DateTime? customTime,
     TimeOfDay? customTimeOfDay,
+    String? customNote,
     String? langCode,
   }) {
     final type = customType ?? suggestedType;
@@ -520,6 +513,11 @@ class BankSlipData {
       );
     }
 
+    final autoNote = getFormattedNote(langCode: langCode);
+    final resolvedNote = customNote != null
+        ? (customNote.trim().isNotEmpty ? customNote.trim() : null)
+        : (autoNote.isNotEmpty ? autoNote : null);
+
     return TransactionItem(
       id: referenceNo != null && referenceNo!.isNotEmpty
           ? '${idPrefix}_${referenceNo!}'
@@ -530,7 +528,7 @@ class BankSlipData {
       costNature: costNature,
       categoryName: customCategory ?? suggestedCategory,
       date: resolvedDate,
-      note: getFormattedNote(langCode: langCode),
+      note: resolvedNote,
     );
   }
 

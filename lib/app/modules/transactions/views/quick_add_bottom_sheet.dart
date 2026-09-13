@@ -45,7 +45,11 @@ class QuickAddBottomSheet extends StatefulWidget {
 class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
   final DashboardController controller = Get.find<DashboardController>();
   late final TextEditingController _titleController;
+  late final TextEditingController _noteController;
   final FocusNode _sheetFocusNode = FocusNode();
+  final FocusNode _titleFocusNode = FocusNode();
+  final FocusNode _noteFocusNode = FocusNode();
+  final ScrollController _scrollController = ScrollController();
 
   late String _amountBuffer;
   late TransactionType _selectedType;
@@ -64,6 +68,7 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
     if (item != null) {
       _amountBuffer = item.amount % 1 == 0 ? item.amount.toInt().toString() : item.amount.toStringAsFixed(2);
       _titleController = TextEditingController(text: item.title);
+      _noteController = TextEditingController(text: item.note ?? '');
       _selectedType = item.type;
       _selectedCostNature = item.costNature;
       _selectedCategory = item.categoryName;
@@ -71,16 +76,44 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
     } else {
       _amountBuffer = '';
       _titleController = TextEditingController();
+      _noteController = TextEditingController();
       _selectedType = TransactionType.expense;
       _selectedCostNature = CostNature.variable;
       _selectedCategory = 'อาหาร/ของกิน';
       _selectedDate = DateTime.now();
     }
+
+    // เมื่อ keyboard เปิด ให้ scroll ลงมาล่างสุดเพื่อให้เห็น text fields
+    _titleFocusNode.addListener(_onFieldFocused);
+    _noteFocusNode.addListener(_onFieldFocused);
+  }
+
+  void _onFieldFocused() {
+    if (!(_titleFocusNode.hasFocus || _noteFocusNode.hasFocus)) return;
+    // ใช้ addPostFrameCallback เพื่อรอให้ layout อัปเดตก่อน
+    // จากนั้น scroll เพื่อให้ text fields โผล่เหนือ keyboard พอดี
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+      final pos = _scrollController.position;
+      // scroll ไปใกล้ maxScrollExtent แต่เหลือช่องว่างเล็กน้อยไม่ให้ชิดเกินไป
+      final target = (pos.maxScrollExtent - 8).clamp(0.0, pos.maxScrollExtent);
+      _scrollController.animateTo(
+        target,
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeOutCubic,
+      );
+    });
   }
 
   @override
   void dispose() {
     _titleController.dispose();
+    _noteController.dispose();
+    _titleFocusNode.removeListener(_onFieldFocused);
+    _noteFocusNode.removeListener(_onFieldFocused);
+    _titleFocusNode.dispose();
+    _noteFocusNode.dispose();
+    _scrollController.dispose();
     _sheetFocusNode.dispose();
     super.dispose();
   }
@@ -346,6 +379,7 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
 
     final customTitle = _titleController.text.trim();
     final finalTitle = customTitle.isNotEmpty ? customTitle : _selectedCategory;
+    final customNote = _noteController.text.trim();
 
     setState(() {
       _isSaving = true;
@@ -364,7 +398,7 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
         costNature: _selectedType == TransactionType.expense ? _selectedCostNature : CostNature.notApplicable,
         categoryName: _selectedCategory,
         date: _selectedDate,
-        note: customTitle.isNotEmpty ? customTitle : null,
+        note: customNote.isNotEmpty ? customNote : null,
       );
       controller.updateTransaction(updated);
     } else {
@@ -376,7 +410,7 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
         costNature: _selectedType == TransactionType.expense ? _selectedCostNature : CostNature.notApplicable,
         categoryName: _selectedCategory,
         date: _selectedDate,
-        note: customTitle.isNotEmpty ? customTitle : null,
+        note: customNote.isNotEmpty ? customNote : null,
       );
       controller.addTransaction(item);
     }
@@ -457,6 +491,8 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
           bottom: MediaQuery.of(context).viewInsets.bottom + 16,
         ),
         child: SingleChildScrollView(
+          controller: _scrollController,
+          physics: const ClampingScrollPhysics(),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -751,6 +787,20 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
                               overflow: TextOverflow.ellipsis,
                             ),
                           ],
+                          if (_noteController.text.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              _noteController.text,
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w500,
+                                color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                                fontStyle: FontStyle.italic,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -919,22 +969,66 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
               ),
               const SizedBox(height: 8),
 
-              // Custom Title/Note TextField
+              // Title TextField
               TextField(
                 controller: _titleController,
+                focusNode: _titleFocusNode,
                 onChanged: (_) => setState(() {}),
+                textInputAction: TextInputAction.next,
+                onEditingComplete: () => FocusScope.of(context).requestFocus(_noteFocusNode),
                 style: TextStyle(
                   fontSize: 13,
+                  color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'title_hint'.tr,
+                  hintStyle: const TextStyle(fontSize: 11.5, color: AppColors.textSecondary),
+                  prefixIcon: const Icon(Icons.edit_rounded, size: 16, color: AppColors.textSecondary),
+                  suffixIcon: _titleController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear_rounded, size: 16),
+                          onPressed: () => setState(() => _titleController.clear()),
+                        )
+                      : null,
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  filled: true,
+                  fillColor: isDark ? AppColors.darkBackground : AppColors.surfaceSecondary,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: isDark ? AppColors.darkBorder : AppColors.border.withValues(alpha: 0.6)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: isDark ? AppColors.darkBorder : AppColors.border.withValues(alpha: 0.6)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 6),
+
+              // Note TextField (แยกออกจาก Title)
+              TextField(
+                controller: _noteController,
+                focusNode: _noteFocusNode,
+                onChanged: (_) => setState(() {}),
+                textInputAction: TextInputAction.done,
+                onEditingComplete: () => FocusScope.of(context).unfocus(),
+                style: TextStyle(
+                  fontSize: 12.5,
                   color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                 ),
                 decoration: InputDecoration(
                   hintText: 'note_hint'.tr,
                   hintStyle: const TextStyle(fontSize: 11.5, color: AppColors.textSecondary),
                   prefixIcon: const Icon(Icons.edit_note_rounded, size: 18, color: AppColors.textSecondary),
-                  suffixIcon: _titleController.text.isNotEmpty
+                  suffixIcon: _noteController.text.isNotEmpty
                       ? IconButton(
                           icon: const Icon(Icons.clear_rounded, size: 16),
-                          onPressed: () => setState(() => _titleController.clear()),
+                          onPressed: () => setState(() => _noteController.clear()),
                         )
                       : null,
                   isDense: true,
