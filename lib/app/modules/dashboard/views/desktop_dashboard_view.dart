@@ -11,7 +11,6 @@ import '../widgets/balance_card.dart';
 import '../widgets/daily_allowance_card.dart';
 import '../widgets/fl_finance_chart_card.dart';
 import '../widgets/recent_transactions_card.dart';
-import '../widgets/smart_auto_scan_slips_banner.dart';
 import '../../../widgets/modern_app_bar.dart';
 import '../../../theme/app_popup_decorations.dart';
 
@@ -45,7 +44,6 @@ class DesktopDashboardView extends GetView<DashboardController> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          const SmartAutoScanSlipsBanner(),
                           if (isCompact) ...[
                             const BalanceCard(),
                             const SizedBox(height: 18),
@@ -266,21 +264,21 @@ class DesktopDashboardView extends GetView<DashboardController> {
 
     return Obx(() {
       final incomePill = _buildCashflowPill(
-        title: 'รายรับทั้งหมด',
+        title: 'total_income'.tr,
         amount: currencyFmt.format(controller.actualIncome),
         icon: Icons.arrow_downward_rounded,
         color: AppColors.primary,
         isDark: isDark,
       );
       final expensePill = _buildCashflowPill(
-        title: 'รายจ่ายทั้งหมด',
+        title: 'total_expenses'.tr,
         amount: currencyFmt.format(controller.actualExpenses),
         icon: Icons.arrow_upward_rounded,
         color: AppColors.deficitText,
         isDark: isDark,
       );
       final savingsPill = _buildCashflowPill(
-        title: 'เงินออม & ลงทุน',
+        title: 'savings_and_investing'.tr,
         amount: currencyFmt.format(controller.actualSavings),
         icon: Icons.savings_rounded,
         color: AppColors.accent,

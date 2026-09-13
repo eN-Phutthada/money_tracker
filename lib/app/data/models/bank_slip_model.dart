@@ -30,6 +30,9 @@ class BankSlipData {
   /// เหตุผลสั้นๆ ที่ระบบแนะนำหมวดหมู่นี้
   final String predictionReason;
 
+  /// รายการสินค้าที่ตรวจพบจากใบเสร็จ (เช่น 7-Eleven, ซูเปอร์มาร์เก็ต)
+  final List<String> receiptItems;
+
   const BankSlipData({
     required this.amount,
     required this.transactionDate,
@@ -49,6 +52,7 @@ class BankSlipData {
     required this.hasParsedTime,
     required this.predictionConfidence,
     required this.predictionReason,
+    this.receiptItems = const [],
   });
 
   /// สร้างสำเนาที่มีค่าบางฟิลด์ถูกแทนที่ (สำหรับ history-based enhancement)
@@ -71,6 +75,7 @@ class BankSlipData {
     bool? hasParsedTime,
     double? predictionConfidence,
     String? predictionReason,
+    List<String>? receiptItems,
   }) {
     return BankSlipData(
       amount: amount ?? this.amount,
@@ -91,7 +96,40 @@ class BankSlipData {
       hasParsedTime: hasParsedTime ?? this.hasParsedTime,
       predictionConfidence: predictionConfidence ?? this.predictionConfidence,
       predictionReason: predictionReason ?? this.predictionReason,
+      receiptItems: receiptItems ?? this.receiptItems,
     );
+  }
+
+  /// ตรวจสอบว่าเป็นใบเสร็จ 7-Eleven หรือไม่
+  bool get is7Eleven {
+    final lowerBank = bankName.toLowerCase();
+    final lowerRaw = rawText.toLowerCase();
+    final lowerReceiver = (receiverName ?? '').toLowerCase();
+    return lowerBank.contains('7-eleven') ||
+        lowerBank.contains('7-11') ||
+        lowerBank.contains('เซเว่น') ||
+        lowerBank.contains('ซีพี ออลล์') ||
+        lowerBank.contains('ซีพีออลล์') ||
+        lowerReceiver.contains('7-eleven') ||
+        lowerReceiver.contains('ซีพี ออลล์') ||
+        lowerRaw.contains('7-eleven') ||
+        lowerRaw.contains('7-11') ||
+        lowerRaw.contains('เซเว่น') ||
+        lowerRaw.contains('ซีพี ออลล์') ||
+        lowerRaw.contains('cp all') ||
+        lowerRaw.contains('cpall');
+  }
+
+  /// ตรวจสอบว่าเป็นใบเสร็จรับเงินทั่วไปหรือไม่
+  bool get isReceipt {
+    final lowerBank = bankName.toLowerCase();
+    final lowerRaw = rawText.toLowerCase();
+    return is7Eleven ||
+        lowerBank.contains('ใบเสร็จ') ||
+        lowerBank.contains('receipt') ||
+        lowerRaw.contains('ใบเสร็จรับเงิน') ||
+        lowerRaw.contains('ใบกำกับภาษีอย่างย่อ') ||
+        receiptItems.isNotEmpty;
   }
 
   /// ดึงรหัสภาษาปัจจุบันของแอปพลิเคชันอย่างแม่นยำ (th หรือ en)
@@ -125,6 +163,61 @@ class BankSlipData {
     final isEnglish = effectiveLang == 'en';
     final activeType = type ?? suggestedType;
 
+    // ── 0. กรณีใบเสร็จรับเงิน 7-Eleven หรือร้านค้าปลีก (Retail / 7-Eleven Receipts) ──
+    // กำหนดชื่อรายการอย่างเป็นระบบ ไม่ให้ข้อความ memo หรือชื่อรายการชิ้นแรกที่สับสนมากลืนชื่อรายการทั้งหมด
+    if (is7Eleven) {
+      // ดึงข้อมูลสาขาที่สะอาด (ถ้ามี)
+      String? cleanBranch;
+      if (receiverName != null && receiverName!.isNotEmpty) {
+        final rName = receiverName!;
+        final bMatch = RegExp(r'(?:สาขา|Branch|Store\s*#?)\s*([0-9A-Za-zก-๙\s\.\-_]+)', caseSensitive: false).firstMatch(rName);
+        if (bMatch != null) {
+          final bText = bMatch.group(1)?.trim() ?? '';
+          if (bText.isNotEmpty && !bText.contains('ซีพี') && !bText.contains('cp all')) {
+            cleanBranch = isEnglish ? 'Branch $bText' : 'สาขา $bText';
+          }
+        }
+      }
+
+      final storeLabel = cleanBranch != null ? '7-Eleven $cleanBranch' : '7-Eleven';
+
+      // กรณีมีสินค้าหลายรายการ (> 1)
+      if (receiptItems.length > 1) {
+        return isEnglish
+            ? '$storeLabel (${receiptItems.length} items)'
+            : 'slip_receipt_multiple_items'.trParams({
+                'store': storeLabel,
+                'count': '${receiptItems.length}',
+              });
+      }
+
+      // กรณีมีสินค้าชิ้นเดียว (= 1)
+      if (receiptItems.length == 1) {
+        final item = receiptItems.first.trim();
+        return '$storeLabel - $item';
+      }
+
+      // กรณีตรวจไม่พบรายการย่อย ให้ใช้ชื่อร้านพร้อมสาขา
+      return storeLabel;
+    }
+
+    // กรณีใบเสร็จร้านค้าอื่นที่มีรายการสินค้า
+    if (isReceipt && receiptItems.isNotEmpty) {
+      final storeName = (receiverName != null && receiverName!.trim().isNotEmpty)
+          ? receiverName!.trim()
+          : bankName;
+      if (receiptItems.length > 1) {
+        return isEnglish
+            ? '$storeName (${receiptItems.length} items)'
+            : 'slip_receipt_multiple_items'.trParams({
+                'store': storeName,
+                'count': '${receiptItems.length}',
+              });
+      } else {
+        return '$storeName - ${receiptItems.first.trim()}';
+      }
+    }
+
     // หากผู้ใช้มีบันทึกช่วยจำที่ไม่ใช่ข้อความทั่วไปของระบบ ให้ใช้ข้อความบันทึกเป็นชื่อรายการ
     final cleanMemo = memo?.trim();
     if (cleanMemo != null && cleanMemo.isNotEmpty) {
@@ -147,41 +240,25 @@ class BankSlipData {
         final name = senderName!.trim();
         final isOrg = _isBusinessOrOrg(name);
 
-        if (isEnglish) {
-          var cleanName = name;
-          if (cleanName.startsWith('รับเงินจาก ')) {
-            cleanName = cleanName.substring('รับเงินจาก '.length).trim();
-          } else if (cleanName.startsWith('รับจาก ')) {
-            cleanName = cleanName.substring('รับจาก '.length).trim();
-          } else if (cleanName.startsWith('รายได้จาก ')) {
-            cleanName = cleanName.substring('รายได้จาก '.length).trim();
+        var cleanName = name;
+        final prefixes = [
+          'รับเงินจาก ',
+          'รับจาก ',
+          'รายได้จาก ',
+          'received from ',
+          'income from ',
+          'from ',
+        ];
+        for (final p in prefixes) {
+          if (cleanName.toLowerCase().startsWith(p)) {
+            cleanName = cleanName.substring(p.length).trim();
+            break;
           }
-
-          final lower = cleanName.toLowerCase();
-          if (lower.startsWith('from ') ||
-              lower.startsWith('received from ') ||
-              lower.startsWith('income from ')) {
-            return cleanName;
-          }
-          return isOrg ? 'Income from $cleanName' : 'Received from $cleanName';
-        } else {
-          var cleanName = name;
-          final lower = cleanName.toLowerCase();
-          if (lower.startsWith('received from ')) {
-            cleanName = cleanName.substring('received from '.length).trim();
-          } else if (lower.startsWith('income from ')) {
-            cleanName = cleanName.substring('income from '.length).trim();
-          } else if (lower.startsWith('from ')) {
-            cleanName = cleanName.substring(5).trim();
-          }
-
-          if (cleanName.startsWith('รับจาก') ||
-              cleanName.startsWith('รับเงินจาก') ||
-              cleanName.startsWith('รายได้จาก')) {
-            return cleanName;
-          }
-          return isOrg ? 'รายได้จาก $cleanName' : 'รับเงินจาก $cleanName';
         }
+
+        return isOrg
+            ? 'slip_income_from'.trParams({'name': cleanName})
+            : 'slip_receive_from'.trParams({'name': cleanName});
       }
 
       if (suggestedCategory.isNotEmpty &&
@@ -190,16 +267,13 @@ class BankSlipData {
           suggestedCategory != 'Others' &&
           suggestedCategory != 'โอนเงิน/ธุรกรรม' &&
           suggestedCategory != 'Transfers & Transactions') {
-        if (isEnglish) {
-          final translatedCat = _translateCategory(suggestedCategory);
-          return 'Income: $translatedCat';
-        } else {
-          final thaiCat = _translateCategoryToThai(suggestedCategory);
-          return 'เงินได้ $thaiCat';
-        }
+        final cat = isEnglish
+            ? _translateCategory(suggestedCategory)
+            : _translateCategoryToThai(suggestedCategory);
+        return 'slip_income_category'.trParams({'category': cat});
       }
 
-      return isEnglish ? 'Incoming Transfer' : 'เงินโอนเข้า';
+      return 'incoming_transfer'.tr;
     }
 
     // กรณีเงินออก (Expense & Savings / Transfer)
@@ -207,44 +281,25 @@ class BankSlipData {
       final name = receiverName!.trim();
       final isMerchant = _isBusinessOrMerchant(name);
 
-      if (isEnglish) {
-        var cleanName = name;
-        if (cleanName.startsWith('โอนให้ ')) {
-          cleanName = cleanName.substring('โอนให้ '.length).trim();
-        } else if (cleanName.startsWith('โอนไปยัง ')) {
-          cleanName = cleanName.substring('โอนไปยัง '.length).trim();
-        } else if (cleanName.startsWith('จ่าย ')) {
-          cleanName = cleanName.substring('จ่าย '.length).trim();
+      var cleanName = name;
+      final prefixes = [
+        'โอนให้ ',
+        'โอนไปยัง ',
+        'จ่าย ',
+        'transfer to ',
+        'pay ',
+        'to ',
+      ];
+      for (final p in prefixes) {
+        if (cleanName.toLowerCase().startsWith(p)) {
+          cleanName = cleanName.substring(p.length).trim();
+          break;
         }
-
-        final lower = cleanName.toLowerCase();
-        if (lower.startsWith('to ') ||
-            lower.startsWith('transfer to ') ||
-            lower.startsWith('pay ')) {
-          return cleanName;
-        }
-        return isMerchant ? 'Pay $cleanName' : 'Transfer to $cleanName';
-      } else {
-        var cleanName = name;
-        final lower = cleanName.toLowerCase();
-        if (lower.startsWith('to ')) {
-          cleanName = cleanName.substring(3).trim();
-        } else if (lower.startsWith('transfer to ')) {
-          cleanName = cleanName.substring('transfer to '.length).trim();
-        } else if (lower.startsWith('pay ')) {
-          cleanName = cleanName.substring('pay '.length).trim();
-        }
-
-        if (cleanName.startsWith('โอนให้') ||
-            cleanName.startsWith('โอนไปยัง') ||
-            cleanName.startsWith('จ่าย')) {
-          return cleanName;
-        }
-        if (isMerchant || cleanName.startsWith('ร้าน ')) {
-          return 'จ่าย $cleanName';
-        }
-        return 'โอนให้ $cleanName';
       }
+
+      return isMerchant
+          ? 'slip_pay_to'.trParams({'name': cleanName})
+          : 'slip_transfer_to'.trParams({'name': cleanName});
     }
 
     if (suggestedCategory.isNotEmpty &&
@@ -253,22 +308,13 @@ class BankSlipData {
         suggestedCategory != 'Others' &&
         suggestedCategory != 'โอนเงิน/ธุรกรรม' &&
         suggestedCategory != 'Transfers & Transactions') {
-      if (isEnglish) {
-        final translatedCat = _translateCategory(suggestedCategory);
-        return 'Expense: $translatedCat';
-      } else {
-        final thaiCat = _translateCategoryToThai(suggestedCategory);
-        if (thaiCat.startsWith('ค่า') ||
-            thaiCat.startsWith('เงิน') ||
-            thaiCat.startsWith('การ') ||
-            thaiCat.startsWith('ช้อปปิ้ง')) {
-          return thaiCat;
-        }
-        return 'ค่า$thaiCat';
-      }
+      final cat = isEnglish
+          ? _translateCategory(suggestedCategory)
+          : _translateCategoryToThai(suggestedCategory);
+      return 'slip_expense_category'.trParams({'category': cat});
     }
 
-    return isEnglish ? 'Money Transfer' : 'รายการโอนเงิน';
+    return 'money_transfer'.tr;
   }
 
   static String _translateCategory(String category) {
@@ -418,25 +464,20 @@ class BankSlipData {
 
   /// บันทึกประกอบรายการพร้อมระบุภาษา (th หรือ en)
   String getFormattedNote({String? langCode}) {
-    final effectiveLang = (langCode != null && langCode.trim().isNotEmpty)
-        ? langCode.trim().toLowerCase()
-        : _currentAppLanguage;
-    final isEnglish = effectiveLang == 'en';
-
     final parts = <String>[];
     if (memo != null && memo!.trim().isNotEmpty) {
-      parts.add(isEnglish ? 'Note: ${memo!.trim()}' : 'บันทึก: ${memo!.trim()}');
+      parts.add('note_prefix'.trParams({'memo': memo!.trim()}));
     }
     if (suggestedType == TransactionType.income && senderName != null && senderName!.trim().isNotEmpty) {
-      parts.add(isEnglish ? 'Sender: ${senderName!.trim()}' : 'ผู้โอน: ${senderName!.trim()}');
+      parts.add('sender_prefix'.trParams({'sender': senderName!.trim()}));
     }
     if (receiverName != null && receiverName!.trim().isNotEmpty) {
-      parts.add(isEnglish ? 'Receiver: ${receiverName!.trim()}' : 'ผู้รับ: ${receiverName!.trim()}');
+      parts.add('receiver_prefix'.trParams({'receiver': receiverName!.trim()}));
     }
     if (referenceNo != null && referenceNo!.trim().isNotEmpty) {
-      parts.add(isEnglish ? 'Ref: ${referenceNo!.trim()}' : 'รหัสอ้างอิง: ${referenceNo!.trim()}');
+      parts.add('ref_prefix'.trParams({'ref': referenceNo!.trim()}));
     }
-    parts.add(isEnglish ? 'Slip: $bankName' : 'สลิป: $bankName');
+    parts.add('slip_prefix'.trParams({'slip': bankName}));
     return parts.join(' | ');
   }
 
@@ -513,6 +554,7 @@ class BankSlipData {
       'hasParsedTime': hasParsedTime,
       'predictionConfidence': predictionConfidence,
       'predictionReason': predictionReason,
+      'receiptItems': receiptItems,
     };
   }
 
@@ -544,6 +586,10 @@ class BankSlipData {
       hasParsedTime: json['hasParsedTime'] as bool? ?? false,
       predictionConfidence: (json['predictionConfidence'] as num?)?.toDouble() ?? 0.5,
       predictionReason: json['predictionReason'] as String? ?? '',
+      receiptItems: (json['receiptItems'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
     );
   }
 }

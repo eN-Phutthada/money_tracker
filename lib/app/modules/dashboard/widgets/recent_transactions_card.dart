@@ -295,7 +295,7 @@ class RecentTransactionsCard extends GetView<DashboardController> {
                               ),
                               const SizedBox(width: 6),
                               Text(
-                                isEn ? 'Delete' : 'ลบรายการ',
+                                'delete_transaction'.tr,
                                 style: const TextStyle(
                                   color: AppColors.deficitText,
                                   fontWeight: FontWeight.w800,
@@ -309,11 +309,11 @@ class RecentTransactionsCard extends GetView<DashboardController> {
                           HapticFeedback.mediumImpact();
                           controller.deleteTransaction(item.id);
                           AppFeedback.showSuccess(
-                            title: isEn ? 'Transaction Deleted' : 'ลบรายการเรียบร้อย',
+                            title: 'transaction_deleted_title'.tr,
                             message: item.title,
                             amount: item.amount,
                             transactionType: item.type,
-                            actionLabel: isEn ? 'Undo' : 'เลิกทำ',
+                            actionLabel: 'undo'.tr,
                             duration: const Duration(milliseconds: 4500),
                             onAction: () {
                               HapticFeedback.mediumImpact();

@@ -14,10 +14,20 @@ class BankSlipParser {
         lower.contains('เป๋าตัง');
   }
 
-  /// ตรวจสอบว่าเป็นข้อความสลิปโอนเงินของธนาคารใดๆ ในไทยหรือไม่
+  /// ตรวจสอบว่าเป็นข้อความสลิปโอนเงินของธนาคารหรือใบเสร็จรับเงิน (เช่น 7-Eleven) หรือไม่
   static bool isValidBankSlip(String text) {
     final lower = text.toLowerCase();
     return isKrungthaiSlip(text) ||
+        lower.contains('7-eleven') ||
+        lower.contains('7-11') ||
+        lower.contains('เซเว่น') ||
+        lower.contains('ซีพี ออลล์') ||
+        lower.contains('ซีพีออลล์') ||
+        lower.contains('cp all') ||
+        lower.contains('cpall') ||
+        lower.contains('ใบเสร็จรับเงิน') ||
+        lower.contains('ใบกำกับภาษีอย่างย่อ') ||
+        lower.contains('tax inv') ||
         lower.contains('กสิกร') ||
         lower.contains('k plus') ||
         lower.contains('kbank') ||
@@ -58,9 +68,43 @@ class BankSlipParser {
         lower.contains('successful');
   }
 
-  /// ตรวจจับชื่อธนาคารจากข้อความสลิป (รองรับทุกธนาคาร โดยมีกรุงไทย NEXT เป็นหลัก)
+  /// ตรวจสอบว่าเป็นใบเสร็จรับเงินร้านค้า (เช่น 7-Eleven, ซูเปอร์มาร์เก็ต) หรือไม่
+  static bool isStoreReceipt(String text) {
+    final lower = text.toLowerCase();
+    return is7ElevenSlip(text) ||
+        lower.contains('ใบเสร็จรับเงิน') ||
+        lower.contains('ใบกำกับภาษีอย่างย่อ') ||
+        lower.contains('tax invoice (abb)') ||
+        lower.contains('tax inv (abb)') ||
+        lower.contains('tax inv(abb)') ||
+        lower.contains('abb no') ||
+        lower.contains('abb.');
+  }
+
+  /// ตรวจสอบว่าเป็นใบเสร็จ 7-Eleven หรือไม่
+  static bool is7ElevenSlip(String text) {
+    final lower = text.toLowerCase();
+    return lower.contains('7-eleven') ||
+        lower.contains('7-11') ||
+        lower.contains('เซเว่น') ||
+        lower.contains('ซีพี ออลล์') ||
+        lower.contains('ซีพีออลล์') ||
+        lower.contains('cp all') ||
+        lower.contains('cpall');
+  }
+
+  /// ตรวจจับชื่อธนาคาร/ร้านค้าจากข้อความสลิปหรือใบเสร็จ (รองรับทุกธนาคาร และ 7-Eleven)
   static String detectBankName(String fullText) {
     final lower = fullText.toLowerCase();
+    if (lower.contains('7-eleven') ||
+        lower.contains('7-11') ||
+        lower.contains('เซเว่น') ||
+        lower.contains('ซีพี ออลล์') ||
+        lower.contains('ซีพีออลล์') ||
+        lower.contains('cp all') ||
+        lower.contains('cpall')) {
+      return '7-Eleven (ซีพี ออลล์)';
+    }
     if (lower.contains('k plus') || lower.contains('กสิกร') || lower.contains('kbank') || lower.contains('kasikorn')) {
       return 'ธนาคารกสิกรไทย (K PLUS)';
     }
@@ -148,7 +192,9 @@ class BankSlipParser {
 
     final bankName = detectBankName(normalized);
     final isKrungthai = isKrungthaiSlip(normalized) || bankName.contains('กรุงไทย');
-    final amount = _extractAmount(normalized, lines);
+    final isStore = isStoreReceipt(normalized);
+    final receiptItems = isStore ? _extractReceiptItems(lines) : <_ReceiptParsedItem>[];
+    final amount = _extractAmount(normalized, lines, receiptItems);
     final dateResult = _extractDateTime(normalized, lines);
     final date = dateResult?.dateTime ?? DateTime.now();
     final hasParsedDateTime = dateResult != null;
@@ -158,7 +204,7 @@ class BankSlipParser {
     final senderAccount = _extractSenderAccount(lines);
     final receiver = _extractReceiver(lines);
     final receiverAccount = _extractReceiverAccount(lines);
-    final memo = _extractMemo(lines);
+    final memo = _extractMemo(lines, receiptItems: receiptItems);
 
     final prediction = SlipCategoryPredictor.predict(
       memo: memo,
@@ -189,18 +235,33 @@ class BankSlipParser {
       hasParsedTime: hasParsedTime,
       predictionConfidence: prediction.confidence,
       predictionReason: prediction.reason,
+      receiptItems: receiptItems.map((e) => e.name).toList(),
     );
   }
 
-  /// สกัดยอดเงิน (Amount) ด้วย Multi-Tier Recognition Engine
-  static double _extractAmount(String fullText, List<String> lines) {
+  /// สกัดยอดเงิน (Amount) ด้วย Multi-Tier Recognition Engine รองรับทั้งใบเสร็จรับเงิน และสลิปธนาคาร
+  static double _extractAmount(
+    String fullText,
+    List<String> lines, [
+    List<_ReceiptParsedItem>? parsedItems,
+  ]) {
     // 0. ปรับข้อความภาษาไทยให้อยู่ในรูปมาตรฐาน (Normalize Nikhahit U+0E4D + Sara Aa U+0E32 -> Sara Am U+0E33)
     final normalizedText = fullText.replaceAll('\u0E4D\u0E32', '\u0E33');
     final normalizedLines = lines.map((l) => l.replaceAll('\u0E4D\u0E32', '\u0E33')).toList();
 
-    // 1. ค้นหาบรรทัดที่มีคีย์เวิร์ดจำนวนเงินบนบรรทัดเดียวกัน (รองรับวงเล็บ เช่น "จำนวนเงิน (บาท) 139.00", "Amount (THB): 139.00")
+    // หากเป็นใบเสร็จรับเงิน (เช่น 7-Eleven, Tops, ร้านค้า) ให้ใช้อัลกอริทึมสำหรับใบเสร็จโดยเฉพาะ
+    if (isStoreReceipt(normalizedText)) {
+      final receiptAmt = _extractReceiptAmount(
+        normalizedText,
+        normalizedLines,
+        parsedItems ?? _extractReceiptItems(normalizedLines),
+      );
+      if (receiptAmt > 0) return receiptAmt;
+    }
+
+    // 1. ค้นหาบรรทัดที่มีคีย์เวิร์ดจำนวนเงินบนบรรทัดเดียวกัน (สำหรับสลิปธนาคาร)
     final amountKeywordRegex = RegExp(
-      r'(?:จำนวนเงิน|จํานวนเงิน|ยอดเงิน|ยอดโอน|จำนวนโอน|จำนวน|จํานวน|Amount|Total|Amt|Transfer\s*Amount)(?:\s*\((?:บาท|THB|baht|บ\.|[^\)]+)\))?\s*[:：\-]?\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{1,2})?|\.[0-9]{1,2}|[0-9]+)\s*(?:บาท|บ\.|THB|baht)?',
+      r'(?:ยอดสุทธิ|รวมสุทธิ|รวมทั้งสิ้น|รวมเงิน|ยอดเงินสุทธิ|จำนวนเงิน|จํานวนเงิน|ยอดเงิน|ยอดโอน|จำนวนโอน|Net\s*Total|Total|Amount|Amt|Transfer\s*Amount)(?:\s*\((?:บาท|THB|baht|บ\.|[^\)]+)\))?\s*[:：\-]?\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{1,2})?|\.[0-9]{1,2}|[0-9]+)\s*(?:บาท|บ\.|THB|baht)?',
       caseSensitive: false,
     );
     for (final match in amountKeywordRegex.allMatches(normalizedText)) {
@@ -214,13 +275,16 @@ class BankSlipParser {
     // 2. ค้นหาบรรทัดที่มีคีย์เวิร์ด และดูบรรทัดถัดไป 1 - 4 บรรทัด (รองรับ Columnar OCR ที่ฝั่งซ้ายเป็น Label ฝั่งขวาเป็นตัวเลข)
     for (int i = 0; i < normalizedLines.length; i++) {
       final line = normalizedLines[i].toLowerCase();
-      final isAmountLine = line.contains('จำนวนเงิน') ||
+      final isAmountLine = line.contains('รวมเงิน') ||
+          line.contains('ยอดรวม') ||
+          line.contains('ยอดสุทธิ') ||
+          line.contains('รวมทั้งสิ้น') ||
+          line.contains('จำนวนเงิน') ||
           line.contains('จํานวนเงิน') ||
           line.contains('ยอดเงิน') ||
           line.contains('ยอดโอน') ||
-          line.contains('จำนวน') ||
           line.contains('amount') ||
-          line.contains('total');
+          (line.contains('total') && !line.contains('item'));
 
       if (isAmountLine) {
         // ตรวจในบรรทัดเดียวกัน
@@ -230,10 +294,16 @@ class BankSlipParser {
           if (val != null && val > 0) return val;
         }
 
-        // ค้นหาในบรรทัดถัดไป 1-4 บรรทัด ข้ามบรรทัด Label ค่าธรรมเนียม หรือบรรทัดที่มีแต่คำว่า บาท/THB
+        // ค้นหาในบรรทัดถัดไป 1-4 บรรทัด ข้ามบรรทัด Label ค่าธรรมเนียม เงินสด เงินทอน หรือ VAT
         for (int step = 1; step <= 4 && (i + step) < normalizedLines.length; step++) {
           final candidateLine = normalizedLines[i + step].trim();
           if (candidateLine.contains('ค่าธรรมเนียม') ||
+              candidateLine.contains('เงินสด') ||
+              candidateLine.contains('เงินทอน') ||
+              candidateLine.toLowerCase().contains('cash') ||
+              candidateLine.toLowerCase().contains('change') ||
+              candidateLine.toLowerCase().contains('vat') ||
+              candidateLine.toLowerCase().contains('tax') ||
               candidateLine.toLowerCase().contains('fee') ||
               candidateLine.toLowerCase() == 'บาท' ||
               candidateLine.toLowerCase() == 'thb') {
@@ -284,6 +354,261 @@ class BankSlipParser {
     }
 
     return 0.0;
+  }
+
+  /// สกัดยอดเงินจากใบเสร็จรับเงิน (Receipt) ด้วยการตรวจสอบ ยอดสุทธิ, รวมทั้งสิ้น, รวมเงิน, เงินสด-เงินทอน, และผลรวมรายการสินค้า
+  static double _extractReceiptAmount(
+    String fullText,
+    List<String> lines,
+    List<_ReceiptParsedItem> items,
+  ) {
+    final normalizedLines = lines.map((l) => l.replaceAll('\u0E4D\u0E32', '\u0E33')).toList();
+
+    // ── Tier 1: ค้นหายอดสุทธิ (Net Total / ยอดชำระสุทธิ / ยอดเงินสุทธิ) ──
+    final netTotalRegex = RegExp(
+      r'(?:ยอดสุทธิ|รวมสุทธิ|ยอดเงินสุทธิ|รวมเงินสุทธิ|มูลค่าสุทธิ|ยอดชำระสุทธิ|ยอดชำระทั้งสิ้น|ยอดต้องชำระ|net\s*total|net\s*amount|net\s*amt|total\s*due|amount\s*due)\s*[:：\-]?\s*([0-9]{1,4}(?:,[0-9]{3})*(?:\.[0-9]{2})?)',
+      caseSensitive: false,
+    );
+
+    for (int i = normalizedLines.length - 1; i >= 0; i--) {
+      final line = normalizedLines[i];
+      final match = netTotalRegex.firstMatch(line);
+      if (match != null) {
+        final val = double.tryParse(match.group(1)!.replaceAll(',', ''));
+        if (val != null && val > 0) return val;
+      }
+
+      final lower = line.toLowerCase();
+      if (lower.contains('ยอดสุทธิ') ||
+          lower.contains('รวมสุทธิ') ||
+          lower.contains('ยอดเงินสุทธิ') ||
+          lower.contains('รวมเงินสุทธิ') ||
+          lower.contains('มูลค่าสุทธิ') ||
+          lower.contains('ยอดชำระสุทธิ') ||
+          lower.contains('net total') ||
+          lower.contains('net amount') ||
+          lower.contains('total due')) {
+        for (int next = 1; next <= 2 && (i + next) < normalizedLines.length; next++) {
+          final nextLine = normalizedLines[i + next].trim();
+          final numMatch = RegExp(r'^([0-9]{1,4}(?:,[0-9]{3})*\.[0-9]{2})\s*(?:บาท|บ\.|thb)?$', caseSensitive: false).firstMatch(nextLine);
+          if (numMatch != null) {
+            final val = double.tryParse(numMatch.group(1)!.replaceAll(',', ''));
+            if (val != null && val > 0) return val;
+          }
+        }
+      }
+    }
+
+    // ── Tier 2: ค้นหายอดรวมทั้งสิ้น (Grand Total) ──
+    final grandTotalRegex = RegExp(
+      r'(?:รวมทั้งสิ้น|ยอดรวมทั้งสิ้น|grand\s*total)\s*[:：\-]?\s*([0-9]{1,4}(?:,[0-9]{3})*(?:\.[0-9]{2})?)',
+      caseSensitive: false,
+    );
+    for (int i = normalizedLines.length - 1; i >= 0; i--) {
+      final match = grandTotalRegex.firstMatch(normalizedLines[i]);
+      if (match != null) {
+        final val = double.tryParse(match.group(1)!.replaceAll(',', ''));
+        if (val != null && val > 0) return val;
+      }
+    }
+
+    // ── Tier 3: ค้นหารวมเงิน / ยอดรวม / Total (ระวังไม่ให้จับจำนวนรายการ หรือ รวมภาษี) ──
+    final totalRegex = RegExp(
+      r'(?:^|\s)(?:รวมเงิน|ยอดรวม|total)\s*(?:\([^\)]*\))?\s*[:：\-]?\s*([0-9]{1,4}(?:,[0-9]{3})*(?:\.[0-9]{2})?)',
+      caseSensitive: false,
+    );
+    for (int i = normalizedLines.length - 1; i >= 0; i--) {
+      final line = normalizedLines[i];
+      final lower = line.toLowerCase();
+      if (lower.contains('รายการ') || lower.contains('ชิ้น') || lower.contains('item') || lower.contains('vat') || lower.contains('ภาษี')) {
+        continue;
+      }
+      final match = totalRegex.firstMatch(line);
+      if (match != null) {
+        final val = double.tryParse(match.group(1)!.replaceAll(',', ''));
+        if (val != null && val > 0) return val;
+      }
+    }
+
+    // ── Tier 4: ตรวจสอบจาก เงินสด (Cash) - เงินทอน (Change) ──
+    double? cashVal;
+    double? changeVal;
+    for (final line in normalizedLines) {
+      final lower = line.toLowerCase();
+      if (lower.contains('เงินสด') || lower.contains('cash')) {
+        final m = RegExp(r'([0-9]{1,4}(?:,[0-9]{3})*\.[0-9]{2})').firstMatch(line);
+        if (m != null) {
+          cashVal = double.tryParse(m.group(1)!.replaceAll(',', ''));
+        }
+      }
+      if (lower.contains('เงินทอน') || lower.contains('change')) {
+        final m = RegExp(r'([0-9]{1,4}(?:,[0-9]{3})*\.[0-9]{2})').firstMatch(line);
+        if (m != null) {
+          changeVal = double.tryParse(m.group(1)!.replaceAll(',', ''));
+        }
+      }
+    }
+    if (cashVal != null && changeVal != null && cashVal >= changeVal) {
+      final calculatedNet = (cashVal - changeVal);
+      final rounded = double.parse(calculatedNet.toStringAsFixed(2));
+      if (rounded > 0) return rounded;
+    }
+
+    // ── Tier 5: รวมยอดจากรายการสินค้าที่ตรวจพบทั้งหมด (Sum of parsed items) ──
+    if (items.isNotEmpty) {
+      double itemSum = 0;
+      for (final it in items) {
+        itemSum += it.price;
+      }
+      if (itemSum > 0) {
+        return double.parse(itemSum.toStringAsFixed(2));
+      }
+    }
+
+    return 0.0;
+  }
+
+  /// ตรวจสอบว่าบรรทัดนี้เป็นข้อความประกอบใบเสร็จ (Header, Footer, Tax, Payment) หรือไม่ เพื่อไม่ให้สับสนกับรายการสินค้า
+  static bool _isReceiptNoiseLine(String line) {
+    final lower = line.toLowerCase().trim();
+    if (lower.isEmpty) return true;
+
+    // หัวกระดาษ / บรรทัดระบุร้าน
+    if (lower.contains('7-eleven') ||
+        lower.contains('7-11') ||
+        lower.contains('เซเว่น') ||
+        lower.contains('ซีพี ออลล์') ||
+        lower.contains('ซีพีออลล์') ||
+        lower.contains('cp all') ||
+        lower.contains('cpall') ||
+        lower.contains('public company') ||
+        lower.contains('จำกัด (มหาชน)')) {
+      return true;
+    }
+
+    // ข้อมูลสาขา เครื่อง และภาษี
+    if (lower.contains('สาขา') ||
+        lower.contains('store #') ||
+        lower.contains('branch') ||
+        lower.contains('ใบเสร็จ') ||
+        lower.contains('ใบกำกับภาษี') ||
+        lower.contains('tax inv') ||
+        lower.contains('tax id') ||
+        lower.contains('เลขประจำตัว') ||
+        lower.contains('abb') ||
+        lower.contains('pos') ||
+        lower.contains('r#') ||
+        lower.contains('b#') ||
+        lower.contains('เครื่อง') ||
+        lower.contains('แคชเชียร์')) {
+      return true;
+    }
+
+    // วันที่และเวลา
+    if (lower.contains('วันที่') ||
+        lower.contains('เวลา') ||
+        RegExp(r'\b\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}\b').hasMatch(lower)) {
+      return true;
+    }
+
+    // หัวตาราง
+    if (lower == 'รายการ' ||
+        (lower.contains('จำนวน') && lower.contains('ราคา')) ||
+        lower.contains('description') ||
+        (lower.contains('qty') && lower.contains('price'))) {
+      return true;
+    }
+
+    // เส้นคั่น
+    if (RegExp(r'^[\-\=\*\.]{3,}$').hasMatch(lower)) {
+      return true;
+    }
+
+    // สรุปยอดเงินและวิธีชำระเงิน
+    if (lower.contains('รวมเงิน') ||
+        lower.contains('ยอดรวม') ||
+        lower.contains('ยอดสุทธิ') ||
+        lower.contains('รวมสุทธิ') ||
+        lower.contains('รวมทั้งสิ้น') ||
+        lower.contains('จำนวนชิ้น') ||
+        lower.contains('จำนวนรวม') ||
+        lower.contains('net total') ||
+        lower.contains('total') ||
+        lower.contains('subtotal') ||
+        lower.contains('grand total') ||
+        lower.contains('เงินสด') ||
+        lower.contains('เงินทอน') ||
+        lower.contains('cash') ||
+        lower.contains('change') ||
+        lower.contains('vat') ||
+        lower.contains('ภาษี') ||
+        lower.contains('มูลค่าสินค้า') ||
+        lower.contains('all member') ||
+        lower.contains('member') ||
+        lower.contains('คะแนน') ||
+        lower.contains('point') ||
+        lower.contains('แต้ม') ||
+        lower.contains('truemoney') ||
+        lower.contains('wallet') ||
+        lower.contains('credit card') ||
+        lower.contains('บัตรเครดิต') ||
+        lower.contains('promptpay') ||
+        lower.contains('พร้อมเพย์') ||
+        lower.contains('qr code') ||
+        lower.contains('ขอบคุณ') ||
+        lower.contains('thank you') ||
+        lower.contains('call center') ||
+        lower.contains('โทร')) {
+      return true;
+    }
+
+    // ตัวเลขโดดๆ รหัสบาร์โค้ด หรือสัญลักษณ์
+    if (RegExp(r'^\d+$').hasMatch(lower)) return true;
+
+    return false;
+  }
+
+  /// สกัดรายการสินค้าแต่ละรายการจากใบเสร็จ
+  static List<_ReceiptParsedItem> _extractReceiptItems(List<String> lines) {
+    final items = <_ReceiptParsedItem>[];
+
+    for (final rawLine in lines) {
+      final line = rawLine.trim();
+      if (_isReceiptNoiseLine(line)) continue;
+
+      // รูปแบบ: [จำนวน (ถ้ามี)] [ชื่อสินค้า] [ราคา]
+      final match = RegExp(
+        r'^(?:(?:(\d{1,2})[\.\s\:\-xX]+)?)'
+        r'([ก-๙a-zA-Z0-9\s\.\-_\(\)\/]{2,45}?)'
+        r'\s+([0-9]{1,4}\.[0-9]{2})\s*(?:บาท|บ\.|THB)?$',
+        caseSensitive: false,
+      ).firstMatch(line);
+
+      if (match != null) {
+        final qtyStr = match.group(1);
+        var name = match.group(2)!.trim();
+        final priceStr = match.group(3)!;
+
+        final qty = (qtyStr != null) ? (int.tryParse(qtyStr) ?? 1) : 1;
+        final price = double.tryParse(priceStr) ?? 0.0;
+
+        name = name.replaceAll(RegExp(r'^[\.\-\:\s]+|[\.\-\:\s]+$'), '').trim();
+
+        if (name.length >= 2 &&
+            price > 0 &&
+            price < 50000 &&
+            !RegExp(r'^\d+$').hasMatch(name) &&
+            !_isReceiptNoiseLine(name)) {
+          items.add(_ReceiptParsedItem(
+            name: name,
+            price: price,
+            quantity: qty,
+          ));
+        }
+      }
+    }
+
+    return items;
   }
 
   /// สกัดวันและเวลา (Date & Time) จากข้อความสลิป
@@ -817,6 +1142,15 @@ class BankSlipParser {
       return idMatch.group(1);
     }
 
+    // 4. ตรวจจับรหัสใบเสร็จ 7-Eleven / ร้านค้า (R#, INV#, ABB#, Bill#)
+    final receiptNumMatch = RegExp(
+      r'(?:R#|INV#|ABB#|Bill#|Tax\s*Inv(?:\(ABB\))?#?)\s*[:：\-]?\s*([0-9A-Za-z/_-]{4,24})',
+      caseSensitive: false,
+    ).firstMatch(fullText);
+    if (receiptNumMatch != null) {
+      return receiptNumMatch.group(1)!.trim();
+    }
+
     return null;
   }
 
@@ -964,8 +1298,34 @@ class BankSlipParser {
     return null;
   }
 
-  /// สกัดชื่อผู้รับเงิน (ไปยัง / To / ผู้รับ / เข้าบัญชี / ร้านค้า)
+  /// สกัดชื่อผู้รับเงิน (ไปยัง / To / ผู้รับ / เข้าบัญชี / ร้านค้า / 7-Eleven)
   static String? _extractReceiver(List<String> lines) {
+    // 0. ตรวจสอบชื่อร้านและสาขาสำหรับใบเสร็จ 7-Eleven / CP ALL
+    for (final line in lines) {
+      final l = line.toLowerCase();
+      if (l.contains('7-eleven') ||
+          l.contains('7-11') ||
+          l.contains('เซเว่น') ||
+          l.contains('ซีพี ออลล์') ||
+          l.contains('ซีพีออลล์') ||
+          l.contains('cp all') ||
+          l.contains('cpall')) {
+        for (final branchLine in lines) {
+          final branchMatch = RegExp(
+            r'(?:สาขา|Store\s*#?)\s*([0-9]{3,6}\s*[^\n\r,]+|[^\n\r,]+)',
+            caseSensitive: false,
+          ).firstMatch(branchLine);
+          if (branchMatch != null) {
+            final cleanedBranch = _cleanReceiptBranch(branchMatch.group(0)!);
+            if (cleanedBranch != null && cleanedBranch.length >= 3) {
+              return '7-Eleven $cleanedBranch';
+            }
+          }
+        }
+        return '7-Eleven (ซีพี ออลล์)';
+      }
+    }
+
     final receiverKeywords = [
       'ไปยัง',
       'ผู้รับเงิน',
@@ -1102,7 +1462,7 @@ class BankSlipParser {
   }
 
   /// สกัดบันทึกช่วยจำ (Memo / Note)
-  static String? _extractMemo(List<String> lines) {
+  static String? _extractMemo(List<String> lines, {List<_ReceiptParsedItem>? receiptItems}) {
     final memoKeywords = [
       'บันทึกช่วยจำ',
       'บันทึก:',
@@ -1151,7 +1511,50 @@ class BankSlipParser {
         }
       }
     }
+
+    // สำหรับใบเสร็จ 7-Eleven หรือใบเสร็จร้านค้า
+    final is7El = lines.any((line) {
+      final l = line.toLowerCase();
+      return l.contains('7-eleven') ||
+          l.contains('7-11') ||
+          l.contains('เซเว่น') ||
+          l.contains('ซีพี ออลล์') ||
+          l.contains('cp all') ||
+          l.contains('cpall');
+    });
+
+    if (is7El || isStoreReceipt(lines.join('\n'))) {
+      final items = receiptItems ?? _extractReceiptItems(lines);
+      if (items.isNotEmpty) {
+        return items.map((it) {
+          final priceStr = it.price == it.price.roundToDouble()
+              ? '${it.price.toInt()}.-'
+              : '${it.price.toStringAsFixed(2)}.-';
+          return '${it.name} ($priceStr)';
+        }).join(', ');
+      }
+      return is7El ? 'ซื้อของ 7-Eleven' : 'ซื้อของ/ใบเสร็จรับเงิน';
+    }
+
     return null;
+  }
+
+  /// ทำความสะอาดชื่อสาขาจากใบเสร็จ 7-Eleven โดยตัดข้อความขยะที่พ่วงมาด้วย (เช่น TAX INV, เลขประจำตัว, POS, R#)
+  static String? _cleanReceiptBranch(String rawBranch) {
+    var b = rawBranch.trim();
+    final cutOffPatterns = [
+      RegExp(r'\s*(?:TAX|ABB|POS|R#|B#|REG|TAX\s*INV|ABB\s*NO)\b.*$', caseSensitive: false),
+      RegExp(r'\s*(?:เลขประจำตัว|ผู้เสียภาษี|ใบเสร็จ|ใบกำกับ|โทร|Tel|เครื่อง|แคชเชียร์|ลำดับ).*$', caseSensitive: false),
+      RegExp(r'\s*\d{2}[\/\-]\d{2}[\/\-]\d{2,4}.*$'),
+    ];
+    for (final p in cutOffPatterns) {
+      b = b.replaceFirst(p, '').trim();
+    }
+    b = b.replaceAll(RegExp(r'[\s\-:：,.]+$'), '').trim();
+    if (b.length > 30) {
+      b = b.substring(0, 30).trim();
+    }
+    return b.isNotEmpty ? b : null;
   }
 
   static String _cleanName(String raw) {
@@ -1203,3 +1606,11 @@ class _ExtractedDateTime {
 
 /// Typedef สำหรับความเข้ากันได้ย้อนหลัง 100%
 typedef KrungthaiSlipParser = BankSlipParser;
+
+/// โมเดลข้อมูลรายการสินค้าที่แยกออกมาจากใบเสร็จ (Receipt Item)
+class _ReceiptParsedItem {
+  final String name;
+  final double price;
+  final int quantity;
+  const _ReceiptParsedItem({required this.name, required this.price, this.quantity = 1});
+}

@@ -415,8 +415,10 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
     final today = DateTime(now.year, now.month, now.day);
     final target = DateTime(d.year, d.month, d.day);
     final isEn = controller.isEnglish;
-    if (target == today) return isEn ? 'Today (${d.day}/${d.month})' : 'วันนี้ (${d.day}/${d.month})';
-    if (target == today.subtract(const Duration(days: 1))) return isEn ? 'Yesterday (${d.day}/${d.month})' : 'เมื่อวาน (${d.day}/${d.month})';
+    if (target == today) return '${'today'.tr} (${d.day}/${d.month})';
+    if (target == today.subtract(const Duration(days: 1))) {
+      return '${'yesterday'.tr} (${d.day}/${d.month})';
+    }
     final yearSuffix = isEn ? '${d.year % 100}' : '${(d.year + 543) % 100}';
     return '${d.day}/${d.month}/$yearSuffix';
   }

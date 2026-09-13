@@ -171,7 +171,7 @@ class BudgetSettingsView extends GetView<BudgetController> {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                                 Text(
-                                  '${controller.daysInMonth} ${controller.dashboardController.isEnglish ? "days in cycle" : "วันในรอบเดือน"}',
+                                  'days_in_cycle'.trParams({'days': '${controller.daysInMonth}'}),
                                   style: TextStyle(
                                     fontSize: 10.5,
                                     fontWeight: FontWeight.w500,
@@ -391,21 +391,21 @@ class BudgetSettingsView extends GetView<BudgetController> {
           runSpacing: 6,
           children: [
             _buildAllocationChip(
-              label: controller.dashboardController.isEnglish ? 'Fixed' : 'คงที่',
+              label: 'fixed_cost_short'.tr,
               percent: (fixedRatio * 100).toInt(),
               amount: currencyFmt.format(fixedAmount),
               color: AppColors.fixedCostAccent,
               isDark: isDark,
             ),
             _buildAllocationChip(
-              label: controller.dashboardController.isEnglish ? 'Variable' : 'กินอยู่',
+              label: 'variable_cost_short'.tr,
               percent: (varRatio * 100).toInt(),
               amount: currencyFmt.format(varAmount),
               color: AppColors.variableCostAccent,
               isDark: isDark,
             ),
             _buildAllocationChip(
-              label: controller.dashboardController.isEnglish ? 'Savings' : 'เงินออม',
+              label: 'savings_short'.tr,
               percent: (savingsRatio * 100).toInt(),
               amount: currencyFmt.format(savingsAmount),
               color: AppColors.accent,
@@ -413,7 +413,7 @@ class BudgetSettingsView extends GetView<BudgetController> {
             ),
             if (surplusRatio > 0)
               _buildAllocationChip(
-                label: controller.dashboardController.isEnglish ? 'Buffer' : 'คงเหลือ',
+                label: 'buffer_short'.tr,
                 percent: (surplusRatio * 100).toInt(),
                 amount: currencyFmt.format(surplusAmount),
                 color: AppColors.primary,
@@ -494,7 +494,7 @@ class BudgetSettingsView extends GetView<BudgetController> {
             Expanded(
               child: _buildStrategyCard(
                 title: '50 / 30 / 20',
-                subtitle: controller.dashboardController.isEnglish ? 'Balanced Life' : 'สมดุลชีวิต',
+                subtitle: 'balanced_life'.tr,
                 badgeText: 'rule_50_30_20_badge'.tr,
                 badgeIcon: Icons.star_rounded,
                 color: AppColors.primary,
@@ -507,7 +507,7 @@ class BudgetSettingsView extends GetView<BudgetController> {
             Expanded(
               child: _buildStrategyCard(
                 title: '60 / 20 / 20',
-                subtitle: controller.dashboardController.isEnglish ? 'Fixed Heavy' : 'ภาระคงที่',
+                subtitle: 'fixed_heavy'.tr,
                 badgeText: 'rule_60_20_20_badge'.tr,
                 badgeIcon: Icons.home_rounded,
                 color: AppColors.fixedCostAccent,
@@ -520,7 +520,7 @@ class BudgetSettingsView extends GetView<BudgetController> {
             Expanded(
               child: _buildStrategyCard(
                 title: '40 / 30 / 30',
-                subtitle: controller.dashboardController.isEnglish ? 'High Savings' : 'สายออมดุ',
+                subtitle: 'high_savings'.tr,
                 badgeText: 'rule_40_30_30_badge'.tr,
                 badgeIcon: Icons.rocket_launch_rounded,
                 color: AppColors.accent,
@@ -972,7 +972,7 @@ class BudgetSettingsView extends GetView<BudgetController> {
           icon: Icons.savings_rounded,
           currencyFmt: currencyFmt,
           isDark: isDark,
-          ratioTextBuilder: () => '${(controller.savingsRatio * 100).toInt()}% ${controller.dashboardController.isEnglish ? "of income" : "ของรายได้"}',
+          ratioTextBuilder: () => 'percent_of_income'.trParams({'percent': '${(controller.savingsRatio * 100).toInt()}%'}),
           onQuickAdjust: (delta) => controller.adjustTargetMonthlySavings(delta),
           quickSteps: [500, 1000],
         ),
@@ -988,7 +988,7 @@ class BudgetSettingsView extends GetView<BudgetController> {
           icon: Icons.home_work_rounded,
           currencyFmt: currencyFmt,
           isDark: isDark,
-          ratioTextBuilder: () => '${(controller.fixedCostsRatio * 100).toInt()}% ${controller.dashboardController.isEnglish ? "of income" : "ของรายได้"}',
+          ratioTextBuilder: () => 'percent_of_income'.trParams({'percent': '${(controller.fixedCostsRatio * 100).toInt()}%'}),
           onQuickAdjust: (delta) => controller.adjustPlannedFixedCosts(delta),
           quickSteps: [500, 1000],
         ),
@@ -1309,7 +1309,7 @@ class BudgetSettingsView extends GetView<BudgetController> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             AppPopupHeader(
-              title: '${controller.dashboardController.isEnglish ? "Edit" : "แก้ไข"} $title',
+              title: 'edit_item_title'.trParams({'title': title}),
               icon: Icons.edit_note_rounded,
               iconColor: color,
             ),

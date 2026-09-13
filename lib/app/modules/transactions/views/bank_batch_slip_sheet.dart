@@ -7,7 +7,6 @@ import '../../../data/models/bank_slip_model.dart';
 import '../../../data/services/bank_slip_service.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_popup_decorations.dart';
-import '../../dashboard/controllers/dashboard_controller.dart';
 
 /// หน้าต่างพรีวิวและตรวจสอบสลิปแบบกลุ่ม (Krungthai Batch Slip Confirmation Sheet)
 class BankBatchSlipSheet extends StatefulWidget {
@@ -76,7 +75,6 @@ class _BatchItemState {
 }
 
 class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
-  final DashboardController controller = Get.find<DashboardController>();
   final BankSlipService slipService = BankSlipService();
   final currencyFormat = NumberFormat('#,##0.00', 'en_US');
 

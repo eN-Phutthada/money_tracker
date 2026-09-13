@@ -226,15 +226,17 @@ class DashboardView extends GetView<DashboardController> {
           final monthStr = isEn
               ? DashboardController.englishMonthShortNames[now.month]
               : DashboardController.thaiMonthShortNames[now.month];
-          final dateStr = isEn
-              ? 'Today, ${now.day} $monthStr • $timeStr'
-              : 'วันนี้ ${now.day} $monthStr • $timeStr น.';
+          final dateStr = 'today_date_display'.trParams({
+            'day': '${now.day}',
+            'month': monthStr,
+            'time': timeStr,
+          });
 
           return Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Personal Finance',
+                'app_subtitle'.tr,
                 style: TextStyle(
                   fontSize: 11,
                   color: isDark

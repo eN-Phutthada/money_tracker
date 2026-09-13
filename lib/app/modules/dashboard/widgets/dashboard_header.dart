@@ -105,9 +105,7 @@ class DashboardHeader extends GetView<DashboardController> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          controller.isEnglish
-                              ? 'Tap a month to view financial reports'
-                              : 'แตะเลือกเดือนเพื่อตรวจสอบสรุปการเงิน',
+                          'select_period_desc'.tr,
                           style: TextStyle(
                             fontSize: 11.5,
                             fontWeight: FontWeight.w500,
@@ -208,7 +206,9 @@ class DashboardHeader extends GetView<DashboardController> {
                             const SizedBox(width: 6),
                             Flexible(
                               child: Text(
-                                controller.isEnglish ? 'Year $year' : 'พ.ศ. ${year + 543}',
+                                'year_format'.trParams({
+                                  'year': (controller.isEnglish ? year : year + 543).toString(),
+                                }),
                                 style: TextStyle(
                                   fontSize: 15.5,
                                   fontWeight: FontWeight.w800,
@@ -972,7 +972,7 @@ class DashboardHeader extends GetView<DashboardController> {
                     ),
                     const SizedBox(width: 3.5),
                     Text(
-                      '${controller.transactions.length} ${controller.isEnglish ? "items" : "รายการ"}',
+                      'items_count_badge'.trParams({'count': '${controller.transactions.length}'}),
                       style: const TextStyle(
                         fontSize: 10.5,
                         fontWeight: FontWeight.w700,

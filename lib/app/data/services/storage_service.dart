@@ -342,16 +342,16 @@ class StorageService {
   }
 
   // ==========================================
-  // SLIP TARGET FOLDER & AUTO-SCAN PREFERENCES
+  // GEMINI AI SLIP ANALYSIS PREFERENCES
   // ==========================================
-  Future<File> _getSlipFolderAutoScanPrefFile() async {
+  Future<File> _getGeminiEnabledPrefFile() async {
     final dir = await getStorageDirectory();
-    return File('${dir.path}/slip_folder_auto_scan.pref');
+    return File('${dir.path}/gemini_slip_analysis.pref');
   }
 
-  Future<bool> loadSlipFolderAutoScanPref() async {
+  Future<bool> loadGeminiEnabledPref() async {
     try {
-      final file = await _getSlipFolderAutoScanPrefFile();
+      final file = await _getGeminiEnabledPrefFile();
       if (!await file.exists()) return false;
       final content = await file.readAsString();
       return content.trim() == 'true';
@@ -360,62 +360,12 @@ class StorageService {
     }
   }
 
-  Future<void> saveSlipFolderAutoScanPref(bool enabled) async {
+  Future<void> saveGeminiEnabledPref(bool enabled) async {
     try {
-      final file = await _getSlipFolderAutoScanPrefFile();
+      final file = await _getGeminiEnabledPrefFile();
       await file.writeAsString(enabled ? 'true' : 'false', flush: true);
     } catch (_) {}
   }
-
-  Future<File> _getSlipTargetFolderFile() async {
-    final dir = await getStorageDirectory();
-    return File('${dir.path}/slip_target_folder.json');
-  }
-
-  Future<Map<String, String>?> loadSlipTargetFolder() async {
-    try {
-      final file = await _getSlipTargetFolderFile();
-      if (!await file.exists()) return null;
-      final content = await file.readAsString();
-      final Map<String, dynamic> data = jsonDecode(content);
-      return {
-        'path': data['path']?.toString() ?? '',
-        'name': data['name']?.toString() ?? '',
-      };
-    } catch (_) {
-      return null;
-    }
-  }
-
-  Future<void> saveSlipTargetFolder(String path, String name) async {
-    try {
-      final file = await _getSlipTargetFolderFile();
-      final content = jsonEncode({'path': path, 'name': name});
-      await file.writeAsString(content, flush: true);
-    } catch (_) {}
-  }
-
-  Future<File> _getSlipLastScannedTimeFile() async {
-    final dir = await getStorageDirectory();
-    return File('${dir.path}/slip_last_scanned_time.pref');
-  }
-
-  Future<DateTime?> loadSlipLastScannedTime() async {
-    try {
-      final file = await _getSlipLastScannedTimeFile();
-      if (!await file.exists()) return null;
-      final content = await file.readAsString();
-      return DateTime.tryParse(content.trim());
-    } catch (_) {
-      return null;
-    }
-  }
-
-  Future<void> saveSlipLastScannedTime(DateTime time) async {
-    try {
-      final file = await _getSlipLastScannedTimeFile();
-      await file.writeAsString(time.toIso8601String(), flush: true);
-    } catch (_) {}
-  }
 }
+
 

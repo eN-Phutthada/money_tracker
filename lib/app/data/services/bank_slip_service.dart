@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -10,6 +9,8 @@ import '../../widgets/app_feedback.dart';
 import 'bank_ocr_service.dart';
 import 'bank_qr_decoder.dart';
 import 'bank_slip_parser.dart';
+import 'config_service.dart';
+import 'gemini_slip_service.dart';
 import 'slip_category_predictor.dart';
 import 'storage_service.dart';
 
@@ -36,7 +37,6 @@ class BankBatchResult {
 /// - โหมด A: ตรวจสอบและแก้ไขก่อนบันทึก (Preview & Confirm Sheet)
 /// - โหมด B: บันทึกทันทีอัตโนมัติ (Instant Auto-Save) พร้อม In-App Notification และปุ่มแก้ไข
 /// - ระบบสแกนแบบกลุ่ม (Batch Processing)
-/// - ระบบตรวจจับสลิปใหม่อัตโนมัติจากโฟลเดอร์เป้าหมาย (Target Folder Auto-Scan)
 class BankSlipService {
   static final BankSlipService _instance =
       BankSlipService._internal();
@@ -47,33 +47,14 @@ class BankSlipService {
   final StorageService _storageService = StorageService();
 
   final RxBool isInstantAutoSave = false.obs;
-
-  // Folder Auto-Scan States
-  final RxBool isFolderAutoScanEnabled = false.obs;
-  final RxString targetFolderPath = ''.obs;
-  final RxString targetFolderName = 'Krungthai NEXT'.obs;
-  final Rx<DateTime?> lastScannedTime = Rx<DateTime?>(null);
+  final RxBool isGeminiEnabled = false.obs;
 
   Future<void> init() async {
+    await ConfigService().init();
     final pref = await _storageService.loadSlipAutoSavePref();
     isInstantAutoSave.value = pref;
-
-    final folderScanPref = await _storageService.loadSlipFolderAutoScanPref();
-    isFolderAutoScanEnabled.value = folderScanPref;
-
-    final targetFolder = await _storageService.loadSlipTargetFolder();
-    if (targetFolder != null && (targetFolder['path']?.isNotEmpty ?? false)) {
-      targetFolderPath.value = targetFolder['path']!;
-      targetFolderName.value = targetFolder['name'] ?? 'โฟลเดอร์สลิป';
-    } else {
-      // ค่าแนะนำเริ่มต้น
-      targetFolderName.value = 'Krungthai NEXT';
-      if (Platform.isAndroid) {
-        targetFolderPath.value = '/storage/emulated/0/Pictures/Krungthai';
-      }
-    }
-
-    lastScannedTime.value = await _storageService.loadSlipLastScannedTime();
+    final geminiPref = await _storageService.loadGeminiEnabledPref();
+    isGeminiEnabled.value = geminiPref;
   }
 
   Future<void> toggleAutoSave(bool value) async {
@@ -81,18 +62,9 @@ class BankSlipService {
     await _storageService.saveSlipAutoSavePref(value);
   }
 
-  Future<void> toggleFolderAutoScan(bool value) async {
-    isFolderAutoScanEnabled.value = value;
-    await _storageService.saveSlipFolderAutoScanPref(value);
-  }
-
-  Future<void> setTargetFolder({
-    required String path,
-    required String name,
-  }) async {
-    targetFolderPath.value = path;
-    targetFolderName.value = name;
-    await _storageService.saveSlipTargetFolder(path, name);
+  Future<void> toggleGemini(bool value) async {
+    isGeminiEnabled.value = value;
+    await _storageService.saveGeminiEnabledPref(value);
   }
 
   /// เลือกรูปสลิปหลายรูปพร้อมกันจากอัลบั้ม (Multi-Image Pick)
@@ -148,109 +120,7 @@ class BankSlipService {
     );
   }
 
-  /// ตรวจหาสลิปใหม่ในโฟลเดอร์เป้าหมาย
-  Future<List<BankSlipData>> scanTargetFolderForNewSlips({
-    List<TransactionItem>? existingTransactions,
-  }) async {
-    if (!isFolderAutoScanEnabled.value ||
-        targetFolderPath.value.trim().isEmpty) {
-      return [];
-    }
 
-    try {
-      final dir = Directory(targetFolderPath.value.trim());
-      if (!await dir.exists()) return [];
-
-      final entities = await dir.list().toList();
-      final imageExtensions = ['.jpg', '.jpeg', '.png', '.webp'];
-
-      final imageFiles = entities.whereType<File>().where((f) {
-        final lower = f.path.toLowerCase();
-        return imageExtensions.any((ext) => lower.endsWith(ext));
-      }).toList();
-
-      if (imageFiles.isEmpty) return [];
-
-      // เรียงลำดับจากรูปที่แก้ไขล่าสุด
-      imageFiles.sort(
-        (a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()),
-      );
-
-      // ตรวจสอบรูปภาพล่าสุดไม่เกิน 8 รูปล่าสุดเพื่อความรวดเร็ว
-      final recentFiles = imageFiles.take(8).toList();
-      final lastScan = lastScannedTime.value;
-
-      final filesToProcess = recentFiles.where((f) {
-        if (lastScan == null) return true;
-        return f.lastModifiedSync().isAfter(lastScan);
-      }).toList();
-
-      if (filesToProcess.isEmpty) return [];
-
-      final transactions =
-          existingTransactions ??
-          (Get.isRegistered<DashboardController>()
-              ? Get.find<DashboardController>().transactions
-              : <TransactionItem>[]);
-
-      final newSlips = <BankSlipData>[];
-
-      for (final f in filesToProcess) {
-        final slip = await processSlipImage(XFile(f.path));
-        if (slip != null) {
-          final isDup = BankSlipParser.isDuplicate(slip, transactions);
-          if (!isDup) {
-            newSlips.add(slip);
-          }
-        }
-      }
-
-      // บันทึกเวลาที่สแกนล่าสุด
-      final now = DateTime.now();
-      lastScannedTime.value = now;
-      await _storageService.saveSlipLastScannedTime(now);
-
-      return newSlips;
-    } catch (_) {
-      return [];
-    }
-  }
-
-  /// ตัวเลือกโฟลเดอร์สลิปแนะนำยอดนิยมสำหรับผู้ใช้ (เน้นกรุงไทยเป็นหลัก พร้อมรองรับธนาคารอื่น)
-  static List<Map<String, String>> getRecommendedFolderPresets() {
-    return [
-      {
-        'id': 'ktb_next',
-        'name': 'Krungthai NEXT (หลัก)',
-        'defaultPath': '/storage/emulated/0/Pictures/Krungthai NEXT',
-        'subtitle': 'โฟลเดอร์สลิปอัตโนมัติจากแอป Krungthai NEXT (แนะนำ)',
-      },
-      {
-        'id': 'paotang',
-        'name': 'เป๋าตัง (Paotang Pay)',
-        'defaultPath': '/storage/emulated/0/Pictures/เป๋าตัง',
-        'subtitle': 'โฟลเดอร์สลิปอัตโนมัติจากแอปเป๋าตัง G-Wallet',
-      },
-      {
-        'id': 'kplus',
-        'name': 'K PLUS (กสิกรไทย)',
-        'defaultPath': '/storage/emulated/0/Pictures/K PLUS',
-        'subtitle': 'โฟลเดอร์สลิปอัตโนมัติจากแอป K PLUS',
-      },
-      {
-        'id': 'scbeasy',
-        'name': 'SCB EASY (ไทยพาณิชย์)',
-        'defaultPath': '/storage/emulated/0/Pictures/SCB EASY',
-        'subtitle': 'โฟลเดอร์สลิปอัตโนมัติจากแอป SCB EASY',
-      },
-      {
-        'id': 'screenshots',
-        'name': 'ภาพหน้าจอ (Screenshots)',
-        'defaultPath': '/storage/emulated/0/DCIM/Screenshots',
-        'subtitle': 'อัลบั้มภาพบันทึกหน้าจอสำหรับผู้ที่แคปภาพสลิปทุกธนาคาร',
-      },
-    ];
-  }
 
   /// เลือกรูปสลิปจากอัลบั้ม (Gallery)
   Future<XFile?> pickSlipImageFromGallery() async {
@@ -305,15 +175,58 @@ class BankSlipService {
         qrSlip = BankQrDecoder.parsePromptPaySlipQr(qrString, userProfileName: userProfileName);
       }
 
+      // Fast-path: หาก QR Code มีข้อมูลครบถ้วน (มียอดเงิน > 0, รหัสอ้างอิง, วันที่, และมีชื่อผู้รับ/ร้านค้า)
+      // สามารถส่งต่อผลลัพธ์ได้ทันทีโดยไม่ต้องรัน OCR ให้เสียเวลาและเปลืองแบตเตอรี่
+      if (qrSlip != null &&
+          qrSlip.amount > 0 &&
+          qrSlip.hasParsedDateTime &&
+          qrSlip.referenceNo != null &&
+          (qrSlip.receiverName?.isNotEmpty ?? false)) {
+        final finalDate = resolveAccurateDateTime(
+          qrSlip: qrSlip,
+          fileModTime: fileModTime,
+        );
+        final completedSlip = qrSlip.copyWith(
+          transactionDate: finalDate,
+          hasParsedDateTime: true,
+          hasParsedTime: qrSlip.hasParsedTime || finalDate.hour != 0 || finalDate.minute != 0,
+        );
+        return enrichWithHistory(completedSlip);
+      }
+
       // 2. ลองอ่านข้อความผ่าน Mobile On-Device OCR
       String? ocrText;
       try {
         ocrText = await BankOcrService.recognizeTextFromImage(file.path);
       } catch (_) {}
 
+      // 3. วิเคราะห์ด้วย Gemini AI (หากผู้ใช้เปิดใช้งานตัวเลือกนี้ไว้ และมี API Key ใน config.json)
+      if (isGeminiEnabled.value && ConfigService().hasGeminiKey) {
+        final geminiSlip = await GeminiSlipService().analyzeSlip(
+          file: file,
+          existingOcrText: ocrText,
+        );
+        if (geminiSlip != null && geminiSlip.amount > 0) {
+          final finalRef = qrSlip?.referenceNo ?? geminiSlip.referenceNo;
+          final finalDate = resolveAccurateDateTime(
+            qrSlip: qrSlip,
+            fileModTime: fileModTime,
+          );
+          final fusedSlip = geminiSlip.copyWith(
+            referenceNo: finalRef,
+            transactionDate: geminiSlip.hasParsedTime ? geminiSlip.transactionDate : finalDate,
+            hasParsedDateTime: true,
+          );
+          return enrichWithHistory(fusedSlip);
+        }
+      }
+
       BankSlipData? ocrSlip;
       if (ocrText != null && ocrText.trim().isNotEmpty) {
-        ocrSlip = BankSlipParser.parse(ocrText, userProfileName: userProfileName);
+        // หากไม่มี QR Code ต้องตรวจสอบก่อนว่าเป็นสลิปธนาคารจริงเพื่อข้ามรูปภาพทั่วไปได้อย่างรวดเร็ว
+        if (qrSlip != null || BankSlipParser.isValidBankSlip(ocrText)) {
+          ocrSlip = BankSlipParser.parse(ocrText, userProfileName: userProfileName);
+        }
       }
 
       BankSlipData? result;
@@ -723,6 +636,28 @@ To: ShopeePay Thailand
 Amount: 1,290.00 THB
 Fee: 0.00 THB
 Memo: หูฟังบลูทูธไร้สาย
+''',
+      },
+      {
+        'title': 'ใบเสร็จ 7-Eleven (ซีพี ออลล์)',
+        'description': '99.00 บาท | 7-Eleven สาขา 01234 อโศกมนตรี',
+        'rawText': '''
+7-ELEVEN
+บมจ. ซีพี ออลล์
+สาขา 01234 อโศกมนตรี
+ใบเสร็จรับเงิน/ใบกำกับภาษีอย่างย่อ
+วันที่ 13/09/2569 12:45:30
+R# 12345/6789 T#02
+
+1 ข้าวกะเพราไก่ไข่ดาว 47.00
+1 ชาเขียวโออิชิ 20.00
+1 แซนวิชอบร้อน 32.00
+
+รวมเงิน 99.00 บาท
+เงินสด 100.00
+เงินทอน 1.00
+
+7-Eleven ขอบคุณที่ใช้บริการ
 ''',
       },
     ];

@@ -233,8 +233,8 @@ class AppPopupHeader extends StatelessWidget {
 class AppConfirmDialog extends StatelessWidget {
   final String title;
   final String message;
-  final String confirmText;
-  final String cancelText;
+  final String? confirmText;
+  final String? cancelText;
   final IconData? icon;
   final Color? iconColor;
   final Color? confirmButtonColor;
@@ -246,8 +246,8 @@ class AppConfirmDialog extends StatelessWidget {
     required this.title,
     required this.message,
     required this.onConfirm,
-    this.confirmText = 'ยืนยัน',
-    this.cancelText = 'ยกเลิก',
+    this.confirmText,
+    this.cancelText,
     this.icon,
     this.iconColor,
     this.confirmButtonColor,
@@ -300,7 +300,7 @@ class AppConfirmDialog extends StatelessWidget {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 child: Text(
-                  cancelText,
+                  cancelText ?? 'cancel'.tr,
                   style: TextStyle(
                     color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569),
                     fontWeight: FontWeight.w600,
@@ -318,7 +318,7 @@ class AppConfirmDialog extends StatelessWidget {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 child: Text(
-                  confirmText,
+                  confirmText ?? 'confirm'.tr,
                   style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
               ),
@@ -390,7 +390,7 @@ void showThemePickerDialog(BuildContext context) {
                     ),
                     const SizedBox(width: 12),
                     Text(
-                      dashboardController.isEnglish ? 'Display Theme' : 'ธีมการแสดงผล',
+                      'theme_settings'.tr,
                       style: TextStyle(
                         fontSize: 16.5,
                         fontWeight: FontWeight.w800,
@@ -422,10 +422,8 @@ void showThemePickerDialog(BuildContext context) {
               return Column(
                 children: [
                   _buildThemeOptionTile(
-                    title: dashboardController.isEnglish ? 'Light Mode' : 'โหมดสว่าง',
-                    subtitle: dashboardController.isEnglish
-                        ? 'Crisp, bright white background'
-                        : 'พื้นหลังโทนขาว คมชัด สดใส สบายตา',
+                    title: 'theme_light'.tr,
+                    subtitle: 'theme_light_desc'.tr,
                     icon: Icons.light_mode_rounded,
                     iconColor: const Color(0xFFF59E0B),
                     isSelected: currentMode == ThemeMode.light || (currentMode == ThemeMode.system && !isDark),
@@ -437,10 +435,8 @@ void showThemePickerDialog(BuildContext context) {
                   ),
                   const SizedBox(height: 10),
                   _buildThemeOptionTile(
-                    title: dashboardController.isEnglish ? 'Dark Mode' : 'โหมดมืด',
-                    subtitle: dashboardController.isEnglish
-                        ? 'Sleek dark background, easy on the eyes'
-                        : 'พื้นหลังโทนเข้ม ถนอมสายตา และประหยัดแบตเตอรี่',
+                    title: 'theme_dark'.tr,
+                    subtitle: 'theme_dark_desc'.tr,
                     icon: Icons.dark_mode_rounded,
                     iconColor: const Color(0xFF6366F1),
                     isSelected: currentMode == ThemeMode.dark || (currentMode == ThemeMode.system && isDark),
@@ -653,14 +649,13 @@ void showLanguagePickerDialog(BuildContext context) {
             // Options List
             Obx(() {
               final currentLang = dashboardController.currentLanguage.value;
-              final isEn = dashboardController.isEnglish;
 
               return Column(
                 children: [
                   _buildThemeOptionTile(
                     title: 'lang_thai'.tr,
                     subtitle: 'lang_thai_desc'.tr,
-                    badge: currentLang == 'th' ? (isEn ? 'Active' : 'ปัจจุบัน') : null,
+                    badge: currentLang == 'th' ? 'active'.tr : null,
                     icon: Icons.flag_rounded,
                     iconColor: const Color(0xFFEF4444),
                     isSelected: currentLang == 'th',
@@ -674,7 +669,7 @@ void showLanguagePickerDialog(BuildContext context) {
                   _buildThemeOptionTile(
                     title: 'lang_english'.tr,
                     subtitle: 'lang_english_desc'.tr,
-                    badge: currentLang == 'en' ? (isEn ? 'Active' : 'ปัจจุบัน') : null,
+                    badge: currentLang == 'en' ? 'active'.tr : null,
                     icon: Icons.language_rounded,
                     iconColor: const Color(0xFF3B82F6),
                     isSelected: currentLang == 'en',

@@ -47,7 +47,7 @@ class AppFeedback {
     Duration duration = const Duration(milliseconds: 2800),
   }) {
     show(
-      title: title ?? 'แจ้งเตือน',
+      title: title ?? 'notice'.tr,
       message: message,
       type: FeedbackType.info,
       actionLabel: actionLabel,
@@ -65,7 +65,7 @@ class AppFeedback {
     Duration duration = const Duration(milliseconds: 3400),
   }) {
     show(
-      title: title ?? 'แจ้งเตือน',
+      title: title ?? 'warning'.tr,
       message: message,
       type: FeedbackType.warning,
       actionLabel: actionLabel,
@@ -83,7 +83,7 @@ class AppFeedback {
     Duration duration = const Duration(milliseconds: 3600),
   }) {
     show(
-      title: title ?? 'เกิดข้อผิดพลาด',
+      title: title ?? 'error'.tr,
       message: message,
       type: FeedbackType.error,
       actionLabel: actionLabel,

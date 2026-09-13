@@ -95,41 +95,16 @@ class _TransactionsListViewState extends State<TransactionsListView> {
       return 'yesterday'.tr;
     }
 
-    if (controller.isEnglish) {
-      const monthsEn = [
-        '',
-        'Jan',
-        'Feb',
-        'Mar',
-        'Apr',
-        'May',
-        'Jun',
-        'Jul',
-        'Aug',
-        'Sep',
-        'Oct',
-        'Nov',
-        'Dec',
-      ];
-      return '${monthsEn[date.month]} ${date.day}, ${date.year}';
-    }
-
-    const months = [
-      '',
-      'ม.ค.',
-      'ก.พ.',
-      'มี.ค.',
-      'เม.ย.',
-      'พ.ค.',
-      'มิ.ย.',
-      'ก.ค.',
-      'ส.ค.',
-      'ก.ย.',
-      'ต.ค.',
-      'พ.ย.',
-      'ธ.ค.',
-    ];
-    return '${date.day} ${months[date.month]} ${date.year + 543}';
+    final isEn = controller.isEnglish;
+    final monthStr = isEn
+        ? DashboardController.englishMonthShortNames[date.month]
+        : DashboardController.thaiMonthShortNames[date.month];
+    final yearStr = isEn ? '${date.year}' : '${date.year + 543}';
+    return 'group_date_format'.trParams({
+      'day': '${date.day}',
+      'month': monthStr,
+      'year': yearStr,
+    });
   }
 
   @override
@@ -1180,7 +1155,7 @@ class _TransactionsListViewState extends State<TransactionsListView> {
             ),
             const SizedBox(width: 6),
             Text(
-              isEn ? 'Delete' : 'ลบรายการ',
+              'delete_transaction'.tr,
               style: const TextStyle(
                 color: AppColors.deficitText,
                 fontWeight: FontWeight.w800,
@@ -1194,11 +1169,11 @@ class _TransactionsListViewState extends State<TransactionsListView> {
         HapticFeedback.mediumImpact();
         controller.deleteTransaction(item.id);
         AppFeedback.showSuccess(
-          title: isEn ? 'Transaction Deleted' : 'ลบรายการเรียบร้อย',
+          title: 'transaction_deleted_title'.tr,
           message: item.title,
           amount: item.amount,
           transactionType: item.type,
-          actionLabel: isEn ? 'Undo' : 'เลิกทำ',
+          actionLabel: 'undo'.tr,
           duration: const Duration(milliseconds: 4500),
           onAction: () {
             HapticFeedback.mediumImpact();

@@ -116,19 +116,19 @@ class BudgetController extends GetxController {
 
     switch (type) {
       case BudgetPresetType.rule50_30_20:
-        templateName = 'สูตร 50/30/20 (สมดุลชีวิต)';
+        templateName = 'template_50_30_20';
         fixedPct = 0.50;
         varPct = 0.30;
         savingsPct = 0.20;
         break;
       case BudgetPresetType.rule60_20_20:
-        templateName = 'สูตร 60/20/20 (เน้นภาระคงที่)';
+        templateName = 'template_60_20_20';
         fixedPct = 0.60;
         varPct = 0.20;
         savingsPct = 0.20;
         break;
       case BudgetPresetType.rule40_30_30:
-        templateName = 'สูตร 40/30/30 (สายออมดุดัน)';
+        templateName = 'template_40_30_30';
         fixedPct = 0.40;
         varPct = 0.30;
         savingsPct = 0.30;

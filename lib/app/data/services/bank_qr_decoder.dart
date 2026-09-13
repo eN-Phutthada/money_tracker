@@ -10,8 +10,11 @@ class BankQrDecoder {
   /// ถอดรหัส QR Code จากข้อมูลไบต์ของรูปภาพสลิป
   static Future<String?> decodeQrFromImageBytes(Uint8List bytes) async {
     try {
-      final image = img.decodeImage(bytes);
+      var image = img.decodeImage(bytes);
       if (image == null) return null;
+
+      // ปรับทิศทางภาพถ่ายจากกล้องมือถือให้ตั้งตรงตาม EXIF ก่อนทำการประมวลผล
+      image = img.bakeOrientation(image);
 
       // 1. ลองอ่านจากภาพที่มีการปรับขนาดให้เหมาะสม (Downscaled) เพื่อความเร็วและประหยัด RAM บนมือถือ
       img.Image processed = image;
@@ -132,6 +135,15 @@ class BankQrDecoder {
         final globalBitmap = BinaryBitmap(GlobalHistogramBinarizer(source));
         final reader = QRCodeReader();
         final result = reader.decode(globalBitmap);
+        if (result.text.isNotEmpty) return result.text;
+      } catch (_) {}
+
+      // สำรองสำหรับสลิปโหมดมืด (Dark Theme) หรือสีกลับด้าน (Inverted QR Code)
+      try {
+        final invertedSource = source.invert();
+        final invertedBitmap = BinaryBitmap(HybridBinarizer(invertedSource));
+        final reader = QRCodeReader();
+        final result = reader.decode(invertedBitmap);
         if (result.text.isNotEmpty) return result.text;
       } catch (_) {}
 

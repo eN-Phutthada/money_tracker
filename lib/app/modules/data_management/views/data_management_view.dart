@@ -47,12 +47,8 @@ class _DataManagementViewState extends State<DataManagementView> {
 
     Get.dialog(
       _buildExportDialog(
-        title: controller.isEnglish
-            ? 'Export CSV (Excel Compatible)'
-            : 'ส่งออกข้อมูล CSV',
-        description: controller.isEnglish
-            ? 'UTF-8 BOM encoded for seamless opening in Microsoft Excel and Google Sheets'
-            : 'ไฟล์ CSV มี UTF-8 BOM สำหรับเปิดอ่านภาษาไทยใน Microsoft Excel ได้อย่างถูกต้อง',
+        title: 'export_csv_modal_title'.tr,
+        description: 'export_csv_modal_desc'.tr,
         content: csvContent,
         filename:
             'money_tracker_export_${DateTime.now().year}_${DateTime.now().month}_${DateTime.now().day}.csv',
@@ -77,12 +73,8 @@ class _DataManagementViewState extends State<DataManagementView> {
 
     Get.dialog(
       _buildExportDialog(
-        title: controller.isEnglish
-            ? 'Full Backup (JSON Vault)'
-            : 'สำรองข้อมูลทั้งหมด',
-        description: controller.isEnglish
-            ? 'Complete encrypted vault backup containing all transactions and budget plans'
-            : 'ไฟล์ Backup สมบูรณ์แบบ ประกอบด้วยรายการธุรกรรมและแผนงบประมาณ',
+        title: 'backup_all_modal_title'.tr,
+        description: 'backup_all_modal_desc'.tr,
         content: jsonContent,
         filename:
             'money_tracker_backup_${DateTime.now().millisecondsSinceEpoch}.json',
@@ -117,7 +109,7 @@ class _DataManagementViewState extends State<DataManagementView> {
           AppPopupHeader(
             title: title,
             subtitle:
-                '$description (${controller.isEnglish ? "Total" : "รวม"} $itemCount ${controller.isEnglish ? "records" : "รายการ"})',
+                '$description (${'total_records'.trParams({'count': itemCount.toString()})})',
             icon: icon,
             iconColor: accentColor,
           ),
@@ -158,15 +150,13 @@ class _DataManagementViewState extends State<DataManagementView> {
                   HapticFeedback.lightImpact();
                   Clipboard.setData(ClipboardData(text: content));
                   AppFeedback.showSuccess(
-                    title: controller.isEnglish ? 'Copied' : 'สำเร็จ',
-                    message: controller.isEnglish
-                        ? 'Export content copied to clipboard'
-                        : 'คัดลอกเนื้อหาลงคลิปบอร์ดแล้ว',
+                    title: 'copied_title'.tr,
+                    message: 'copied_to_clipboard'.tr,
                   );
                 },
                 icon: const Icon(Icons.copy_rounded, size: 16),
                 label: Text(
-                  controller.isEnglish ? 'Copy Text' : 'คัดลอกข้อความ',
+                  'copy_text'.tr,
                 ),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(
@@ -198,17 +188,13 @@ class _DataManagementViewState extends State<DataManagementView> {
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             AppPopupHeader(
-                              title: controller.isEnglish
-                                  ? 'File Saved!'
-                                  : 'บันทึกไฟล์สำเร็จ!',
+                              title: 'save_file_success'.tr,
                               icon: Icons.check_circle_rounded,
                               iconColor: AppColors.primary,
                             ),
                             const SizedBox(height: 14),
                             Text(
-                              controller.isEnglish
-                                  ? 'Saved $filename successfully at:'
-                                  : 'บันทึกไฟล์ $filename เรียบร้อยแล้วที่:',
+                              'save_file_path'.trParams({'filename': filename}),
                               style: TextStyle(
                                 fontSize: 13,
                                 color: isDark
@@ -253,7 +239,7 @@ class _DataManagementViewState extends State<DataManagementView> {
                                 ),
                               ),
                               child: Text(
-                                controller.isEnglish ? 'Close' : 'ปิดหน้าต่าง',
+                                'close_window'.tr,
                                 style: const TextStyle(
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -267,7 +253,7 @@ class _DataManagementViewState extends State<DataManagementView> {
                 },
                 icon: const Icon(Icons.download_rounded, size: 16),
                 label: Text(
-                  controller.isEnglish ? 'Save to File' : 'บันทึกไฟล์',
+                  'save_to_file'.tr,
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: accentColor,
@@ -331,12 +317,8 @@ class _DataManagementViewState extends State<DataManagementView> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       AppPopupHeader(
-                        title: controller.isEnglish
-                            ? 'Import from CSV or JSON'
-                            : 'นำเข้าข้อมูลจาก CSV หรือ JSON',
-                        subtitle: controller.isEnglish
-                            ? 'Paste your CSV or JSON backup content to inspect before restore'
-                            : 'วางเนื้อหาไฟล์ CSV หรือ JSON จากการสำรองข้อมูลเพื่อตรวจสอบก่อนกู้คืน',
+                        title: 'import_data_modal_title'.tr,
+                        subtitle: 'import_data_modal_desc'.tr,
                         icon: Icons.cloud_download_rounded,
                         iconColor: AppColors.fixedCostAccent,
                       ),
@@ -349,9 +331,7 @@ class _DataManagementViewState extends State<DataManagementView> {
                           fontFamily: 'monospace',
                         ),
                         decoration: InputDecoration(
-                          hintText: controller.isEnglish
-                              ? 'Paste CSV or JSON content here...'
-                              : 'วางเนื้อหา CSV หรือ JSON ที่นี่...',
+                          hintText: 'import_data_hint'.tr,
                           hintStyle: const TextStyle(fontSize: 11),
                           filled: true,
                           fillColor: isDark
@@ -400,9 +380,9 @@ class _DataManagementViewState extends State<DataManagementView> {
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                controller.isEnglish
-                                    ? 'Detected ${_parsedPreviewItems!.length} valid records'
-                                    : 'ตรวจพบ ${_parsedPreviewItems!.length} รายการที่ถูกต้อง',
+                                'found_valid_items'.trParams({
+                                  'count': _parsedPreviewItems!.length.toString(),
+                                }),
                                 style: const TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
@@ -473,9 +453,7 @@ class _DataManagementViewState extends State<DataManagementView> {
                               },
                               icon: const Icon(Icons.paste_rounded, size: 16),
                               label: Text(
-                                controller.isEnglish
-                                    ? 'Paste Clipboard'
-                                    : 'วางจากคลิปบอร์ด',
+                                'paste_from_clipboard'.tr,
                               ),
                               style: OutlinedButton.styleFrom(
                                 padding: const EdgeInsets.symmetric(
@@ -518,12 +496,8 @@ class _DataManagementViewState extends State<DataManagementView> {
                                           }
                                           Get.back();
                                           AppFeedback.showSuccess(
-                                            title: controller.isEnglish
-                                                ? 'Success'
-                                                : 'สำเร็จ',
-                                            message: controller.isEnglish
-                                                ? 'Vault backup restored successfully'
-                                                : 'กู้คืนข้อมูลสำรองเรียบร้อยแล้ว',
+                                            title: 'copied_title'.tr,
+                                            message: 'restore_success_msg'.tr,
                                           );
                                         }
                                       } else if (_parsedPreviewItems != null &&
@@ -533,12 +507,10 @@ class _DataManagementViewState extends State<DataManagementView> {
                                         );
                                         Get.back();
                                         AppFeedback.showSuccess(
-                                          title: controller.isEnglish
-                                              ? 'Success'
-                                              : 'สำเร็จ',
-                                          message: controller.isEnglish
-                                              ? 'Imported ${_parsedPreviewItems!.length} records successfully!'
-                                              : 'นำเข้าข้อมูลสำเร็จ ${_parsedPreviewItems!.length} รายการ!',
+                                          title: 'copied_title'.tr,
+                                          message: 'import_success_msg'.trParams({
+                                            'count': _parsedPreviewItems!.length.toString(),
+                                          }),
                                         );
                                       }
                                     }
@@ -555,9 +527,7 @@ class _DataManagementViewState extends State<DataManagementView> {
                                 ),
                               ),
                               child: Text(
-                                controller.isEnglish
-                                    ? 'Confirm Import'
-                                    : 'ยืนยันนำเข้าข้อมูล',
+                                'confirm_import'.tr,
                                 style: const TextStyle(
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -622,9 +592,7 @@ class _DataManagementViewState extends State<DataManagementView> {
                 // 2. Section 1: Export Studio Bento Deck
                 _buildSectionHeader(
                   icon: Icons.upload_file_rounded,
-                  title: controller.isEnglish
-                      ? 'Financial Export Studio'
-                      : 'การส่งออกข้อมูล',
+                  title: 'section_export'.tr,
                   isDark: isDark,
                 ),
                 const SizedBox(height: 10),
@@ -634,9 +602,7 @@ class _DataManagementViewState extends State<DataManagementView> {
                 // 3. Section 2: Import & Disaster Recovery
                 _buildSectionHeader(
                   icon: Icons.download_for_offline_rounded,
-                  title: controller.isEnglish
-                      ? 'Import & Recovery Center'
-                      : 'การนำเข้าและกู้คืนข้อมูล',
+                  title: 'section_import'.tr,
                   isDark: isDark,
                 ),
                 const SizedBox(height: 10),
@@ -646,9 +612,7 @@ class _DataManagementViewState extends State<DataManagementView> {
                 // 4. Section 3: Danger Zone
                 _buildSectionHeader(
                   icon: Icons.security_update_warning_rounded,
-                  title: controller.isEnglish
-                      ? 'Data Danger Zone'
-                      : 'จัดการความเสี่ยงข้อมูล',
+                  title: 'section_danger'.tr,
                   isDark: isDark,
                   color: AppColors.deficitText,
                 ),
@@ -740,9 +704,7 @@ class _DataManagementViewState extends State<DataManagementView> {
                             children: [
                               Flexible(
                                 child: Text(
-                                  controller.isEnglish
-                                      ? 'Local Encrypted Vault'
-                                      : 'Local Persistence Active',
+                                  'local_vault_title'.tr,
                                   style: TextStyle(
                                     fontSize: 14.5,
                                     fontWeight: FontWeight.w800,
@@ -776,9 +738,9 @@ class _DataManagementViewState extends State<DataManagementView> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            controller.isEnglish
-                                ? '$count records securely persisted on device'
-                                : 'บันทึกข้อมูลถาวรในเครื่องแล้ว $count รายการ (ออฟไลน์ 100%)',
+                            'stored_records_offline'.trParams({
+                              'count': count.toString(),
+                            }),
                             style: TextStyle(
                               fontSize: 11.5,
                               fontWeight: FontWeight.w500,
@@ -828,12 +790,8 @@ class _DataManagementViewState extends State<DataManagementView> {
           _buildActionTile(
             icon: Icons.table_chart_rounded,
             color: AppColors.primary,
-            title: controller.isEnglish
-                ? 'Export to CSV (Excel Compatible)'
-                : 'ส่งออกเป็นไฟล์ CSV',
-            subtitle: controller.isEnglish
-                ? 'UTF-8 BOM support for Microsoft Excel, Google Sheets, Numbers'
-                : 'มี UTF-8 BOM สำหรับเปิดอ่านบน Microsoft Excel หรือ Google Sheets',
+            title: 'export_csv_card_title'.tr,
+            subtitle: 'export_csv_card_desc'.tr,
             tag: 'CSV / Excel',
             onTap: _exportCsv,
             isDark: isDark,
@@ -847,12 +805,8 @@ class _DataManagementViewState extends State<DataManagementView> {
           _buildActionTile(
             icon: Icons.cloud_sync_rounded,
             color: AppColors.accent,
-            title: controller.isEnglish
-                ? 'Full Backup (JSON Vault)'
-                : 'สำรองข้อมูลทั้งหมด',
-            subtitle: controller.isEnglish
-                ? 'Complete snapshot of all transactions & budget plans for recovery'
-                : 'สำรองรายการธุรกรรมและแผนงบประมาณสำหรับกู้คืนภายหลัง',
+            title: 'backup_card_title'.tr,
+            subtitle: 'backup_card_desc'.tr,
             tag: 'JSON Vault',
             onTap: _exportJsonBackup,
             isDark: isDark,
@@ -885,13 +839,9 @@ class _DataManagementViewState extends State<DataManagementView> {
       child: _buildActionTile(
         icon: Icons.file_download_rounded,
         color: AppColors.fixedCostAccent,
-        title: controller.isEnglish
-            ? 'Import from CSV or JSON'
-            : 'นำเข้าข้อมูลจาก CSV หรือ JSON',
-        subtitle: controller.isEnglish
-            ? 'Paste backup text or CSV with live transaction preview and validation'
-            : 'วางข้อความหรือไฟล์สำรอง พร้อมระบบ Live Preview ตรวจสอบความถูกต้อง',
-        tag: controller.isEnglish ? 'Live Preview' : 'ตรวจสอบสด',
+        title: 'import_card_title'.tr,
+        subtitle: 'import_card_desc'.tr,
+        tag: 'live_preview'.tr,
         onTap: _showImportBottomSheet,
         isDark: isDark,
       ),
@@ -923,13 +873,9 @@ class _DataManagementViewState extends State<DataManagementView> {
       child: _buildActionTile(
         icon: Icons.delete_sweep_rounded,
         color: AppColors.deficitText,
-        title: controller.isEnglish
-            ? 'Clear All Transactions (Reset)'
-            : 'ล้างข้อมูลธุรกรรมทั้งหมด',
-        subtitle: controller.isEnglish
-            ? 'Reset all transaction history to clean slate (budget plan preserved)'
-            : 'ลบรายการธุรกรรมทั้งหมดออกจากเครื่องเพื่อเริ่มต้นใหม่ (แผนงบยังคงอยู่)',
-        tag: controller.isEnglish ? 'Reset 0' : 'ล้างเป็น 0',
+        title: 'clear_transactions_title'.tr,
+        subtitle: 'clear_transactions_desc'.tr,
+        tag: 'reset_zero'.tr,
         onTap: _confirmClearAll,
         isDark: isDark,
       ),
@@ -1129,15 +1075,13 @@ class _SecureClearAllDialogState extends State<SecureClearAllDialog> {
 
   bool get _isKeywordMatched {
     final text = _keywordController.text.trim().toLowerCase();
-    if (widget.controller.isEnglish) {
-      return text == 'clear' || text == 'delete';
-    } else {
-      return text == 'ล้างข้อมูล' ||
-          text == 'ล้าง' ||
-          text == 'clear' ||
-          text == 'delete' ||
-          text == 'ลบ';
-    }
+    final target = 'target_keyword_clear'.tr.toLowerCase();
+    return text == target ||
+        text == 'clear' ||
+        text == 'delete' ||
+        text == 'ล้างข้อมูล' ||
+        text == 'ล้าง' ||
+        text == 'ลบ';
   }
 
   bool get _isPinValid {
@@ -1168,9 +1112,7 @@ class _SecureClearAllDialogState extends State<SecureClearAllDialog> {
       if (!sec.verifyPin(pin, autoUnlock: false)) {
         HapticFeedback.vibrate();
         setState(() {
-          _pinErrorMessage = widget.controller.isEnglish
-              ? 'Incorrect PIN code'
-              : 'รหัส PIN ไม่ถูกต้อง';
+          _pinErrorMessage = 'pin_incorrect'.tr;
         });
         return;
       }
@@ -1185,17 +1127,15 @@ class _SecureClearAllDialogState extends State<SecureClearAllDialog> {
       Get.back(); // close dialog
       await widget.onConfirmed();
       AppFeedback.showSuccess(
-        title: widget.controller.isEnglish ? 'Cleared Successfully' : 'ล้างข้อมูลสำเร็จ',
-        message: widget.controller.isEnglish
-            ? 'All transactions have been reset to 0.'
-            : 'ประวัติรายการธุรกรรมทั้งหมดถูกล้างเป็น 0 เรียบร้อยแล้ว',
+        title: 'cleared_success_title'.tr,
+        message: 'cleared_success_msg'.tr,
       );
     } catch (e) {
       setState(() {
         _isExecuting = false;
       });
       AppFeedback.showError(
-        title: widget.controller.isEnglish ? 'Error' : 'เกิดข้อผิดพลาด',
+        title: 'error_title'.tr,
         message: e.toString(),
       );
     }
@@ -1231,10 +1171,9 @@ class _SecureClearAllDialogState extends State<SecureClearAllDialog> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isEn = widget.controller.isEnglish;
     final itemCount = widget.controller.transactions.length;
     final screenHeight = MediaQuery.of(context).size.height;
-    final targetKeyword = isEn ? 'CLEAR' : 'ล้างข้อมูล';
+    final targetKeyword = 'target_keyword_clear'.tr;
 
     return AppGlassDialog(
       maxWidth: 440,
@@ -1248,10 +1187,8 @@ class _SecureClearAllDialogState extends State<SecureClearAllDialog> {
           children: [
           // 1. Header with Danger Shield Icon
           AppPopupHeader(
-            title: isEn ? 'Clear All Transactions?' : 'ยืนยันล้างข้อมูลธุรกรรมทั้งหมด?',
-            subtitle: isEn
-                ? 'High Security Anti-Accidental Confirmation'
-                : 'ระบบยืนยันความปลอดภัย ป้องกันการเผลอกด',
+            title: 'clear_transactions_confirm_title'.tr,
+            subtitle: 'clear_transactions_confirm_desc'.tr,
             icon: Icons.warning_amber_rounded,
             iconColor: AppColors.deficitText,
             onClose: _isExecuting ? null : () => Get.back(),
@@ -1281,7 +1218,7 @@ class _SecureClearAllDialogState extends State<SecureClearAllDialog> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        isEn ? 'DANGER ZONE' : 'คำเตือนสำคัญ',
+                        'danger_zone'.tr,
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 10,
@@ -1293,9 +1230,9 @@ class _SecureClearAllDialogState extends State<SecureClearAllDialog> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        isEn
-                            ? 'Will delete $itemCount transactions'
-                            : 'จะลบประวัติธุรกรรมทั้งหมด $itemCount รายการ',
+                        'will_delete_records'.trParams({
+                          'count': itemCount.toString(),
+                        }),
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
@@ -1309,26 +1246,20 @@ class _SecureClearAllDialogState extends State<SecureClearAllDialog> {
                 const SizedBox(height: 10),
                 _buildWarningItem(
                   icon: Icons.remove_circle_outline_rounded,
-                  text: isEn
-                      ? 'All expense and income history will be permanently deleted.'
-                      : 'ประวัติรายรับ รายจ่าย และการออมทั้งหมดจะถูกลบออกจากเครื่อง',
+                  text: 'delete_history_warning'.tr,
                   isDark: isDark,
                 ),
                 const SizedBox(height: 6),
                 _buildWarningItem(
                   icon: Icons.check_circle_outline_rounded,
-                  text: isEn
-                      ? 'Your budget plan and settings will remain safe.'
-                      : 'แผนงบประมาณและการตั้งค่าต่างๆ จะยังคงอยู่ ไม่ถูกลบ',
+                  text: 'budget_preserved_note'.tr,
                   isDark: isDark,
                   color: AppColors.primary,
                 ),
                 const SizedBox(height: 6),
                 _buildWarningItem(
                   icon: Icons.history_rounded,
-                  text: isEn
-                      ? 'Cannot be undone without a JSON backup file.'
-                      : 'ไม่สามารถกู้คืนได้ เว้นแต่คุณจะมีไฟล์สำรอง JSON',
+                  text: 'cannot_undo_note'.tr,
                   isDark: isDark,
                 ),
               ],
@@ -1339,7 +1270,7 @@ class _SecureClearAllDialogState extends State<SecureClearAllDialog> {
           // 3. Step 1: Type-to-Confirm Prompt
           Text.rich(
             TextSpan(
-              text: isEn ? '1. Type ' : '1. พิมพ์คำว่า ',
+              text: 'step_type_confirm_prefix'.tr,
               style: TextStyle(
                 fontSize: 12.5,
                 fontWeight: FontWeight.w600,
@@ -1354,7 +1285,7 @@ class _SecureClearAllDialogState extends State<SecureClearAllDialog> {
                   ),
                 ),
                 TextSpan(
-                  text: isEn ? ' to confirm intent:' : ' เพื่อยืนยันความตั้งใจจริง:',
+                  text: 'step_type_confirm_suffix'.tr,
                 ),
               ],
             ),
@@ -1369,7 +1300,7 @@ class _SecureClearAllDialogState extends State<SecureClearAllDialog> {
               color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
             ),
             decoration: InputDecoration(
-              hintText: isEn ? 'Type "$targetKeyword"' : 'พิมพ์ "$targetKeyword"',
+              hintText: 'step_type_confirm_hint'.trParams({'keyword': targetKeyword}),
               hintStyle: TextStyle(
                 fontSize: 13,
                 color: isDark
@@ -1422,9 +1353,7 @@ class _SecureClearAllDialogState extends State<SecureClearAllDialog> {
           // 4. Step 2 (Optional): PIN Verification if PIN is enabled
           if (_isPinEnabled) ...[
             Text(
-              isEn
-                  ? '2. Enter your 4-digit Security PIN:'
-                  : '2. ใส่รหัส PIN 4 หลักของระบบความปลอดภัย:',
+              'step_pin_confirm'.tr,
               style: TextStyle(
                 fontSize: 12.5,
                 fontWeight: FontWeight.w600,
@@ -1547,9 +1476,7 @@ class _SecureClearAllDialogState extends State<SecureClearAllDialog> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      isEn
-                          ? 'I understand all transactions will be permanently lost'
-                          : 'ฉันเข้าใจว่าข้อมูลธุรกรรมจะถูกลบถาวรและไม่สามารถกู้คืนได้',
+                      'understand_delete_risk'.tr,
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
@@ -1574,7 +1501,7 @@ class _SecureClearAllDialogState extends State<SecureClearAllDialog> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   ),
                   child: Text(
-                    isEn ? 'Cancel (Keep Data)' : 'ยกเลิก (เก็บข้อมูลไว้)',
+                    'cancel_keep_data'.tr,
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
@@ -1636,8 +1563,8 @@ class _SecureClearAllDialogState extends State<SecureClearAllDialog> {
                                 fit: BoxFit.scaleDown,
                                 child: Text(
                                   _canSubmit
-                                      ? (isEn ? 'Clear to 0' : 'ล้างเป็น 0')
-                                      : (isEn ? 'Locked' : 'ถูกล็อกไว้'),
+                                      ? 'clear_to_zero'.tr
+                                      : 'locked_status'.tr,
                                   style: const TextStyle(
                                     fontWeight: FontWeight.w800,
                                     fontSize: 13,

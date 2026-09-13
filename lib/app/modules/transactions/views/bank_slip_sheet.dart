@@ -10,6 +10,7 @@ import '../../../data/services/bank_slip_parser.dart';
 import '../../../data/services/bank_slip_service.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_popup_decorations.dart';
+import '../../../data/services/config_service.dart';
 import '../../dashboard/controllers/dashboard_controller.dart';
 import 'bank_batch_slip_sheet.dart';
 
@@ -177,23 +178,6 @@ class BankSlipScanModal extends StatelessWidget {
               }
             },
           ),
-          const SizedBox(height: 10),
-
-          // Option 3: Folder Auto-Scan Settings
-          Obx(() => _buildOptionTile(
-            context: context,
-            icon: Icons.folder_special_rounded,
-            title: 'auto_scan_folder_title'.tr,
-            subtitle: slipService.isFolderAutoScanEnabled.value
-                ? 'auto_scan_folder_enabled'.trParams({'folder': slipService.targetFolderName.value})
-                : 'auto_scan_folder_disabled'.tr,
-            color: const Color(0xFFEC4899),
-            isDark: isDark,
-            onTap: () {
-              Get.back();
-              showFolderSettingsModal(Get.context ?? context);
-            },
-          )),
           const SizedBox(height: 18),
 
           // Instant Auto-Save Mode Switcher
@@ -246,6 +230,102 @@ class BankSlipScanModal extends StatelessWidget {
                     activeTrackColor: const Color(0xFFF59E0B),
                     onChanged: (val) {
                       slipService.toggleAutoSave(val);
+                    },
+                  ),
+                ],
+              ),
+            );
+          }),
+          const SizedBox(height: 10),
+
+          // Gemini AI Analysis Option Switcher
+          Obx(() {
+            final isGemini = slipService.isGeminiEnabled.value;
+            final hasKey = ConfigService().hasGeminiKey;
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? AppColors.darkSurfaceSecondary.withValues(alpha: 0.6)
+                    : AppColors.surfaceSecondary.withValues(alpha: 0.7),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isGemini
+                      ? const Color(0xFF6366F1).withValues(alpha: 0.5)
+                      : (isDark ? AppColors.darkBorder : AppColors.border),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF6366F1), Color(0xFFA855F7)],
+                      ),
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                    child: const Icon(Icons.auto_awesome_rounded, size: 16, color: Colors.white),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              'gemini_ai_option_title'.tr,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                              decoration: BoxDecoration(
+                                color: hasKey
+                                    ? const Color(0xFF10B981).withValues(alpha: 0.15)
+                                    : const Color(0xFFF59E0B).withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                hasKey ? 'gemini_key_ready'.tr : 'gemini_key_missing'.tr,
+                                style: TextStyle(
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: hasKey ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 1),
+                        Text(
+                          'gemini_ai_option_desc'.tr,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Switch.adaptive(
+                    value: isGemini,
+                    activeTrackColor: const Color(0xFF6366F1),
+                    onChanged: (val) {
+                      if (val && !hasKey) {
+                        AppFeedback.showWarning(
+                          title: 'gemini_key_missing'.tr,
+                          message: 'gemini_key_hint'.tr,
+                        );
+                      }
+                      slipService.toggleGemini(val);
                     },
                   ),
                 ],
@@ -374,7 +454,9 @@ class BankSlipScanModal extends StatelessWidget {
               ),
               const SizedBox(height: 18),
               Text(
-                'reading_slip_data'.tr,
+                slipService.isGeminiEnabled.value && ConfigService().hasGeminiKey
+                    ? 'gemini_analyzing'.tr
+                    : 'reading_slip_data'.tr,
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
@@ -383,7 +465,9 @@ class BankSlipScanModal extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                'reading_slip_data_desc'.tr,
+                slipService.isGeminiEnabled.value && ConfigService().hasGeminiKey
+                    ? 'gemini_ai_option_desc'.tr
+                    : 'reading_slip_data_desc'.tr,
                 style: TextStyle(
                   fontSize: 12,
                   color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
@@ -624,239 +708,7 @@ class BankSlipScanModal extends StatelessWidget {
     );
   }
 
-  /// แสดงหน้าต่างตั้งค่าโฟลเดอร์สำหรับตรวจจับสลิปใหม่อัตโนมัติ
-  static void showFolderSettingsModal([BuildContext? context]) {
-    final activeContext = (context != null && context.mounted ? context : Get.context);
-    if (activeContext == null) return;
-    final isDark = Theme.of(activeContext).brightness == Brightness.dark;
-    final slipService = BankSlipService();
-    final presets = BankSlipService.getRecommendedFolderPresets();
 
-    final customPathController = TextEditingController(text: slipService.targetFolderPath.value);
-
-    Get.dialog(
-      AppGlassDialog(
-        maxWidth: 440,
-        padding: const EdgeInsets.all(22),
-        child: StatefulBuilder(
-          builder: (context, setState) {
-            return SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFEC4899).withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(Icons.folder_special_rounded, color: Color(0xFFEC4899), size: 22),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'folder_settings_title'.tr,
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w800,
-                                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'folder_settings_desc'.tr,
-                              style: TextStyle(
-                                fontSize: 11.5,
-                                color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close_rounded),
-                        onPressed: () => Get.back(),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Toggle Auto-Scan Switch
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: isDark ? AppColors.darkBorder : AppColors.border,
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'auto_scan_on_launch'.tr,
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                            ),
-                          ),
-                        ),
-                        Obx(() => Switch.adaptive(
-                              value: slipService.isFolderAutoScanEnabled.value,
-                              activeTrackColor: const Color(0xFF10B981),
-                              onChanged: (val) {
-                                slipService.toggleFolderAutoScan(val);
-                              },
-                            )),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-                  Text(
-                    'choose_folder_or_album'.tr,
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w700,
-                      color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-
-                  // Presets
-                  ...presets.map((preset) {
-                    final isSelected = slipService.targetFolderName.value == preset['name'];
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: InkWell(
-                        onTap: () {
-                          slipService.setTargetFolder(
-                            path: preset['defaultPath']!,
-                            name: preset['name']!,
-                          );
-                          setState(() {
-                            customPathController.text = preset['defaultPath']!;
-                          });
-                        },
-                        borderRadius: BorderRadius.circular(12),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? const Color(0xFF00A3E0).withValues(alpha: 0.12)
-                                : isDark
-                                    ? AppColors.darkSurfaceSecondary
-                                    : AppColors.surfaceSecondary,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: isSelected
-                                  ? const Color(0xFF00A3E0)
-                                  : isDark
-                                      ? AppColors.darkBorder
-                                      : AppColors.border,
-                              width: isSelected ? 1.4 : 0.8,
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                isSelected ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
-                                size: 18,
-                                color: isSelected ? const Color(0xFF00A3E0) : (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      preset['name']!,
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w700,
-                                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                                      ),
-                                    ),
-                                    Text(
-                                      preset['subtitle']!,
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  }),
-
-                  const SizedBox(height: 12),
-                  // Custom path input
-                  TextField(
-                    controller: customPathController,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                    ),
-                    decoration: InputDecoration(
-                      labelText: 'custom_path'.tr,
-                      labelStyle: TextStyle(
-                        fontSize: 11.5,
-                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                      ),
-                      filled: true,
-                      fillColor: isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF00A3E0),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      onPressed: () {
-                        final path = customPathController.text.trim();
-                        if (path.isNotEmpty) {
-                          slipService.setTargetFolder(
-                            path: path,
-                            name: slipService.targetFolderName.value,
-                          );
-                        }
-                        Get.back();
-                        AppFeedback.showSuccess(
-                          title: 'folder_settings_saved_title'.tr,
-                          message: 'folder_settings_saved_desc'.trParams({'folder': slipService.targetFolderName.value}),
-                        );
-                      },
-                      child: Text('save_settings'.tr),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }
 
   static void dispatchSlip(BankSlipData slip, [BuildContext? context]) {
     final activeContext = (context != null && context.mounted ? context : Get.context);

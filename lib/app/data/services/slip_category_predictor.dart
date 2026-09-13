@@ -509,6 +509,7 @@ class SlipCategoryPredictor {
         'ข้าว', 'อาหาร', 'กิน', 'ก๋วยเตี๋ยว', 'ขนม', 'ชาบู',
         'ส้มตำ', 'lunch', 'dinner', 'food', 'meal', 'กะเพรา',
         'หมูกระทะ', 'เซเว่น', '7-eleven', '7-11', 'breakfast',
+        'ซีพี ออลล์', 'ซีพีออลล์', 'cp all', 'cpall', '7-delivery',
         'ร้านอาหาร', 'pizza', 'sushi', 'ข้าวมันไก่', 'ยำ',
         'ต้มยำ', 'ผัดไทย', 'ลาบ', 'line man', 'lineman', 'grabfood',
         'grab food', 'foodpanda', 'robinhood', 'kfc', 'mcdonald',
