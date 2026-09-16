@@ -422,11 +422,24 @@ void showThemePickerDialog(BuildContext context) {
               return Column(
                 children: [
                   _buildThemeOptionTile(
+                    title: 'theme_system'.tr,
+                    subtitle: 'theme_system_desc'.tr,
+                    icon: Icons.brightness_auto_rounded,
+                    iconColor: AppColors.primary,
+                    isSelected: currentMode == ThemeMode.system,
+                    onTap: () {
+                      dashboardController.setThemeMode(ThemeMode.system);
+                      Navigator.of(ctx).pop();
+                    },
+                    isDark: isDark,
+                  ),
+                  const SizedBox(height: 10),
+                  _buildThemeOptionTile(
                     title: 'theme_light'.tr,
                     subtitle: 'theme_light_desc'.tr,
                     icon: Icons.light_mode_rounded,
                     iconColor: const Color(0xFFF59E0B),
-                    isSelected: currentMode == ThemeMode.light || (currentMode == ThemeMode.system && !isDark),
+                    isSelected: currentMode == ThemeMode.light,
                     onTap: () {
                       dashboardController.setThemeMode(ThemeMode.light);
                       Navigator.of(ctx).pop();
@@ -439,7 +452,7 @@ void showThemePickerDialog(BuildContext context) {
                     subtitle: 'theme_dark_desc'.tr,
                     icon: Icons.dark_mode_rounded,
                     iconColor: const Color(0xFF6366F1),
-                    isSelected: currentMode == ThemeMode.dark || (currentMode == ThemeMode.system && isDark),
+                    isSelected: currentMode == ThemeMode.dark,
                     onTap: () {
                       dashboardController.setThemeMode(ThemeMode.dark);
                       Navigator.of(ctx).pop();

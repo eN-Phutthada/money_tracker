@@ -78,33 +78,43 @@ class BankSlipParser {
         lower.contains('tax inv (abb)') ||
         lower.contains('tax inv(abb)') ||
         lower.contains('abb no') ||
-        lower.contains('abb.');
+        lower.contains('abb.') ||
+        lower.contains('ยอดสุทธิ') ||
+        lower.contains('ยอดเงินสุทธิ') ||
+        lower.contains('รวมเงินสุทธิ') ||
+        RegExp(r'\bnet\s*total\b', caseSensitive: false).hasMatch(lower);
   }
 
-  /// ตรวจสอบว่าเป็นใบเสร็จ 7-Eleven หรือไม่
+  /// ตรวจสอบว่าเป็นใบเสร็จ 7-Eleven หรือไม่ (รองรับทุกสำนวนและการสะกดของ OCR)
   static bool is7ElevenSlip(String text) {
     final lower = text.toLowerCase();
     return lower.contains('7-eleven') ||
+        lower.contains('7 eleven') ||
         lower.contains('7-11') ||
+        lower.contains('7 11') ||
         lower.contains('เซเว่น') ||
         lower.contains('ซีพี ออลล์') ||
         lower.contains('ซีพีออลล์') ||
         lower.contains('cp all') ||
-        lower.contains('cpall');
+        lower.contains('cpall') ||
+        lower.contains('seven eleven') ||
+        lower.contains('seven-eleven') ||
+        lower.contains('all member') ||
+        lower.contains('allmember') ||
+        lower.contains('cp-all') ||
+        lower.contains('c.p. all') ||
+        lower.contains('c.p.all') ||
+        lower.contains('7-e1even') ||
+        lower.contains('7e1even') ||
+        lower.contains('7eleven');
   }
 
   /// ตรวจจับชื่อธนาคาร/ร้านค้าจากข้อความสลิปหรือใบเสร็จ (รองรับทุกธนาคาร และ 7-Eleven)
   static String detectBankName(String fullText) {
-    final lower = fullText.toLowerCase();
-    if (lower.contains('7-eleven') ||
-        lower.contains('7-11') ||
-        lower.contains('เซเว่น') ||
-        lower.contains('ซีพี ออลล์') ||
-        lower.contains('ซีพีออลล์') ||
-        lower.contains('cp all') ||
-        lower.contains('cpall')) {
+    if (is7ElevenSlip(fullText)) {
       return '7-Eleven';
     }
+    final lower = fullText.toLowerCase();
     if (lower.contains('k plus') || lower.contains('กสิกร') || lower.contains('kbank') || lower.contains('kasikorn')) {
       return 'ธนาคารกสิกรไทย (K PLUS)';
     }
@@ -249,8 +259,13 @@ class BankSlipParser {
     final normalizedText = fullText.replaceAll('\u0E4D\u0E32', '\u0E33');
     final normalizedLines = lines.map((l) => l.replaceAll('\u0E4D\u0E32', '\u0E33')).toList();
 
-    // หากเป็นใบเสร็จรับเงิน (เช่น 7-Eleven, Tops, ร้านค้า) ให้ใช้อัลกอริทึมสำหรับใบเสร็จโดยเฉพาะ
-    if (isStoreReceipt(normalizedText)) {
+    // หากเป็นใบเสร็จรับเงิน (เช่น 7-Eleven, Tops, ร้านค้า) หรือข้อความมีคีย์เวิร์ดยอดสุทธิ ให้ใช้อัลกอริทึมสำหรับใบเสร็จโดยเฉพาะ
+    if (isStoreReceipt(normalizedText) ||
+        normalizedText.contains('ยอดสุทธิ') ||
+        normalizedText.contains('รวมสุทธิ') ||
+        normalizedText.contains('ยอดเงินสุทธิ') ||
+        normalizedText.contains('รวมเงินสุทธิ') ||
+        RegExp(r'\bnet\s*total\b', caseSensitive: false).hasMatch(normalizedText)) {
       final receiptAmt = _extractReceiptAmount(
         normalizedText,
         normalizedLines,
@@ -259,9 +274,22 @@ class BankSlipParser {
       if (receiptAmt > 0) return receiptAmt;
     }
 
-    // 1. ค้นหาบรรทัดที่มีคีย์เวิร์ดจำนวนเงินบนบรรทัดเดียวกัน (สำหรับสลิปธนาคาร)
+    // 1. ค้นหาบรรทัดที่มีคีย์เวิร์ดยอดสุทธิบนบรรทัดเดียวกันเป็นลำดับแรก (Net Total ก่อน Gross Total เสมอ)
+    final netKeywordRegex = RegExp(
+      r'(?:ยอดสุทธิ|รวมสุทธิ|ยอดเงินสุทธิ|รวมเงินสุทธิ|มูลค่าสุทธิ|Net\s*Total|Total\s*Net|Net\s*Amount|Net\s*Amt)(?:\s*\((?:บาท|THB|baht|บ\.|[^\)]+)\))?\s*[:：\-]?\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{1,2})?|\.[0-9]{1,2}|[0-9]+)\s*(?:บาท|บ\.|THB|baht)?',
+      caseSensitive: false,
+    );
+    for (final match in netKeywordRegex.allMatches(normalizedText)) {
+      final str = match.group(1)?.replaceAll(',', '');
+      if (str != null) {
+        final val = double.tryParse(str);
+        if (val != null && val > 0) return val;
+      }
+    }
+
+    // 2. ค้นหาบรรทัดที่มีคีย์เวิร์ดจำนวนเงินทั่วไปบนบรรทัดเดียวกัน (สำหรับสลิปธนาคาร)
     final amountKeywordRegex = RegExp(
-      r'(?:ยอดสุทธิ|รวมสุทธิ|รวมทั้งสิ้น|รวมเงิน|ยอดเงินสุทธิ|จำนวนเงิน|จํานวนเงิน|ยอดเงิน|ยอดโอน|จำนวนโอน|Net\s*Total|Total|Amount|Amt|Transfer\s*Amount)(?:\s*\((?:บาท|THB|baht|บ\.|[^\)]+)\))?\s*[:：\-]?\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{1,2})?|\.[0-9]{1,2}|[0-9]+)\s*(?:บาท|บ\.|THB|baht)?',
+      r'(?:รวมทั้งสิ้น|รวมเงิน|จำนวนเงิน|จํานวนเงิน|ยอดเงิน|ยอดโอน|จำนวนโอน|Total|Amount|Amt|Transfer\s*Amount)(?:\s*\((?:บาท|THB|baht|บ\.|[^\)]+)\))?\s*[:：\-]?\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{1,2})?|\.[0-9]{1,2}|[0-9]+)\s*(?:บาท|บ\.|THB|baht)?',
       caseSensitive: false,
     );
     for (final match in amountKeywordRegex.allMatches(normalizedText)) {
@@ -272,12 +300,12 @@ class BankSlipParser {
       }
     }
 
-    // 2. ค้นหาบรรทัดที่มีคีย์เวิร์ด และดูบรรทัดถัดไป 1 - 4 บรรทัด (รองรับ Columnar OCR ที่ฝั่งซ้ายเป็น Label ฝั่งขวาเป็นตัวเลข)
+    // 3. ค้นหาบรรทัดที่มีคีย์เวิร์ด และดูบรรทัดถัดไป 1 - 4 บรรทัด (รองรับ Columnar OCR ที่ฝั่งซ้ายเป็น Label ฝั่งขวาเป็นตัวเลข)
     for (int i = 0; i < normalizedLines.length; i++) {
       final line = normalizedLines[i].toLowerCase();
-      final isAmountLine = line.contains('รวมเงิน') ||
+      final isAmountLine = line.contains('ยอดสุทธิ') ||
+          line.contains('รวมเงิน') ||
           line.contains('ยอดรวม') ||
-          line.contains('ยอดสุทธิ') ||
           line.contains('รวมทั้งสิ้น') ||
           line.contains('จำนวนเงิน') ||
           line.contains('จํานวนเงิน') ||
@@ -318,7 +346,7 @@ class BankSlipParser {
       }
     }
 
-    // 3. ค้นหาตัวเลขทศนิยมสองตำแหน่งที่มีหน่วยสกุลเงิน บาท / บ. / THB กำกับ
+    // 4. ค้นหาตัวเลขทศนิยมสองตำแหน่งที่มีหน่วยสกุลเงิน บาท / บ. / THB กำกับ
     final currencySuffixRegex = RegExp(
       r'([0-9]{1,3}(?:,[0-9]{3})*\.[0-9]{2})\s*(?:บาท|บ\.|THB|baht)\b',
       caseSensitive: false,
@@ -331,7 +359,7 @@ class BankSlipParser {
       }
     }
 
-    // 4. ค้นหาตัวเลขทศนิยม 2 ตำแหน่งทั้งหมดในสลิป (Fallback สำหรับ OCR ภาษาอังกฤษ/ละตินที่ไม่สามารถอ่านตัวอักษรไทยได้)
+    // 5. ค้นหาตัวเลขทศนิยม 2 ตำแหน่งทั้งหมดในสลิป (Fallback สำหรับ OCR ภาษาอังกฤษ/ละตินที่ไม่สามารถอ่านตัวอักษรไทยได้)
     final allDecimals = RegExp(r'\b([0-9]{1,3}(?:,[0-9]{3})*\.[0-9]{2})\b')
         .allMatches(normalizedText)
         .map((m) => double.tryParse(m.group(1)!.replaceAll(',', '')) ?? 0.0)
@@ -342,7 +370,7 @@ class BankSlipParser {
       return allDecimals.first;
     }
 
-    // 5. Fallback ตัวเลขจำนวนเต็มพร้อมสกุลเงิน (เช่น 139 บาท)
+    // 6. Fallback ตัวเลขจำนวนเต็มพร้อมสกุลเงิน (เช่น 139 บาท)
     final intCurrencyRegex = RegExp(
       r'([1-9][0-9]{0,2}(?:,[0-9]{3})*|[1-9][0-9]*)\s*(?:บาท|บ\.|THB)',
       caseSensitive: false,
@@ -356,8 +384,8 @@ class BankSlipParser {
     return 0.0;
   }
 
-  /// สกัดยอดเงินจากใบเสร็จรับเงิน (Receipt) ด้วยการตรวจสอบ ยอดสุทธิ, รวมทั้งสิ้น, รวมเงิน, เงินสด-เงินทอน, และผลรวมรายการสินค้า
-  /// สกัดยอดเงินจากใบเสร็จรับเงิน (Receipt) ด้วยการตรวจสอบ ยอดสุทธิ, รวมทั้งสิ้น, รวมเงิน, เงินสด-เงินทอน, และผลรวมรายการสินค้า
+  /// สกัดยอดเงินจากใบเสร็จรับเงิน (Receipt / 7-Eleven) ด้วยการเน้น "ยอดสุทธิ" (Net Total) เป็นอันดับแรก
+  /// ป้องกันการอ่านยอดผิดพลาดจาก VAT (รวมในยอดสุทธิ), ยอดรวมก่อนหักส่วนลด (รวมเป็นเงิน), เงินสด หรือคะแนนสมาชิก
   static double _extractReceiptAmount(
     String fullText,
     List<String> lines,
@@ -365,137 +393,128 @@ class BankSlipParser {
   ) {
     final normalizedLines = lines.map((l) => l.replaceAll('\u0E4D\u0E32', '\u0E33')).toList();
 
-    // ── Tier 1: ค้นหายอดสุทธิ (Net Total / ยอดชำระสุทธิ / ยอดเงินสุทธิ / ยอดชำระ) ──
-    final netTotalKeywords = [
-      'ยอดสุทธิ',
-      'รวมสุทธิ',
-      'ยอดเงินสุทธิ',
-      'รวมเงินสุทธิ',
-      'มูลค่าสุทธิ',
-      'ยอดชำระสุทธิ',
-      'ยอดชำระทั้งสิ้น',
-      'ยอดต้องชำระ',
-      'ยอดชำระ',
-      'ยอดจ่าย',
-      'net total',
-      'net amount',
-      'net amt',
-      'total due',
-      'amount due',
-      'total net',
-      'net',
-    ];
+    // ตัวกรองเพื่อข้ามบรรทัดที่ไม่ใช่ยอดสุทธิอย่างเด็ดขาด (VAT, คะแนนสมาชิก ALL Member, ส่วนลด, เงินสด/เงินทอน, แพ็กเกจเน็ต)
+    bool isInvalidNetTotalLine(String rawLine) {
+      final l = rawLine.toLowerCase();
 
-    for (int i = normalizedLines.length - 1; i >= 0; i--) {
-      final line = normalizedLines[i];
-      final lower = line.toLowerCase();
-
-      final hasKeyword = netTotalKeywords.any((kw) => lower.contains(kw));
-      if (!hasKeyword) continue;
-
-      // 1. ตรวจสอบตัวเลขในบรรทัดเดียวกัน
-      final inlineNum = RegExp(r'([0-9]{1,4}(?:,[0-9]{3})*\.[0-9]{2})').firstMatch(line);
-      if (inlineNum != null) {
-        final val = double.tryParse(inlineNum.group(1)!.replaceAll(',', ''));
-        if (val != null && val > 0) return val;
+      // 1. ตรวจจับและข้ามบรรทัด VAT อย่างเด็ดขาด (เช่น "V=VAT 7% รวมในยอดสุทธิ 5.82", "(V) รวมในยอดสุทธิ", "ภาษีมูลค่าเพิ่ม รวมในยอดสุทธิ")
+      if (l.contains('รวมใน') ||
+          l.contains('vat') ||
+          l.contains('ภาษี') ||
+          l.contains('tax') ||
+          l.contains('7%') ||
+          l.contains('(v)') ||
+          l.contains('v=')) {
+        return true;
       }
 
-      // 2. ตรวจสอบในบรรทัดถัดไป 1-4 บรรทัด (กรณี OCR แยกบรรทัดระหว่างป้ายกำกับกับตัวเลข)
-      for (int step = 1; step <= 4 && (i + step) < normalizedLines.length; step++) {
-        final nextLine = normalizedLines[i + step].trim();
-        final lowerNext = nextLine.toLowerCase();
-        if (lowerNext.contains('เงินสด') ||
-            lowerNext.contains('เงินทอน') ||
-            lowerNext.contains('cash') ||
-            lowerNext.contains('change') ||
-            lowerNext.contains('vat') ||
-            lowerNext.contains('ภาษี') ||
-            lowerNext.contains('ส่วนลด') ||
-            lowerNext.contains('all member')) {
-          continue;
+      // 2. ตรวจจับและข้ามคะแนนสะสม ALL Member (เช่น "คะแนนสะสมสุทธิ 1250", "ยอดคะแนนสุทธิ", "แต้มสุทธิ")
+      if (l.contains('คะแนน') ||
+          l.contains('แต้ม') ||
+          l.contains('point') ||
+          l.contains('points') ||
+          l.contains('member') ||
+          l.contains('all member') ||
+          l.contains('allmember')) {
+        return true;
+      }
+
+      // 3. ตรวจจับและข้ามบรรทัดส่วนลด (เช่น "ส่วนลด ALL member -10.00", "คูปองส่วนลด", "ลดทันที")
+      if (l.contains('ส่วนลด') ||
+          l.contains('ลดราคา') ||
+          l.contains('ลดทันที') ||
+          l.contains('discount') ||
+          l.contains('coupon') ||
+          l.contains('คูปอง')) {
+        return true;
+      }
+
+      // 4. ตรวจจับและข้ามบรรทัดเงินสด/เงินทอน/เงินคงเหลือ/สะสม
+      if (l.contains('เงินสด') ||
+          l.contains('เงินทอน') ||
+          l.contains('cash') ||
+          l.contains('change') ||
+          l.contains('คงเหลือ') ||
+          l.contains('balance') ||
+          l.contains('สะสม') ||
+          l.contains('เติมเงิน') ||
+          l.contains('topup') ||
+          l.contains('top-up')) {
+        return true;
+      }
+
+      // 5. ตรวจจับและข้ามบรรทัดระบุจำนวนชิ้น/รายการ และแพ็กเกจเน็ตโฆษณาท้ายบิล
+      if (l.contains('รายการ') ||
+          l.contains('ชิ้น') ||
+          l.contains('item') ||
+          l.contains('qty') ||
+          l.contains('แพ็กเกจ') ||
+          l.contains('package') ||
+          l.contains('เน็ต') ||
+          l.contains('internet') ||
+          l.contains('wifi')) {
+        return true;
+      }
+
+      return false;
+    }
+
+    // ── Tier 1: ค้นหายอดสุทธิแท้จริง (Net Total / ยอดชำระสุทธิ / ยอดเงินสุทธิ) ──
+    // สำคัญ: อ่านจากบนลงล่าง หรือเจาะจงบรรทัด ยอดสุทธิ โดยไม่ชนกับบรรทัด VAT ท้ายบิล
+    final netTotalPattern = RegExp(
+      r'(?:ยอด\s*สุทธิ|ยอด\s*เงิน\s*สุทธิ|รวม\s*เงิน\s*สุทธิ|รวม\s*สุทธิ|ยอด\s*รวม\s*สุทธิ|มูลค่า\s*สุทธิ|ยอด\s*ชำระ\s*สุทธิ|ยอด\s*ชำระ\s*ทั้งสิ้น|ยอด\s*ต้อง\s*ชำระ|ย[อ|ต]ด\s*ส[ทุ]?[ธิ์ฺื]?|net\s*total|total\s*net|net\s*amount|net\s*amt|amount\s*due|total\s*due)',
+      caseSensitive: false,
+    );
+
+    for (int i = 0; i < normalizedLines.length; i++) {
+      final line = normalizedLines[i];
+      if (isInvalidNetTotalLine(line)) continue;
+
+      if (netTotalPattern.hasMatch(line)) {
+        // 1. ลองดึงตัวเลขที่อยู่หลังคีย์เวิร์ดยอดสุทธิโดยตรงก่อน
+        final directMatch = RegExp(
+          r'(?:ยอด\s*สุทธิ|ยอด\s*เงิน\s*สุทธิ|รวม\s*เงิน\s*สุทธิ|รวม\s*สุทธิ|ยอด\s*รวม\s*สุทธิ|มูลค่า\s*สุทธิ|ยอด\s*ชำระ\s*สุทธิ|ยอด\s*ชำระ\s*ทั้งสิ้น|ยอด\s*ต้อง\s*ชำระ|ย[อ|ต]ด\s*ส[ทุ]?[ธิ์ฺื]?|net\s*total|total\s*net|net\s*amount|net\s*amt|amount\s*due|total\s*due)\s*[:：\-\s]*([0-9]{1,4}(?:,[0-9]{3})*(?:\.[0-9]{1,2})?|\.[0-9]{1,2}|[0-9]+)\s*(?:บาท|บ\.|thb|baht)?',
+          caseSensitive: false,
+        ).firstMatch(line);
+
+        if (directMatch != null) {
+          final str = directMatch.group(1)?.replaceAll(',', '');
+          if (str != null) {
+            final val = double.tryParse(str);
+            if (val != null && val > 0) return val;
+          }
         }
-        final nextNum = RegExp(r'([0-9]{1,4}(?:,[0-9]{3})*\.[0-9]{2})').firstMatch(nextLine);
-        if (nextNum != null) {
-          final val = double.tryParse(nextNum.group(1)!.replaceAll(',', ''));
+
+        // 2. หากยังไม่พบ ให้ตรวจตัวเลขทศนิยมใดๆ บนบรรทัดเดียวกัน
+        final inlineNum = RegExp(r'([0-9]{1,4}(?:,[0-9]{3})*\.[0-9]{2})').firstMatch(line);
+        if (inlineNum != null) {
+          final val = double.tryParse(inlineNum.group(1)!.replaceAll(',', ''));
           if (val != null && val > 0) return val;
+        }
+
+        // 3. กรณี OCR แยกป้ายกำกับกับตัวเลขไว้คนละบรรทัด ให้ตรวจบรรทัดถัดไป 1-3 บรรทัด
+        for (int step = 1; step <= 3 && (i + step) < normalizedLines.length; step++) {
+          final nextLine = normalizedLines[i + step].trim();
+          if (isInvalidNetTotalLine(nextLine)) continue;
+
+          final nextNum = RegExp(r'([0-9]{1,4}(?:,[0-9]{3})*(?:\.[0-9]{2})?)').firstMatch(nextLine);
+          if (nextNum != null) {
+            final val = double.tryParse(nextNum.group(1)!.replaceAll(',', ''));
+            if (val != null && val > 0) return val;
+          }
         }
       }
     }
 
-    // ── Tier 2: ค้นหารวมเป็นเงิน / รวมเงิน / รวมทั้งสิ้น / ยอดรวม / Total ──
-    final totalKeywords = [
-      'รวมทั้งสิ้น',
-      'ยอดรวมทั้งสิ้น',
-      'grand total',
-      'รวมเป็นเงิน',
-      'รวมเงิน',
-      'ยอดรวม',
-      'จำนวนเงินทั้งสิ้น',
-      'จำนวนเงินรวม',
-      'จำนวนเงิน',
-      'จํานวนเงิน',
-      'ยอดเงิน',
-      'มูลค่ารวม',
-      'ราคารวม',
-      'subtotal',
-      'sub-total',
-      'sub total',
-      'total',
-    ];
-
-    for (int i = normalizedLines.length - 1; i >= 0; i--) {
-      final line = normalizedLines[i];
-      final lower = line.toLowerCase();
-
-      // ข้ามบรรทัดที่ระบุจำนวนรายการ เช่น 'รวม 2 รายการ' หรือ 'รวม 3 ชิ้น'
-      if (lower.contains('รายการ') ||
-          lower.contains('ชิ้น') ||
-          lower.contains('item') ||
-          lower.contains('vat') ||
-          lower.contains('ภาษี')) {
-        continue;
-      }
-
-      final hasKeyword = totalKeywords.any((kw) => lower.contains(kw)) ||
-          lower.startsWith('รวม ') ||
-          lower.startsWith('รวม:') ||
-          lower == 'รวม';
-      if (!hasKeyword) continue;
-
-      final inlineNum = RegExp(r'([0-9]{1,4}(?:,[0-9]{3})*\.[0-9]{2})').firstMatch(line);
-      if (inlineNum != null) {
-        final val = double.tryParse(inlineNum.group(1)!.replaceAll(',', ''));
-        if (val != null && val > 0) return val;
-      }
-
-      for (int step = 1; step <= 4 && (i + step) < normalizedLines.length; step++) {
-        final nextLine = normalizedLines[i + step].trim();
-        final lowerNext = nextLine.toLowerCase();
-        if (lowerNext.contains('เงินสด') ||
-            lowerNext.contains('เงินทอน') ||
-            lowerNext.contains('cash') ||
-            lowerNext.contains('change') ||
-            lowerNext.contains('vat') ||
-            lowerNext.contains('ภาษี') ||
-            lowerNext.contains('ส่วนลด') ||
-            lowerNext.contains('รายการ') ||
-            lowerNext.contains('ชิ้น')) {
-          continue;
-        }
-        final nextNum = RegExp(r'([0-9]{1,4}(?:,[0-9]{3})*\.[0-9]{2})').firstMatch(nextLine);
-        if (nextNum != null) {
-          final val = double.tryParse(nextNum.group(1)!.replaceAll(',', ''));
-          if (val != null && val > 0) return val;
-        }
-      }
-    }
-
-    // ── Tier 3: ตรวจสอบจาก เงินสด (Cash) - เงินทอน (Change) ──
+    // ── Tier 2: คำนวณยอดสุทธิจาก เงินสด (Cash) - เงินทอน (Change) หรือช่องทางชำระเงินดิจิทัล ──
     double? cashVal;
     double? changeVal;
     for (final line in normalizedLines) {
       final lower = line.toLowerCase();
-      if (lower.contains('เงินสด') || lower.contains('cash')) {
+      if (lower.contains('vat') || lower.contains('ภาษี') || lower.contains('คะแนน') || lower.contains('แต้ม')) {
+        continue;
+      }
+      if (lower.contains('เงินสด') || (lower.contains('cash') && !lower.contains('cashier'))) {
         final m = RegExp(r'([0-9]{1,4}(?:,[0-9]{3})*\.[0-9]{2})').firstMatch(line);
         if (m != null) {
           cashVal = double.tryParse(m.group(1)!.replaceAll(',', ''));
@@ -514,11 +533,15 @@ class BankSlipParser {
       if (rounded > 0) return rounded;
     }
 
-    // ── Tier 4: ตรวจสอบจากช่องทางชำระเงิน (Payment method: TrueMoney / PromptPay / QR / Card) ──
+    // ตรวจสอบจากช่องทางชำระเงินดิจิทัล (TrueMoney / PromptPay / Credit Card) ซึ่งบนใบเสร็จ 7-Eleven จะเป็นยอดสุทธิเสมอ
     for (final line in normalizedLines) {
       final lower = line.toLowerCase();
+      if (lower.contains('vat') || lower.contains('ภาษี') || lower.contains('คะแนน') || lower.contains('แต้ม')) {
+        continue;
+      }
       if (lower.contains('truemoney') ||
-          lower.contains('wallet') ||
+          lower.contains('true money') ||
+          (lower.contains('wallet') && !lower.contains('balance')) ||
           lower.contains('promptpay') ||
           lower.contains('พร้อมเพย์') ||
           lower.contains('credit card') ||
@@ -526,6 +549,110 @@ class BankSlipParser {
         final m = RegExp(r'([0-9]{1,4}(?:,[0-9]{3})*\.[0-9]{2})').firstMatch(line);
         if (m != null) {
           final val = double.tryParse(m.group(1)!.replaceAll(',', ''));
+          if (val != null && val > 0) return val;
+        }
+      }
+    }
+
+    // ── Tier 3: ตรวจสอบและคำนวณจาก รวมเป็นเงิน (Subtotal) - ส่วนลด (Discount) ──
+    double? subtotalVal;
+    double? discountVal;
+    for (final line in normalizedLines) {
+      final lower = line.toLowerCase();
+      if (lower.contains('vat') || lower.contains('ภาษี') || lower.contains('คะแนน') || lower.contains('แต้ม') || lower.contains('รวมใน')) {
+        continue;
+      }
+      if (lower.contains('ส่วนลด') || lower.contains('discount') || lower.contains('คูปอง') || lower.contains('ลดทันที')) {
+        final m = RegExp(r'([0-9]{1,4}(?:,[0-9]{3})*\.[0-9]{2})').firstMatch(line);
+        if (m != null) {
+          discountVal = double.tryParse(m.group(1)!.replaceAll(',', ''));
+        }
+      }
+      if ((lower.contains('รวมเป็นเงิน') || lower.contains('subtotal') || lower.contains('รวมเงิน')) &&
+          !lower.contains('รายการ') && !lower.contains('ชิ้น') && !lower.contains('สุทธิ')) {
+        final m = RegExp(r'([0-9]{1,4}(?:,[0-9]{3})*\.[0-9]{2})').firstMatch(line);
+        if (m != null) {
+          subtotalVal = double.tryParse(m.group(1)!.replaceAll(',', ''));
+        }
+      }
+    }
+    if (subtotalVal != null && discountVal != null && subtotalVal > discountVal) {
+      final calculatedNet = subtotalVal - discountVal;
+      final rounded = double.parse(calculatedNet.toStringAsFixed(2));
+      if (rounded > 0) return rounded;
+    }
+
+    // ── Tier 4: รวมเป็นเงิน / รวมทั้งสิ้น / รวมเงิน / ยอดรวม (กรณีไม่มีส่วนลดในใบเสร็จ) ──
+    final totalKeywords = [
+      'รวมทั้งสิ้น',
+      'ยอดรวมทั้งสิ้น',
+      'grand total',
+      'รวมเป็นเงิน',
+      'รวมเงิน',
+      'ยอดรวม',
+      'จำนวนเงินทั้งสิ้น',
+      'จำนวนเงินรวม',
+      'subtotal',
+      'sub-total',
+      'sub total',
+      'total',
+    ];
+
+    for (int i = 0; i < normalizedLines.length; i++) {
+      final line = normalizedLines[i];
+      final lower = line.toLowerCase();
+
+      // ข้ามบรรทัด VAT, คะแนน, ส่วนลด, เงินสด, เงินทอน, จำนวนชิ้น
+      if (lower.contains('รายการ') ||
+          lower.contains('ชิ้น') ||
+          lower.contains('item') ||
+          lower.contains('vat') ||
+          lower.contains('ภาษี') ||
+          lower.contains('tax') ||
+          lower.contains('7%') ||
+          lower.contains('รวมใน') ||
+          lower.contains('คะแนน') ||
+          lower.contains('แต้ม') ||
+          lower.contains('เงินสด') ||
+          lower.contains('เงินทอน') ||
+          lower.contains('cash') ||
+          lower.contains('change') ||
+          lower.contains('ส่วนลด') ||
+          lower.contains('discount')) {
+        continue;
+      }
+
+      final hasKeyword = totalKeywords.any((kw) => lower.contains(kw)) ||
+          lower.startsWith('รวม ') ||
+          lower.startsWith('รวม:') ||
+          lower == 'รวม';
+      if (!hasKeyword) continue;
+
+      final inlineNum = RegExp(r'([0-9]{1,4}(?:,[0-9]{3})*\.[0-9]{2})').firstMatch(line);
+      if (inlineNum != null) {
+        final val = double.tryParse(inlineNum.group(1)!.replaceAll(',', ''));
+        if (val != null && val > 0) return val;
+      }
+
+      for (int step = 1; step <= 3 && (i + step) < normalizedLines.length; step++) {
+        final nextLine = normalizedLines[i + step].trim();
+        final lowerNext = nextLine.toLowerCase();
+        if (lowerNext.contains('เงินสด') ||
+            lowerNext.contains('เงินทอน') ||
+            lowerNext.contains('cash') ||
+            lowerNext.contains('change') ||
+            lowerNext.contains('vat') ||
+            lowerNext.contains('ภาษี') ||
+            lowerNext.contains('ส่วนลด') ||
+            lowerNext.contains('รายการ') ||
+            lowerNext.contains('ชิ้น') ||
+            lowerNext.contains('คะแนน') ||
+            lowerNext.contains('แต้ม')) {
+          continue;
+        }
+        final nextNum = RegExp(r'([0-9]{1,4}(?:,[0-9]{3})*\.[0-9]{2})').firstMatch(nextLine);
+        if (nextNum != null) {
+          final val = double.tryParse(nextNum.group(1)!.replaceAll(',', ''));
           if (val != null && val > 0) return val;
         }
       }
@@ -1669,15 +1796,7 @@ class BankSlipParser {
     }
 
     // สำหรับใบเสร็จ 7-Eleven หรือใบเสร็จร้านค้า
-    final is7El = lines.any((line) {
-      final l = line.toLowerCase();
-      return l.contains('7-eleven') ||
-          l.contains('7-11') ||
-          l.contains('เซเว่น') ||
-          l.contains('ซีพี ออลล์') ||
-          l.contains('cp all') ||
-          l.contains('cpall');
-    });
+    final is7El = is7ElevenSlip(lines.join('\n'));
 
     if (is7El || isStoreReceipt(lines.join('\n'))) {
       final items = receiptItems ?? _extractReceiptItems(lines);

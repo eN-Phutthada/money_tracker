@@ -156,6 +156,48 @@ class BudgetController extends GetxController {
     }
   }
 
+  // =========================================================================
+  // คำนวณโควตารายวันจาก เงินปัจจุบัน - เงินออมต่อเดือน - รายจ่ายคงที่ต่อเดือน
+  // =========================================================================
+
+  double get currentWalletBalance => dashboardController.totalCurrentBalance;
+  int get remainingDaysInMonth => dashboardController.remainingDaysInMonth;
+  double get remainingMonthlyFixedCosts => dashboardController.remainingMonthlyFixedCosts;
+
+  /// ยอดงบกินอยู่คงเหลือจริง = เงินปัจจุบัน - เงินออมต่อเดือนที่กำลังตั้งค่า - รายจ่ายคงที่ที่ยังค้างจ่าย
+  double get dynamicAvailableBudget {
+    final balance = currentWalletBalance;
+    final savings = targetMonthlySavings.value;
+    final fixedCosts = remainingMonthlyFixedCosts;
+    return balance - savings - fixedCosts;
+  }
+
+  /// โควตาต่อวันคำนวณจากยอดจริง
+  double get dynamicCalculatedQuota {
+    final available = dynamicAvailableBudget;
+    if (available <= 0) return 0.0;
+    final days = remainingDaysInMonth > 0 ? remainingDaysInMonth : 1;
+    final quota = available / days;
+    return (quota / 10).round() * 10.0;
+  }
+
+  /// ปรับใช้โควตาที่คำนวณได้ลงในช่องเป้าหมายรายวัน
+  void applyDynamicQuota() {
+    final quota = dynamicCalculatedQuota;
+    if (quota <= 0) return;
+    targetDailyAllowance.value = quota.clamp(0.0, 10000.0);
+    try {
+      HapticFeedback.mediumImpact();
+    } catch (_) {}
+    if (Get.context != null) {
+      final currencyFmt = NumberFormat.currency(locale: 'th_TH', symbol: '฿', decimalDigits: 0);
+      AppFeedback.showSuccess(
+        title: 'dynamic_calculator_title'.tr,
+        message: 'quota_applied_success'.trParams({'amount': currencyFmt.format(quota)}),
+      );
+    }
+  }
+
   void save() {
     final newPlan = BudgetPlan(
       plannedIncome: plannedIncome.value,

@@ -483,6 +483,58 @@ class DailyAllowanceCard extends GetView<DashboardController> {
                               ],
                             ),
                           ],
+                          // Real Balance Dynamic Quota hint: เงินปัจจุบัน - เงินออม - รายจ่ายคงที่
+                          if (controller.dynamicCalculatedDailyQuota > 0 && remainingDays > 0) ...[
+                            const SizedBox(height: 5),
+                            Row(
+                              children: [
+                                const SizedBox(width: 22),
+                                Flexible(
+                                  child: InkWell(
+                                    onTap: () {
+                                      HapticFeedback.selectionClick();
+                                      Get.toNamed(Routes.BUDGET_SETTINGS);
+                                    },
+                                    borderRadius: BorderRadius.circular(6),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.variableCostAccent.withValues(alpha: isDark ? 0.15 : 0.1),
+                                        borderRadius: BorderRadius.circular(6),
+                                        border: Border.all(
+                                          color: AppColors.variableCostAccent.withValues(alpha: 0.25),
+                                          width: 0.8,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.auto_awesome_rounded,
+                                            size: 11,
+                                            color: AppColors.variableCostAccent,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Flexible(
+                                            child: Text(
+                                              '${'dynamic_calculator_title'.tr}: ${currencyFmt.format(controller.dynamicCalculatedDailyQuota)}/${'day'.tr}',
+                                              style: TextStyle(
+                                                fontSize: 9.5,
+                                                fontWeight: FontWeight.w700,
+                                                color: isDark ? AppColors.variableCostAccent : const Color(0xFFD97706),
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ],
                       ),
                     ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import '../../../data/models/transaction_model.dart';
 import '../../../theme/app_colors.dart';
 import '../controllers/dashboard_controller.dart';
 
@@ -15,8 +16,10 @@ class BalanceCard extends GetView<DashboardController> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Obx(() {
-      final actual = controller.actualBalance;
-      final expected = controller.expectedBalance;
+      final isMonthly = controller.currentPeriod.value == TimeFilterPeriod.monthly;
+      final totalBalance = controller.totalCurrentBalance;
+      final heroAmount = controller.periodHeroBalance;
+      final expected = controller.periodExpectedBalance;
       final surplus = controller.surplusOrDeficit;
       final isSurplus = controller.isSurplus;
       final isHidden = controller.isBalanceHidden.value;
@@ -48,11 +51,11 @@ class BalanceCard extends GetView<DashboardController> {
 
       // Achievement ratio calculation for health meter (clamped 0.0 - 1.0)
       final double achievementRatio = expected > 0
-          ? (actual / expected).clamp(0.0, 1.25)
-          : (actual >= 0 ? 1.0 : 0.0);
+          ? (heroAmount / expected).clamp(0.0, 1.25)
+          : (heroAmount >= 0 ? 1.0 : 0.0);
       final int achievementPercent = expected > 0
-          ? ((actual / expected) * 100).round()
-          : (actual >= 0 ? 100 : 0);
+          ? ((heroAmount / expected) * 100).round()
+          : (heroAmount >= 0 ? 100 : 0);
 
       return Container(
         decoration: BoxDecoration(
@@ -164,7 +167,7 @@ class BalanceCard extends GetView<DashboardController> {
                                 children: [
                                   Flexible(
                                     child: Text(
-                                      'net_cashflow'.tr,
+                                      'wallet_status'.tr,
                                       style: TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w700,
@@ -254,16 +257,48 @@ class BalanceCard extends GetView<DashboardController> {
                         ).animate().shimmer(duration: const Duration(seconds: 2), delay: const Duration(seconds: 1)),
                       ],
                     ),
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 16),
 
-                    // --- HERO BALANCE & VARIANCE BADGE ---
-                    Text(
-                      'actual_balance_title'.tr,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                    // --- ALL-TIME CURRENT BALANCE HERO CAPSULE OR MONTHLY BUDGET CAPSULE ---
+                    if (isMonthly)
+                      _buildMonthlyBudgetSummaryCapsule(
+                        context: context,
+                        isDark: isDark,
+                        isHidden: isHidden,
+                        currencyFmt: currencyFmt,
+                      )
+                    else
+                      _buildTotalCurrentBalanceCapsule(
+                        balance: totalBalance,
+                        isDark: isDark,
+                        isHidden: isHidden,
                       ),
+                    const SizedBox(height: 16),
+
+                    // --- HERO BALANCE SECTION ---
+                    Row(
+                      children: [
+                        Icon(
+                          isMonthly ? Icons.account_balance_wallet_rounded : Icons.timelapse_rounded,
+                          size: 13,
+                          color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                        ),
+                        const SizedBox(width: 5),
+                        Flexible(
+                          child: Text(
+                            isMonthly
+                                ? '${'current_money_in_wallet'.tr} (${controller.formattedPeriodTitle})'
+                                : '${'period_net_cashflow'.tr} (${controller.formattedPeriodTitle})',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 4),
 
@@ -294,7 +329,7 @@ class BalanceCard extends GetView<DashboardController> {
                               child: FittedBox(
                                 fit: BoxFit.scaleDown,
                                 alignment: Alignment.centerLeft,
-                                child: _buildFormattedAmount(actual, isDark),
+                                child: _buildFormattedAmount(heroAmount, isDark),
                               ),
                             ),
                     ),
@@ -321,7 +356,9 @@ class BalanceCard extends GetView<DashboardController> {
                             ),
                             const SizedBox(width: 5),
                             Text(
-                              '$surplusFormatted ($percentFormatted ${'vs_budget_plan'.tr})',
+                              isMonthly
+                                  ? '${'monthly_expected_remaining'.tr}: ${currencyFmt.format(expected)} (${'from_fixed_and_daily'.tr})'
+                                  : '$surplusFormatted ($percentFormatted ${'vs_budget_plan'.tr})',
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
@@ -490,12 +527,278 @@ class BalanceCard extends GetView<DashboardController> {
     });
   }
 
+  /// แถบสรุปแผนค่าใช้จ่ายเดือนนี้ (ค่าใช้จ่ายคงที่ + ค่ากินตามโควตา)
+  Widget _buildMonthlyBudgetSummaryCapsule({
+    required BuildContext context,
+    required bool isDark,
+    required bool isHidden,
+    required NumberFormat currencyFmt,
+  }) {
+    final fixed = controller.budgetPlan.value.plannedFixedCosts;
+    final variable = controller.budgetPlan.value.plannedVariableBudget(controller.daysInCurrentMonth);
+    final totalPlanned = controller.monthlyTotalPlannedExpenses;
+    final expectedEnding = controller.monthlyPlanEndingBalance;
+    final isEndingPositive = expectedEnding >= 0;
+    final statusColor = isEndingPositive ? AppColors.primary : AppColors.deficitText;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: isDark
+            ? AppColors.darkSurfaceSecondary.withValues(alpha: 0.5)
+            : AppColors.surfaceSecondary.withValues(alpha: 0.65),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? AppColors.darkBorder : AppColors.border.withValues(alpha: 0.7),
+          width: 1.0,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: isDark ? 0.22 : 0.12),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Icon(
+                  Icons.receipt_long_rounded,
+                  size: 13,
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(width: 7),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'monthly_budget_summary'.tr,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                        letterSpacing: -0.1,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      'monthly_commitments_desc'.trParams({
+                        'fixed': currencyFmt.format(fixed),
+                        'variable': currencyFmt.format(variable),
+                      }),
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w500,
+                        color: isDark ? AppColors.darkTextTertiary : AppColors.textSecondary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: isDark ? 0.18 : 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: statusColor.withValues(alpha: 0.3),
+                    width: 0.8,
+                  ),
+                ),
+                child: Text(
+                  '${'expected_balance_planned'.tr} ${currencyFmt.format(expectedEnding)}',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: statusColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '${'total_outflow'.tr}: ${currencyFmt.format(totalPlanned)}',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                ),
+              ),
+              Text(
+                '${'period_net_cashflow'.tr}: ${controller.actualBalance >= 0 ? '+' : ''}${currencyFmt.format(controller.actualBalance)}',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: controller.actualBalance >= 0 ? AppColors.primary : AppColors.deficitText,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// แถบเด่นยอดเงินคงเหลือสะสมสุทธิทั้งหมด (All-Time Net Current Balance Hero Capsule)
+  Widget _buildTotalCurrentBalanceCapsule({
+    required double balance,
+    required bool isDark,
+    required bool isHidden,
+  }) {
+    final isPositive = balance >= 0;
+    final statusColor = isPositive ? AppColors.primary : AppColors.deficitText;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: isDark
+            ? statusColor.withValues(alpha: 0.09)
+            : statusColor.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: statusColor.withValues(alpha: isDark ? 0.32 : 0.22),
+          width: 1.2,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: isDark ? 0.22 : 0.14),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Icon(
+                  Icons.account_balance_wallet_rounded,
+                  size: 13,
+                  color: statusColor,
+                ),
+              ),
+              const SizedBox(width: 7),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'total_current_balance'.tr,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                        letterSpacing: -0.1,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      'total_current_balance_desc'.tr,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w500,
+                        color: isDark ? AppColors.darkTextTertiary : AppColors.textSecondary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: isDark ? 0.18 : 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: statusColor.withValues(alpha: 0.3),
+                    width: 0.8,
+                  ),
+                ),
+                child: Text(
+                  'all_time'.tr,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: statusColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 220),
+            transitionBuilder: (child, anim) => FadeTransition(opacity: anim, child: child),
+            child: isHidden
+                ? Align(
+                    key: const ValueKey('hidden_total_balance'),
+                    alignment: Alignment.centerLeft,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 2),
+                      child: Text(
+                        '••••••••',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 3,
+                          color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                  )
+                : Align(
+                    key: const ValueKey('visible_total_balance'),
+                    alignment: Alignment.centerLeft,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: _buildFormattedAmount(
+                        balance,
+                        isDark,
+                        symbolSize: 16,
+                        wholeSize: 24,
+                        decimalSize: 15,
+                      ),
+                    ),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// Builds beautifully formatted currency with prominent whole digits and subtle decimals
-  Widget _buildFormattedAmount(double amount, bool isDark) {
+  Widget _buildFormattedAmount(
+    double amount,
+    bool isDark, {
+    double symbolSize = 20,
+    double wholeSize = 32,
+    double decimalSize = 19,
+    Color? customColor,
+  }) {
     final isNegative = amount < 0;
     final absAmount = amount.abs();
     final wholeNumber = NumberFormat('#,##0', 'th_TH').format(absAmount.floor());
     final decimalPart = (absAmount % 1).toStringAsFixed(2).substring(1); // e.g. ".50"
+
+    final textColor = customColor ?? (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary);
+    final secondaryColor = customColor?.withValues(alpha: 0.8) ?? (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary);
+    final tertiaryColor = customColor?.withValues(alpha: 0.65) ?? (isDark ? AppColors.darkTextTertiary : AppColors.textSecondary);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -504,27 +807,27 @@ class BalanceCard extends GetView<DashboardController> {
         Text(
           '${isNegative ? '-' : ''}฿',
           style: TextStyle(
-            fontSize: 20,
+            fontSize: symbolSize,
             fontWeight: FontWeight.w700,
-            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+            color: secondaryColor,
           ),
         ),
         const SizedBox(width: 4),
         Text(
           wholeNumber,
           style: TextStyle(
-            fontSize: 32,
+            fontSize: wholeSize,
             fontWeight: FontWeight.w900,
             letterSpacing: -0.8,
-            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+            color: textColor,
           ),
         ),
         Text(
           decimalPart,
           style: TextStyle(
-            fontSize: 19,
+            fontSize: decimalSize,
             fontWeight: FontWeight.w600,
-            color: isDark ? AppColors.darkTextTertiary : AppColors.textSecondary,
+            color: tertiaryColor,
           ),
         ),
       ],

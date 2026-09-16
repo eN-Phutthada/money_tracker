@@ -62,6 +62,17 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
     }
   }
 
+  @override
+  void didChangePlatformBrightness() {
+    super.didChangePlatformBrightness();
+    if (themeMode.value == ThemeMode.system) {
+      try {
+        final platformBrightness = WidgetsBinding.instance.platformDispatcher.platformBrightness;
+        isDarkMode.value = (platformBrightness == Brightness.dark);
+      } catch (_) {}
+    }
+  }
+
   Future<void> _loadData() async {
     try {
       final isInit = await _storageService.isInitialized();
@@ -77,20 +88,15 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
         transactions.clear();
       }
 
-      final savedTheme = await _storageService.loadThemeMode();
-      if (savedTheme == 'dark') {
-        themeMode.value = ThemeMode.dark;
-        isDarkMode.value = true;
-        Get.changeThemeMode(ThemeMode.dark);
-      } else if (savedTheme == 'light') {
-        themeMode.value = ThemeMode.light;
+      // Requirement: การเข้าแอพทุกครั้งระบบธีมจะตามระบบ (Default to System Theme on every launch)
+      themeMode.value = ThemeMode.system;
+      try {
+        final platformBrightness = WidgetsBinding.instance.platformDispatcher.platformBrightness;
+        isDarkMode.value = (platformBrightness == Brightness.dark);
+      } catch (_) {
         isDarkMode.value = false;
-        Get.changeThemeMode(ThemeMode.light);
-      } else {
-        themeMode.value = ThemeMode.system;
-        isDarkMode.value = false;
-        Get.changeThemeMode(ThemeMode.system);
       }
+      Get.changeThemeMode(ThemeMode.system);
 
       final savedLang = await _storageService.loadLanguage();
       if (savedLang == 'en' || savedLang == 'th') {
@@ -164,6 +170,23 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
 
   double get actualBalance => actualIncome - actualExpenses - actualSavings;
 
+  /// ยอดเงินคงเหลือสะสมสุทธิทั้งหมด (All-time net current balance: รายรับสะสมทั้งหมด - รายจ่ายทั้งหมด - เงินออมทั้งหมด ณ ปัจจุบัน)
+  double get totalCurrentBalance {
+    double income = 0;
+    double expense = 0;
+    double savings = 0;
+    for (final t in transactions) {
+      if (t.isIncome) {
+        income += t.amount;
+      } else if (t.isExpense) {
+        expense += t.amount;
+      } else if (t.isSavings) {
+        savings += t.amount;
+      }
+    }
+    return income - expense - savings;
+  }
+
   int get daysInCurrentMonth {
     final date = selectedDate.value;
     return DateTime(date.year, date.month + 1, 0).day;
@@ -206,9 +229,73 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
         plan.targetMonthlySavings;
   }
 
-  double get surplusOrDeficit => actualBalance - expectedBalance;
+  /// รวมค่าใช้จ่ายคงที่ + ค่ากินทั้งเดือนตามโควตารายวัน (+ เป้าหมายเงินออม)
+  double get monthlyTotalPlannedExpenses =>
+      budgetPlan.value.plannedFixedCosts +
+      (daysInCurrentMonth * budgetPlan.value.targetDailyAllowance) +
+      budgetPlan.value.targetMonthlySavings;
 
-  bool get isSurplus => surplusOrDeficit >= 0;
+  /// ยอดเงินที่ควรเหลือสิ้นเดือนตามแผน (รายรับตามแผน - ค่าใช้จ่ายคงที่ - ค่ากินทั้งเดือนตามโควตา - เงินออม)
+  double get monthlyPlanEndingBalance =>
+      budgetPlan.value.plannedIncome - monthlyTotalPlannedExpenses;
+
+  /// ภาระค่าใช้จ่ายที่ต้องสำรองจ่ายในเดือนนี้ (ค่าใช้จ่ายคงที่ที่ยังค้างจ่าย + ค่ากินวันที่เหลือตามโควตา)
+  double get monthlyRemainingCommitments =>
+      remainingMonthlyFixedCosts + (remainingDaysInMonth * budgetPlan.value.targetDailyAllowance);
+
+  /// ยอดเงินที่คาดว่าจะเหลือเมื่อสิ้นเดือนคำนวณจากเงินในกระเป๋าปัจจุบัน
+  /// (เงินเหลือปัจจุบัน - ค่าใช้จ่ายคงที่ที่ยังค้างจ่าย - ค่ากินวันที่เหลือตามโควตา)
+  double get monthlyProjectedWalletBalance =>
+      totalCurrentBalance - monthlyRemainingCommitments;
+
+  /// ตัวเลขยอดเงินหลักที่แสดงบนบัตรสถานะกระเป๋าเงินตามช่วงเวลาที่เลือก
+  /// - รายเดือน: แสดง "เงินเหลือปัจจุบัน" (totalCurrentBalance)
+  /// - รายปี: แสดงยอดกระแสเงินสดสุทธิของปีนี้ (actualBalance)
+  /// - ทั้งหมด: แสดงยอดเงินคงเหลือสะสมสุทธิทั้งหมด (totalCurrentBalance)
+  double get periodHeroBalance {
+    if (currentPeriod.value == TimeFilterPeriod.monthly) {
+      return totalCurrentBalance;
+    } else if (currentPeriod.value == TimeFilterPeriod.allTime) {
+      return totalCurrentBalance;
+    }
+    return actualBalance;
+  }
+
+  /// ตัวเลขเป้าหมาย/ยอดที่ควรเหลือตามช่วงเวลาที่เลือก
+  /// - รายเดือน: ยอดที่ควรเหลือจาก ค่าใช้จ่ายคงที่ + ค่ากินต่อเดือนจากโควตารายวัน (monthlyPlanEndingBalance)
+  /// - รายปี / ทั้งหมด: expectedBalance ตามสูตรสะสม
+  double get periodExpectedBalance {
+    if (currentPeriod.value == TimeFilterPeriod.monthly) {
+      return monthlyPlanEndingBalance;
+    }
+    return expectedBalance;
+  }
+
+  /// ส่วนต่าง (Surplus หรือ Deficit)
+  double get surplusOrDeficit {
+    if (currentPeriod.value == TimeFilterPeriod.monthly) {
+      if (actualIncome > 0) {
+        return actualBalance - monthlyPlanEndingBalance;
+      }
+      return totalCurrentBalance - monthlyRemainingCommitments;
+    }
+    return actualBalance - expectedBalance;
+  }
+
+  /// สถานะกระเป๋าเงินปลอดภัย (เขียว) หรือเกินงบ/ระวัง (แดง)
+  /// แก้ไขปัญหา: หากรายรับอยู่สิ้นเดือน สถานะจะไม่แดง ถ้าเงินในกระเป๋าปัจจุบันเพียงพอครอบคลุมภาระที่เหลือของเดือน
+  bool get isSurplus {
+    if (currentPeriod.value == TimeFilterPeriod.monthly) {
+      // 1. ถ้ากระแสเงินสดเดือนนี้บวกอยู่แล้ว หรือบรรลุตามแผน
+      if (actualBalance >= monthlyPlanEndingBalance && actualBalance >= 0) {
+        return true;
+      }
+      // 2. แม้เงินเดือนยังไม่ออก แต่ถ้าเงินในกระเป๋าปัจจุบัน >= ค่าคงที่ที่ค้าง + ค่ากินวันที่เหลือตามโควตา
+      // แปลว่าเงินพอใช้จนถึงสิ้นเดือน -> ปลอดภัย (Safe Zone) ไม่แดง
+      return totalCurrentBalance >= monthlyRemainingCommitments;
+    }
+    return surplusOrDeficit >= 0;
+  }
 
   /// จำนวนวันที่เหลืออยู่ในเดือนปัจจุบันหลังจาก "วันนี้" (ไม่รวมวันนี้แล้ว)
   int get remainingDaysInMonth {
@@ -266,6 +353,47 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
 
     if (futureBudget <= 0) return 0.0;
     return (futureBudget / remainingDays).clamp(0.0, 999999.0);
+  }
+
+  // =========================================================================
+  // ระบบเงินปัจจุบัน - เงินออมต่อเดือน - รายจ่ายคงที่ต่อเดือน -> คำนวณโควตารายวัน
+  // =========================================================================
+
+  /// รายจ่ายคงที่ที่ยังค้างจ่ายในรอบเดือนนี้ (ค่าใช้จ่ายคงที่ตามแผน - ที่จ่ายไปแล้วในเดือนนี้)
+  double get remainingMonthlyFixedCosts {
+    final planned = budgetPlan.value.plannedFixedCosts;
+    final paid = totalFixedExpenses;
+    final remaining = planned - paid;
+    return remaining > 0 ? remaining : 0.0;
+  }
+
+  /// งบเงินคงเหลือจริงสำหรับกินอยู่ในรอบเดือนนี้
+  /// คำนวณจาก: เงินปัจจุบัน (totalCurrentBalance) - เงินออมต่อเดือน (targetMonthlySavings) - รายจ่ายคงที่ที่ยังค้างจ่าย (remainingMonthlyFixedCosts)
+  double get dynamicAvailableMonthlyBudget {
+    final balance = totalCurrentBalance;
+    final savings = budgetPlan.value.targetMonthlySavings;
+    final fixedCosts = remainingMonthlyFixedCosts;
+    return balance - savings - fixedCosts;
+  }
+
+  /// โควตารายวันคำนวณจากเงินจริง (Dynamic Daily Quota):
+  /// (เงินปัจจุบัน - เงินออมต่อเดือน - รายจ่ายคงที่ต่อเดือนที่เหลือ) / จำนวนวันที่เหลืออยู่ในเดือน
+  double get dynamicCalculatedDailyQuota {
+    final available = dynamicAvailableMonthlyBudget;
+    if (available <= 0) return 0.0;
+    final days = remainingDaysInMonth > 0 ? remainingDaysInMonth : 1;
+    final quota = available / days;
+    return (quota / 10).round() * 10.0; // ปัดเศษลงตัวละ 10 บาทเพื่อการใช้งานจริงที่สะดวก
+  }
+
+  /// นำโควตาที่คำนวณจากเงินจริงไปบันทึกเป็นเป้าหมายรายวันของแผน
+  void applyDynamicCalculatedQuota() {
+    final quota = dynamicCalculatedDailyQuota;
+    if (quota <= 0) return;
+    final updatedPlan = budgetPlan.value.copyWith(
+      targetDailyAllowance: quota,
+    );
+    updateBudgetPlan(updatedPlan);
   }
 
   // ==========================================
