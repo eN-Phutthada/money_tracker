@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_popup_decorations.dart';
 import '../../../widgets/liquid_glass_nav_dock.dart';
 import '../../../widgets/modern_app_bar.dart';
+import '../../../widgets/nothing_ui_components.dart';
 import '../../../routes/app_routes.dart';
 import '../controllers/budget_controller.dart';
 
@@ -91,274 +93,187 @@ class BudgetSettingsView extends GetView<BudgetController> {
     return Obx(() {
           final endingBalance = controller.expectedEndingBalance;
           final isPositive = endingBalance >= 0;
-          final primaryStatusColor = isPositive
-              ? AppColors.primary
-              : AppColors.deficitText;
 
-          return Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: primaryStatusColor.withValues(
-                    alpha: isDark ? 0.16 : 0.08,
-                  ),
-                  blurRadius: 24,
-                  offset: const Offset(0, 6),
-                ),
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.03),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(24),
-              child: Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.darkSurface : AppColors.surface,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: primaryStatusColor.withValues(
-                      alpha: isDark ? 0.4 : 0.25,
-                    ),
-                    width: 1.2,
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          return NothingCard(
+            showDotGrid: true,
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header Row (Icon + Title + Status Pill)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Header Row (Icon + Title + Status Pill)
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 38,
-                                height: 38,
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: isPositive
-                                        ? const [
-                                            AppColors.primary,
-                                            Color(0xFF6366F1),
-                                          ]
-                                        : const [
-                                            Color(0xFFEF4444),
-                                            Color(0xFFF97316),
-                                          ],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                  ),
-                                  borderRadius: BorderRadius.circular(12),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: primaryStatusColor.withValues(
-                                        alpha: 0.3,
-                                      ),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: Icon(
-                                  isPositive
-                                      ? Icons.auto_graph_rounded
-                                      : Icons.trending_down_rounded,
-                                  color: Colors.white,
-                                  size: 19,
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'estimated_ending_balance'.tr,
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w700,
-                                        color: isDark
-                                            ? AppColors.darkTextPrimary
-                                            : AppColors.textPrimary,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    Text(
-                                      'days_in_cycle'.trParams({
-                                        'days': '${controller.daysInMonth}',
-                                      }),
-                                      style: TextStyle(
-                                        fontSize: 10.5,
-                                        fontWeight: FontWeight.w500,
-                                        color: isDark
-                                            ? AppColors.darkTextSecondary
-                                            : AppColors.textSecondary,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-
-                        // Pulsing Status Pill
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isPositive
-                                ? AppColors.primary.withValues(alpha: 0.12)
-                                : AppColors.deficitText.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: primaryStatusColor.withValues(alpha: 0.3),
-                              width: 0.8,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                width: 6,
-                                height: 6,
-                                decoration: BoxDecoration(
-                                  color: primaryStatusColor,
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: primaryStatusColor.withValues(
-                                        alpha: 0.6,
-                                      ),
-                                      blurRadius: 4,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 5),
-                              Text(
-                                isPositive
-                                    ? 'good_balance'.tr
-                                    : 'over_budget'.tr,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w800,
-                                  color: primaryStatusColor,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-
-                    // Hero Ending Balance Amount
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        currencyFmt.format(endingBalance),
-                        style: TextStyle(
-                          fontSize: 34,
-                          fontWeight: FontWeight.w900,
-                          color: primaryStatusColor,
-                          letterSpacing: -0.8,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-
-                    // Calculation Formula Caption
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? AppColors.darkSurfaceSecondary
-                            : AppColors.surfaceSecondary,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        'budget_calc_desc'.trParams({
-                          'days': controller.daysInMonth.toString(),
-                        }),
-                        style: TextStyle(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w500,
-                          color: isDark
-                              ? AppColors.darkTextSecondary
-                              : AppColors.textSecondary,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-
-                    // Health & Wealth Advisory Banner
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 9,
-                      ),
-                      decoration: BoxDecoration(
-                        color: controller.healthStatusColor.withValues(
-                          alpha: 0.12,
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: controller.healthStatusColor.withValues(
-                            alpha: 0.3,
-                          ),
-                          width: 0.8,
-                        ),
-                      ),
+                    Expanded(
                       child: Row(
                         children: [
-                          Icon(
-                            isPositive
-                                ? Icons.verified_rounded
-                                : Icons.error_outline_rounded,
-                            size: 17,
-                            color: controller.healthStatusColor,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              controller.healthStatusMessage,
-                              style: TextStyle(
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w700,
-                                color: controller.healthStatusColor,
+                          Container(
+                            width: 38,
+                            height: 38,
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0xFF161616) : const Color(0xFFF4F4F4),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                                width: 0.8,
                               ),
+                            ),
+                            child: Icon(
+                              isPositive
+                                  ? Icons.auto_graph_rounded
+                                  : Icons.trending_down_rounded,
+                              color: isPositive
+                                  ? (isDark ? Colors.white : Colors.black)
+                                  : AppColors.nothingRed,
+                              size: 18,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                NothingDotText(
+                                  'PROJECTED // ENDING BALANCE',
+                                  fontSize: 11.5,
+                                  letterSpacing: 1.0,
+                                  color: isDark ? Colors.white : Colors.black,
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'days_in_cycle'.trParams({
+                                    'days': '${controller.daysInMonth}',
+                                  }).toUpperCase(),
+                                  style: GoogleFonts.spaceGrotesk(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.6,
+                                    color: isDark
+                                        ? AppColors.nothingSubtext
+                                        : const Color(0xFF777777),
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(width: 8),
 
-                    // Segmented Allocation Progress Track & Legend
-                    _buildSegmentedAllocationTrack(
-                      context,
-                      isDark,
-                      currencyFmt,
+                    // Status Pill
+                    NothingPill(
+                      label: isPositive ? 'BALANCED' : 'DEFICIT',
+                      color: isPositive
+                          ? (isDark ? const Color(0xFF1A1A1A) : const Color(0xFFEEEEEE))
+                          : AppColors.nothingRed.withValues(alpha: 0.15),
+                      textColor: isPositive
+                          ? (isDark ? Colors.white : Colors.black)
+                          : AppColors.nothingRed,
+                      showDot: true,
+                      dotColor: isPositive ? const Color(0xFF10B981) : AppColors.nothingRed,
+                      isDotMatrix: true,
+                      fontSize: 10,
                     ),
                   ],
                 ),
-              ),
+                const SizedBox(height: 14),
+
+                // Hero Ending Balance Amount
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    currencyFmt.format(endingBalance),
+                    style: GoogleFonts.shareTechMono(
+                      fontSize: 36,
+                      fontWeight: FontWeight.w700,
+                      color: isPositive
+                          ? (isDark ? Colors.white : Colors.black)
+                          : AppColors.nothingRed,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+
+                // Calculation Formula Caption
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? const Color(0xFF0F0F0F)
+                        : const Color(0xFFF6F6F6),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.06),
+                      width: 0.8,
+                    ),
+                  ),
+                  child: Text(
+                    'budget_calc_desc'.trParams({
+                      'days': controller.daysInMonth.toString(),
+                    }),
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w500,
+                      color: isDark
+                          ? AppColors.nothingSubtext
+                          : const Color(0xFF777777),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+
+                // Health & Wealth Advisory Banner
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 9,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF121212) : const Color(0xFFF9F9F9),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isPositive
+                          ? (isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08))
+                          : AppColors.nothingRed.withValues(alpha: 0.35),
+                      width: 0.8,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      NothingLedIndicator(
+                        color: isPositive ? const Color(0xFF10B981) : AppColors.nothingRed,
+                        size: 6,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          controller.healthStatusMessage,
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? Colors.white : Colors.black,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Segmented Allocation Progress Track & Legend
+                _buildSegmentedAllocationTrack(
+                  context,
+                  isDark,
+                  currencyFmt,
+                ),
+              ],
             ),
           );
         })
@@ -621,48 +536,23 @@ class BudgetSettingsView extends GetView<BudgetController> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
           decoration: BoxDecoration(
-            color: isDark ? AppColors.darkSurface : AppColors.surface,
-            borderRadius: BorderRadius.circular(16),
+            color: isDark ? const Color(0xFF141414) : const Color(0xFFF7F7F7),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: color.withValues(alpha: isDark ? 0.35 : 0.25),
-              width: 1,
+              color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+              width: 0.8,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: color.withValues(alpha: isDark ? 0.12 : 0.04),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
           ),
           child: Column(
             children: [
               // Badge Pill
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(badgeIcon, size: 10, color: color),
-                    const SizedBox(width: 3),
-                    Flexible(
-                      child: Text(
-                        badgeText,
-                        style: TextStyle(
-                          fontSize: 9.5,
-                          fontWeight: FontWeight.w700,
-                          color: color,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
+              NothingPill(
+                label: badgeText.toUpperCase(),
+                color: isDark ? const Color(0xFF202020) : const Color(0xFFE8E8E8),
+                textColor: isDark ? Colors.white : Colors.black,
+                isDotMatrix: true,
+                fontSize: 8.5,
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
               ),
               const SizedBox(height: 7),
 
@@ -671,13 +561,10 @@ class BudgetSettingsView extends GetView<BudgetController> {
                 fit: BoxFit.scaleDown,
                 child: Text(
                   title,
-                  style: TextStyle(
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.3,
-                    color: isDark
-                        ? AppColors.darkTextPrimary
-                        : AppColors.textPrimary,
+                  style: GoogleFonts.shareTechMono(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.white : Colors.black,
                   ),
                 ),
               ),
@@ -686,12 +573,12 @@ class BudgetSettingsView extends GetView<BudgetController> {
               // Subtitle
               Text(
                 subtitle,
-                style: TextStyle(
-                  fontSize: 10.5,
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 10,
                   fontWeight: FontWeight.w600,
                   color: isDark
-                      ? AppColors.darkTextSecondary
-                      : AppColors.textSecondary,
+                      ? AppColors.nothingSubtext
+                      : const Color(0xFF777777),
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -703,16 +590,16 @@ class BudgetSettingsView extends GetView<BudgetController> {
                 padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                 decoration: BoxDecoration(
                   color: isDark
-                      ? AppColors.darkSurfaceSecondary
-                      : AppColors.surfaceSecondary,
+                      ? const Color(0xFF0C0C0C)
+                      : const Color(0xFFEEEEEE),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
                   breakdownText,
-                  style: TextStyle(
+                  style: GoogleFonts.shareTechMono(
                     fontSize: 8.5,
-                    fontWeight: FontWeight.w600,
-                    color: color,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.white70 : Colors.black87,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -737,28 +624,14 @@ class BudgetSettingsView extends GetView<BudgetController> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildSectionHeader(
-          icon: Icons.fastfood_rounded,
+          icon: Icons.fastfood_outlined,
           title: 'daily_allowance_section'.tr,
           isDark: isDark,
         ),
         const SizedBox(height: 10),
-        Container(
+        NothingCard(
           padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: isDark ? AppColors.darkSurface : AppColors.surface,
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(
-              color: isDark ? AppColors.darkBorder : AppColors.border,
-              width: 0.8,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.03),
-                blurRadius: 12,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
+          showDotGrid: false,
           child: Column(
             children: [
               // Hero Daily Number Row
@@ -793,11 +666,11 @@ class BudgetSettingsView extends GetView<BudgetController> {
                                       currencyFmt.format(
                                         controller.targetDailyAllowance.value,
                                       ),
-                                      style: TextStyle(
+                                      style: GoogleFonts.shareTechMono(
                                         fontSize: 28,
-                                        fontWeight: FontWeight.w900,
-                                        color: AppColors.variableCostAccent,
-                                        letterSpacing: -0.6,
+                                        fontWeight: FontWeight.w700,
+                                        color: isDark ? Colors.white : Colors.black,
+                                        letterSpacing: -0.5,
                                       ),
                                     ),
                                   ),
@@ -805,14 +678,17 @@ class BudgetSettingsView extends GetView<BudgetController> {
                                   Container(
                                     padding: const EdgeInsets.all(4),
                                     decoration: BoxDecoration(
-                                      color: AppColors.variableCostAccent
-                                          .withValues(alpha: 0.12),
+                                      color: isDark ? const Color(0xFF222222) : const Color(0xFFEEEEEE),
                                       borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                                        width: 0.8,
+                                      ),
                                     ),
-                                    child: const Icon(
-                                      Icons.edit_rounded,
-                                      size: 14,
-                                      color: AppColors.variableCostAccent,
+                                    child: Icon(
+                                      Icons.edit_outlined,
+                                      size: 13,
+                                      color: isDark ? Colors.white : Colors.black,
                                     ),
                                   ),
                                 ],
@@ -822,25 +698,12 @@ class BudgetSettingsView extends GetView<BudgetController> {
                         ),
 
                         // Monthly Run-Rate Pill
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.variableCostAccent.withValues(
-                              alpha: 0.1,
-                            ),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            currencyFmt.format(monthlyTotal),
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.variableCostAccent,
-                            ),
-                          ),
+                        NothingPill(
+                          label: currencyFmt.format(monthlyTotal),
+                          color: isDark ? const Color(0xFF1C1C1C) : const Color(0xFFEDEDED),
+                          textColor: isDark ? Colors.white : Colors.black,
+                          isDotMatrix: true,
+                          fontSize: 11,
                         ),
                       ],
                     ),
@@ -852,12 +715,12 @@ class BudgetSettingsView extends GetView<BudgetController> {
                           'amount': currencyFmt.format(monthlyTotal),
                           'days': controller.daysInMonth.toString(),
                         }),
-                        style: TextStyle(
+                        style: GoogleFonts.spaceGrotesk(
                           fontSize: 11,
                           fontWeight: FontWeight.w500,
                           color: isDark
-                              ? AppColors.darkTextSecondary
-                              : AppColors.textSecondary,
+                              ? AppColors.nothingSubtext
+                              : const Color(0xFF777777),
                         ),
                       ),
                     ),
@@ -919,20 +782,20 @@ class BudgetSettingsView extends GetView<BudgetController> {
                   children: [
                     SliderTheme(
                       data: SliderTheme.of(context).copyWith(
-                        trackHeight: 5,
-                        activeTrackColor: AppColors.variableCostAccent,
+                        trackHeight: 4,
+                        activeTrackColor: isDark ? Colors.white : Colors.black,
                         inactiveTrackColor: isDark
-                            ? AppColors.darkSurfaceSecondary
-                            : AppColors.surfaceSecondary,
-                        thumbColor: AppColors.variableCostAccent,
-                        overlayColor: AppColors.variableCostAccent.withValues(
+                            ? const Color(0xFF222222)
+                            : const Color(0xFFE5E5E5),
+                        thumbColor: AppColors.nothingRed,
+                        overlayColor: AppColors.nothingRed.withValues(
                           alpha: 0.18,
                         ),
                         thumbShape: const RoundSliderThumbShape(
-                          enabledThumbRadius: 8,
+                          enabledThumbRadius: 7,
                         ),
                         overlayShape: const RoundSliderOverlayShape(
-                          overlayRadius: 16,
+                          overlayRadius: 14,
                         ),
                       ),
                       child: Slider(
@@ -1599,73 +1462,60 @@ class BudgetSettingsView extends GetView<BudgetController> {
     return Obx(() {
       final isSuccess = controller.isSaveSuccess.value;
 
-      return AnimatedContainer(
-        duration: const Duration(milliseconds: 260),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(18),
-          gradient: LinearGradient(
-            colors: isSuccess
-                ? const [Color(0xFF10B981), Color(0xFF059669)]
-                : const [AppColors.primary, AppColors.primaryDark],
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: (isSuccess ? const Color(0xFF10B981) : AppColors.primary)
-                  .withValues(alpha: isSuccess ? 0.45 : 0.35),
-              blurRadius: isSuccess ? 20 : 14,
-              offset: const Offset(0, 5),
+      return ElevatedButton(
+        onPressed: controller.isSaving.value ? null : controller.save,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: isSuccess ? const Color(0xFF10B981) : AppColors.nothingRed,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(
+              color: Colors.white.withValues(alpha: 0.25),
+              width: 0.8,
             ),
-          ],
+          ),
         ),
-        child: ElevatedButton(
-          onPressed: controller.isSaving.value ? null : controller.save,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.transparent,
-            shadowColor: Colors.transparent,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 15),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(18),
-            ),
-          ),
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
-            child: isSuccess
-                ? Row(
-                    key: const ValueKey('saved_budget_success'),
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.check_circle_rounded,
-                        color: Colors.white,
-                        size: 22,
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          child: isSuccess
+              ? Row(
+                  key: const ValueKey('saved_budget_success'),
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.check_circle_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'budget_save_success'.tr.toUpperCase(),
+                      style: GoogleFonts.spaceGrotesk(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.0,
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'budget_save_success'.tr,
-                        style: const TextStyle(
-                          fontSize: 15.5,
-                          fontWeight: FontWeight.w800,
-                        ),
+                    ),
+                  ],
+                )
+              : Row(
+                  key: const ValueKey('save_budget_idle'),
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.check_rounded, size: 18),
+                    const SizedBox(width: 8),
+                    Text(
+                      'save_budget'.tr.toUpperCase(),
+                      style: GoogleFonts.spaceGrotesk(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.0,
                       ),
-                    ],
-                  )
-                : Row(
-                    key: const ValueKey('save_budget_idle'),
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.save_rounded, size: 20),
-                      const SizedBox(width: 8),
-                      Text(
-                        'save_budget'.tr,
-                        style: const TextStyle(
-                          fontSize: 15.5,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ],
-                  ),
-          ),
+                    ),
+                  ],
+                ),
         ),
       );
     });

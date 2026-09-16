@@ -2,10 +2,12 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../data/models/transaction_model.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_popup_decorations.dart';
+import '../../../widgets/nothing_ui_components.dart';
 import '../../dashboard/controllers/dashboard_controller.dart';
 import 'bank_slip_sheet.dart';
 
@@ -468,17 +470,17 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
       onKeyEvent: _handleHardwareKey,
       child: Container(
         decoration: BoxDecoration(
-          color: isDark ? AppColors.darkSurface : AppColors.surface,
+          color: isDark ? const Color(0xFF0F0F0F) : Colors.white,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
           border: Border(
             top: BorderSide(
-              color: isDark ? AppColors.darkBorder.withValues(alpha: 0.8) : AppColors.border,
-              width: 1,
+              color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.1),
+              width: 0.8,
             ),
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.15),
+              color: Colors.black.withValues(alpha: isDark ? 0.6 : 0.15),
               blurRadius: 30,
               offset: const Offset(0, -6),
             ),
@@ -500,13 +502,11 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
               // Subtle Drag Handle Bar
               Center(
                 child: Container(
-                  width: 40,
-                  height: 4.5,
+                  width: 36,
+                  height: 4,
                   margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
-                    color: isDark
-                        ? AppColors.darkBorder.withValues(alpha: 0.8)
-                        : AppColors.border.withValues(alpha: 0.9),
+                    color: isDark ? const Color(0xFF333333) : const Color(0xFFDDDDDD),
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
@@ -520,13 +520,13 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
                     ? Icons.arrow_downward_rounded
                     : (_selectedType == TransactionType.income
                         ? Icons.arrow_upward_rounded
-                        : Icons.savings_rounded),
+                        : Icons.savings_outlined),
                 iconColor: _selectedType == TransactionType.expense
-                    ? AppColors.deficitText
-                    : (_selectedType == TransactionType.income ? AppColors.primary : AppColors.accent),
+                    ? AppColors.nothingRed
+                    : (_selectedType == TransactionType.income ? const Color(0xFF10B981) : const Color(0xFF3B82F6)),
                 trailing: isEditMode
                     ? IconButton(
-                        icon: const Icon(Icons.delete_outline_rounded, color: AppColors.deficitText, size: 20),
+                        icon: const Icon(Icons.delete_outline_rounded, color: AppColors.nothingRed, size: 20),
                         onPressed: _delete,
                         tooltip: 'delete_this_item'.tr,
                       )
@@ -538,28 +538,29 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
                             Get.back();
                             BankSlipScanModal.show(context);
                           },
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(10),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF00A3E0).withValues(alpha: 0.14),
-                              borderRadius: BorderRadius.circular(12),
+                              color: isDark ? const Color(0xFF1C1C1C) : const Color(0xFFF0F0F0),
+                              borderRadius: BorderRadius.circular(10),
                               border: Border.all(
-                                color: const Color(0xFF00A3E0).withValues(alpha: 0.35),
-                                width: 1,
+                                color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.1),
+                                width: 0.8,
                               ),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(Icons.receipt_long_rounded, size: 15, color: Color(0xFF00A3E0)),
+                                const Icon(Icons.document_scanner_outlined, size: 14, color: AppColors.nothingRed),
                                 const SizedBox(width: 5),
                                 Text(
-                                  'scan_bank_slip'.tr,
-                                  style: const TextStyle(
-                                    fontSize: 11.5,
+                                  'scan_bank_slip'.tr.toUpperCase(),
+                                  style: GoogleFonts.spaceGrotesk(
+                                    fontSize: 10.5,
                                     fontWeight: FontWeight.w700,
-                                    color: Color(0xFF00A3E0),
+                                    letterSpacing: 0.5,
+                                    color: isDark ? Colors.white : Colors.black,
                                   ),
                                 ),
                               ],
@@ -570,14 +571,15 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
               ),
               const SizedBox(height: 14),
 
-              // Header Type Selector (Floating Pill Deck)
+              // Header Type Selector (Nothing OS Segmented Pill Deck)
               Container(
-                padding: const EdgeInsets.all(4),
+                padding: const EdgeInsets.all(3),
                 decoration: BoxDecoration(
-                  color: isDark ? AppColors.darkBackground : AppColors.surfaceSecondary,
-                  borderRadius: BorderRadius.circular(16),
+                  color: isDark ? const Color(0xFF000000) : const Color(0xFFF1F1F1),
+                  borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: isDark ? AppColors.darkBorder.withValues(alpha: 0.6) : AppColors.border.withValues(alpha: 0.6),
+                    color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                    width: 0.8,
                   ),
                 ),
                 child: Row(
@@ -585,8 +587,8 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
                     Expanded(
                       child: _buildTypeSegment(
                         type: TransactionType.expense,
-                        label: 'expense'.tr,
-                        color: AppColors.deficitText,
+                        label: 'expense'.tr.toUpperCase(),
+                        color: AppColors.nothingRed,
                         isDark: isDark,
                       ),
                     ),
@@ -594,8 +596,8 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
                     Expanded(
                       child: _buildTypeSegment(
                         type: TransactionType.income,
-                        label: 'income'.tr,
-                        color: AppColors.primary,
+                        label: 'income'.tr.toUpperCase(),
+                        color: const Color(0xFF10B981),
                         isDark: isDark,
                       ),
                     ),
@@ -603,8 +605,8 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
                     Expanded(
                       child: _buildTypeSegment(
                         type: TransactionType.savingsInvestment,
-                        label: 'filter_savings'.tr,
-                        color: AppColors.accent,
+                        label: 'filter_savings'.tr.toUpperCase(),
+                        color: const Color(0xFF3B82F6),
                         isDark: isDark,
                       ),
                     ),
@@ -626,7 +628,7 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
 
               // Category Pills Carousel
               SizedBox(
-                height: 40,
+                height: 38,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   itemCount: categories.length,
@@ -642,43 +644,38 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
                       },
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 150),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
                           color: isSelected
-                              ? AppColors.primary
-                              : (isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary),
-                          borderRadius: BorderRadius.circular(12),
+                              ? (isDark ? Colors.white : Colors.black)
+                              : (isDark ? const Color(0xFF161616) : const Color(0xFFF3F3F3)),
+                          borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                            color: isSelected ? AppColors.primary : Colors.transparent,
-                            width: 1.2,
+                            color: isSelected
+                                ? (isDark ? Colors.white : Colors.black)
+                                : (isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08)),
+                            width: 0.8,
                           ),
-                          boxShadow: isSelected
-                              ? [
-                                  BoxShadow(
-                                    color: AppColors.primary.withValues(alpha: 0.3),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ]
-                              : null,
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
                               cat['icon'] as IconData,
-                              size: 15,
-                              color: isSelected ? Colors.white : AppColors.textSecondary,
+                              size: 14,
+                              color: isSelected
+                                  ? (isDark ? Colors.black : Colors.white)
+                                  : (isDark ? AppColors.nothingSubtext : const Color(0xFF777777)),
                             ),
                             const SizedBox(width: 6),
                             Text(
                               (cat['name'] as String).tr,
                               style: TextStyle(
-                                fontSize: 11.5,
-                                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                fontSize: 11,
+                                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
                                 color: isSelected
-                                    ? Colors.white
-                                    : (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
+                                    ? (isDark ? Colors.black : Colors.white)
+                                    : (isDark ? Colors.white : Colors.black),
                               ),
                             ),
                           ],
@@ -693,15 +690,16 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
               // Smart Title Suggestions Row
               Row(
                 children: [
-                  const Icon(Icons.auto_awesome_rounded, size: 12, color: AppColors.accent),
-                  const SizedBox(width: 5),
+                  const NothingLedIndicator(color: AppColors.nothingRed, size: 5),
+                  const SizedBox(width: 6),
                   Expanded(
                     child: Text(
-                      'quick_suggestions_hint'.tr,
-                      style: TextStyle(
-                        fontSize: 11,
+                      'quick_suggestions_hint'.tr.toUpperCase(),
+                      style: GoogleFonts.spaceGrotesk(
+                        fontSize: 10.5,
                         fontWeight: FontWeight.w600,
-                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                        letterSpacing: 0.6,
+                        color: isDark ? AppColors.nothingSubtext : const Color(0xFF777777),
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -713,33 +711,16 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
               _buildSmartSuggestions(isDark),
               const SizedBox(height: 10),
 
-              // Hero Amount Display Area (Guaranteed Zero RenderFlex Overflow)
+              // Hero Amount Display Area (Nothing OS Dot-Matrix / Monospace readout)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: isDark
-                        ? [
-                            AppColors.darkBackground,
-                            AppColors.darkSurfaceSecondary.withValues(alpha: 0.4),
-                          ]
-                        : [
-                            AppColors.surfaceSecondary,
-                            AppColors.surface,
-                          ],
-                  ),
-                  borderRadius: BorderRadius.circular(18),
+                  color: isDark ? const Color(0xFF000000) : const Color(0xFFF7F7F7),
+                  borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: isDark ? AppColors.darkBorder : AppColors.border,
-                    width: 1.2,
+                    color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.1),
+                    width: 0.8,
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.03),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -748,40 +729,31 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: (_selectedType == TransactionType.expense
-                                      ? AppColors.deficitText
-                                      : (_selectedType == TransactionType.income
-                                          ? AppColors.primary
-                                          : AppColors.accent))
-                                  .withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              _selectedCategory.tr,
-                              style: TextStyle(
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.w700,
-                                color: _selectedType == TransactionType.expense
-                                    ? AppColors.deficitText
+                          NothingPill(
+                            label: _selectedCategory.tr,
+                            color: (_selectedType == TransactionType.expense
+                                    ? AppColors.nothingRed
                                     : (_selectedType == TransactionType.income
-                                        ? AppColors.primary
-                                        : AppColors.accent),
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                                        ? const Color(0xFF10B981)
+                                        : const Color(0xFF3B82F6)))
+                                .withValues(alpha: 0.16),
+                            textColor: _selectedType == TransactionType.expense
+                                ? AppColors.nothingRed
+                                : (_selectedType == TransactionType.income
+                                    ? const Color(0xFF10B981)
+                                    : const Color(0xFF3B82F6)),
+                            isDotMatrix: true,
+                            fontSize: 9.5,
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
                           ),
                           if (_titleController.text.isNotEmpty) ...[
                             const SizedBox(height: 4),
                             Text(
                               _titleController.text,
-                              style: TextStyle(
+                              style: GoogleFonts.spaceGrotesk(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
-                                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                                color: isDark ? Colors.white : Colors.black,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -791,10 +763,10 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
                             const SizedBox(height: 2),
                             Text(
                               _noteController.text,
-                              style: TextStyle(
+                              style: GoogleFonts.spaceGrotesk(
                                 fontSize: 10.5,
                                 fontWeight: FontWeight.w500,
-                                color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                                color: isDark ? AppColors.nothingSubtext : const Color(0xFF777777),
                                 fontStyle: FontStyle.italic,
                               ),
                               maxLines: 1,
@@ -814,24 +786,24 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
                           children: [
                             Text(
                               _amountBuffer.isEmpty ? '0' : _amountBuffer,
-                              style: TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.w800,
-                                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                                letterSpacing: -0.5,
+                              style: GoogleFonts.shareTechMono(
+                                fontSize: 34,
+                                fontWeight: FontWeight.w700,
+                                color: isDark ? Colors.white : Colors.black,
+                                letterSpacing: 1.0,
                               ),
                             ),
                             const SizedBox(width: 5),
                             Text(
                               '฿',
-                              style: TextStyle(
+                              style: GoogleFonts.shareTechMono(
                                 fontSize: 18,
-                                fontWeight: FontWeight.w800,
+                                fontWeight: FontWeight.w700,
                                 color: _selectedType == TransactionType.expense
-                                    ? AppColors.deficitText
+                                    ? AppColors.nothingRed
                                     : (_selectedType == TransactionType.income
-                                        ? AppColors.primary
-                                        : AppColors.accent),
+                                        ? const Color(0xFF10B981)
+                                        : const Color(0xFF3B82F6)),
                               ),
                             ),
                           ],
@@ -867,20 +839,25 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
                         },
                         borderRadius: BorderRadius.circular(8),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                           decoration: BoxDecoration(
-                            color: AppColors.deficitBg,
+                            color: AppColors.nothingRed.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: AppColors.deficitText.withValues(alpha: 0.2)),
+                            border: Border.all(color: AppColors.nothingRed.withValues(alpha: 0.3), width: 0.8),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.clear_rounded, size: 12, color: AppColors.deficitText),
+                              const Icon(Icons.clear_rounded, size: 12, color: AppColors.nothingRed),
                               const SizedBox(width: 3),
                               Text(
-                                'reset'.tr,
-                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.deficitText),
+                                'CLEAR',
+                                style: GoogleFonts.spaceGrotesk(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.5,
+                                  color: AppColors.nothingRed,
+                                ),
                               ),
                             ],
                           ),
@@ -891,7 +868,7 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
               ),
               const SizedBox(height: 10),
 
-              // Built-in 4x3 Ergonomic Numpad
+              // Built-in 4x3 Ergonomic Numpad in Nothing OS style
               _buildNumpadGrid(isDark),
               const SizedBox(height: 10),
 
@@ -899,28 +876,29 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: isDark ? AppColors.darkBackground : AppColors.surfaceSecondary,
-                  borderRadius: BorderRadius.circular(14),
+                  color: isDark ? const Color(0xFF000000) : const Color(0xFFF7F7F7),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: isDark ? AppColors.darkBorder.withValues(alpha: 0.6) : AppColors.border.withValues(alpha: 0.6),
+                    color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                    width: 0.8,
                   ),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.calendar_today_rounded, size: 14, color: AppColors.primary),
+                    Icon(Icons.calendar_today_outlined, size: 14, color: isDark ? Colors.white : Colors.black),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         _formatDate(_selectedDate),
-                        style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700),
+                        style: GoogleFonts.spaceGrotesk(fontSize: 11, fontWeight: FontWeight.w700),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    _buildDateChip('today'.tr, () {
+                    _buildDateChip('today'.tr.toUpperCase(), () {
                       setState(() => _selectedDate = DateTime.now());
                     }, isDark),
                     const SizedBox(width: 5),
-                    _buildDateChip('yesterday'.tr, () {
+                    _buildDateChip('yesterday'.tr.toUpperCase(), () {
                       final now = DateTime.now();
                       setState(() => _selectedDate = DateTime(now.year, now.month, now.day - 1, now.hour, now.minute));
                     }, isDark),
@@ -931,10 +909,10 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
                       child: Container(
                         padding: const EdgeInsets.all(5),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.12),
+                          color: isDark ? const Color(0xFF1E1E1E) : const Color(0xFFE5E5E5),
                           borderRadius: BorderRadius.circular(7),
                         ),
-                        child: const Icon(Icons.edit_calendar_rounded, size: 14, color: AppColors.primary),
+                        child: Icon(Icons.edit_calendar_outlined, size: 13, color: isDark ? Colors.white : Colors.black),
                       ),
                     ),
                     const SizedBox(width: 5),
@@ -944,20 +922,20 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.12),
+                          color: isDark ? const Color(0xFF1E1E1E) : const Color(0xFFE5E5E5),
                           borderRadius: BorderRadius.circular(7),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.access_time_rounded, size: 13, color: AppColors.primary),
+                            Icon(Icons.access_time_outlined, size: 12, color: isDark ? Colors.white : Colors.black),
                             const SizedBox(width: 3),
                             Text(
                               DateFormat('HH:mm').format(_selectedDate),
-                              style: const TextStyle(
-                                fontSize: 11,
+                              style: GoogleFonts.shareTechMono(
+                                fontSize: 10.5,
                                 fontWeight: FontWeight.w700,
-                                color: AppColors.primary,
+                                color: isDark ? Colors.white : Colors.black,
                               ),
                             ),
                           ],
@@ -976,138 +954,117 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
                 onChanged: (_) => setState(() {}),
                 textInputAction: TextInputAction.next,
                 onEditingComplete: () => FocusScope.of(context).requestFocus(_noteFocusNode),
-                style: TextStyle(
+                style: GoogleFonts.spaceGrotesk(
                   fontSize: 13,
-                  color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                  color: isDark ? Colors.white : Colors.black,
                 ),
                 decoration: InputDecoration(
                   hintText: 'title_hint'.tr,
-                  hintStyle: const TextStyle(fontSize: 11.5, color: AppColors.textSecondary),
-                  prefixIcon: const Icon(Icons.edit_rounded, size: 16, color: AppColors.textSecondary),
+                  hintStyle: GoogleFonts.spaceGrotesk(fontSize: 11.5, color: AppColors.nothingSubtext),
+                  prefixIcon: Icon(Icons.edit_outlined, size: 15, color: isDark ? Colors.white70 : Colors.black54),
                   suffixIcon: _titleController.text.isNotEmpty
                       ? IconButton(
-                          icon: const Icon(Icons.clear_rounded, size: 16),
+                          icon: const Icon(Icons.clear_rounded, size: 15),
                           onPressed: () => setState(() => _titleController.clear()),
                         )
                       : null,
                   isDense: true,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                   filled: true,
-                  fillColor: isDark ? AppColors.darkBackground : AppColors.surfaceSecondary,
+                  fillColor: isDark ? const Color(0xFF000000) : const Color(0xFFF7F7F7),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: isDark ? AppColors.darkBorder : AppColors.border.withValues(alpha: 0.6)),
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08), width: 0.8),
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: isDark ? AppColors.darkBorder : AppColors.border.withValues(alpha: 0.6)),
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08), width: 0.8),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(color: isDark ? Colors.white : Colors.black, width: 1.0),
                   ),
                 ),
               ),
               const SizedBox(height: 6),
 
-              // Note TextField (แยกออกจาก Title)
+              // Note TextField
               TextField(
                 controller: _noteController,
                 focusNode: _noteFocusNode,
                 onChanged: (_) => setState(() {}),
                 textInputAction: TextInputAction.done,
                 onEditingComplete: () => FocusScope.of(context).unfocus(),
-                style: TextStyle(
+                style: GoogleFonts.spaceGrotesk(
                   fontSize: 12.5,
-                  color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                  color: isDark ? Colors.white : Colors.black,
                 ),
                 decoration: InputDecoration(
                   hintText: 'note_hint'.tr,
-                  hintStyle: const TextStyle(fontSize: 11.5, color: AppColors.textSecondary),
-                  prefixIcon: const Icon(Icons.edit_note_rounded, size: 18, color: AppColors.textSecondary),
+                  hintStyle: GoogleFonts.spaceGrotesk(fontSize: 11.5, color: AppColors.nothingSubtext),
+                  prefixIcon: Icon(Icons.notes_outlined, size: 16, color: isDark ? Colors.white70 : Colors.black54),
                   suffixIcon: _noteController.text.isNotEmpty
                       ? IconButton(
-                          icon: const Icon(Icons.clear_rounded, size: 16),
+                          icon: const Icon(Icons.clear_rounded, size: 15),
                           onPressed: () => setState(() => _noteController.clear()),
                         )
                       : null,
                   isDense: true,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                   filled: true,
-                  fillColor: isDark ? AppColors.darkBackground : AppColors.surfaceSecondary,
+                  fillColor: isDark ? const Color(0xFF000000) : const Color(0xFFF7F7F7),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: isDark ? AppColors.darkBorder : AppColors.border.withValues(alpha: 0.6)),
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08), width: 0.8),
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: isDark ? AppColors.darkBorder : AppColors.border.withValues(alpha: 0.6)),
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08), width: 0.8),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(color: isDark ? Colors.white : Colors.black, width: 1.0),
                   ),
                 ),
               ),
               const SizedBox(height: 12),
 
-              // Glowing Submit Button with Animated State
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 260),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  gradient: LinearGradient(
-                    colors: _isSuccess
-                        ? const [Color(0xFF10B981), Color(0xFF059669)]
-                        : (_selectedType == TransactionType.expense
-                            ? [const Color(0xFFEF4444), const Color(0xFFDC2626)]
-                            : (_selectedType == TransactionType.income
-                                ? [AppColors.primary, AppColors.primaryDark]
-                                : [AppColors.accent, const Color(0xFF7C3AED)])),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: (_isSuccess
-                              ? const Color(0xFF10B981)
-                              : (_selectedType == TransactionType.expense
-                                  ? AppColors.deficitText
-                                  : (_selectedType == TransactionType.income ? AppColors.primary : AppColors.accent)))
-                          .withValues(alpha: _isSuccess ? 0.45 : 0.35),
-                      blurRadius: _isSuccess ? 18 : 14,
-                      offset: const Offset(0, 5),
+              // Submit Button in Nothing OS Signature Red
+              ElevatedButton(
+                onPressed: _isSaving ? null : _submit,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _isSuccess ? const Color(0xFF10B981) : AppColors.nothingRed,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    side: BorderSide(
+                      color: Colors.white.withValues(alpha: 0.25),
+                      width: 0.8,
                     ),
-                  ],
+                  ),
                 ),
-                child: ElevatedButton(
-                  onPressed: _isSaving ? null : _submit,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    shadowColor: Colors.transparent,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  ),
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
-                    child: _isSuccess
-                        ? Row(
-                            key: const ValueKey('submit_success'),
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
-                              const SizedBox(width: 8),
-                              Text(
-                                isEditMode ? 'update_success_title'.tr : 'save_success_title'.tr,
-                                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
-                              ),
-                            ],
-                          )
-                        : Text(
-                            isEditMode ? 'save_changes'.tr : 'add_transaction'.tr,
-                            key: const ValueKey('submit_idle'),
-                            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-                          ),
-                  ),
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: _isSuccess
+                      ? Row(
+                          key: const ValueKey('submit_success'),
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
+                            const SizedBox(width: 8),
+                            Text(
+                              (isEditMode ? 'update_success_title'.tr : 'save_success_title'.tr).toUpperCase(),
+                              style: GoogleFonts.spaceGrotesk(fontSize: 14, fontWeight: FontWeight.w800, letterSpacing: 0.8),
+                            ),
+                          ],
+                        )
+                      : Text(
+                          (isEditMode ? 'save_changes'.tr : 'add_transaction'.tr).toUpperCase(),
+                          key: const ValueKey('submit_idle'),
+                          style: GoogleFonts.spaceGrotesk(fontSize: 14, fontWeight: FontWeight.w800, letterSpacing: 1.0),
+                        ),
                 ),
               ),
             ],
@@ -1120,7 +1077,7 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
   Widget _buildSmartSuggestions(bool isDark) {
     final suggestions = _getCategorySuggestions(_selectedCategory);
     return SizedBox(
-      height: 32,
+      height: 30,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: suggestions.length,
@@ -1143,36 +1100,30 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
             borderRadius: BorderRadius.circular(8),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 140),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? AppColors.primary.withValues(alpha: 0.18)
-                    : (isDark ? AppColors.darkBackground : AppColors.surfaceSecondary),
+                    ? (isDark ? Colors.white : Colors.black)
+                    : (isDark ? const Color(0xFF161616) : const Color(0xFFF1F1F1)),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
                   color: isSelected
-                      ? AppColors.primary
-                      : (isDark ? AppColors.darkBorder : AppColors.border),
-                  width: isSelected ? 1.5 : 1,
+                      ? (isDark ? Colors.white : Colors.black)
+                      : (isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08)),
+                  width: 0.8,
                 ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    Icons.auto_awesome_rounded,
-                    size: 11,
-                    color: isSelected ? AppColors.primary : AppColors.textSecondary,
-                  ),
-                  const SizedBox(width: 4),
                   Text(
                     item,
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: 10.5,
                       fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                       color: isSelected
-                          ? AppColors.primary
-                          : (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
+                          ? (isDark ? Colors.black : Colors.white)
+                          : (isDark ? Colors.white : Colors.black),
                     ),
                   ),
                 ],
@@ -1187,15 +1138,21 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
   Widget _buildDateChip(String label, VoidCallback onTap, bool isDark) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(7),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
         decoration: BoxDecoration(
-          color: isDark ? AppColors.darkSurfaceSecondary : AppColors.surface,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.border),
+          color: isDark ? const Color(0xFF1E1E1E) : const Color(0xFFE5E5E5),
+          borderRadius: BorderRadius.circular(7),
+          border: Border.all(
+            color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.06),
+            width: 0.8,
+          ),
         ),
-        child: Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600)),
+        child: Text(
+          label,
+          style: GoogleFonts.spaceGrotesk(fontSize: 9.5, fontWeight: FontWeight.w700, letterSpacing: 0.5),
+        ),
       ),
     );
   }
@@ -1212,27 +1169,25 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
       onTap: () => _onTypeChange(type),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.symmetric(vertical: 7),
         decoration: BoxDecoration(
-          color: isSelected ? color : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: color.withValues(alpha: 0.35),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
+          color: isSelected
+              ? (type == TransactionType.expense
+                  ? AppColors.nothingRed
+                  : (isDark ? Colors.white : Colors.black))
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
         ),
         alignment: Alignment.center,
         child: Text(
           label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-            color: isSelected ? Colors.white : (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
+          style: GoogleFonts.spaceGrotesk(
+            fontSize: 11,
+            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+            letterSpacing: 0.8,
+            color: isSelected
+                ? Colors.white
+                : (isDark ? AppColors.nothingSubtext : const Color(0xFF777777)),
           ),
         ),
       ),
@@ -1241,7 +1196,6 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
 
   Widget _buildCostNaturePill(CostNature nature, String label, String subtitle, bool isDark) {
     final isSelected = _selectedCostNature == nature;
-    final color = nature == CostNature.fixed ? AppColors.fixedCostAccent : AppColors.variableCostAccent;
 
     return Expanded(
       child: GestureDetector(
@@ -1253,31 +1207,36 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
           duration: const Duration(milliseconds: 140),
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
-            color: isSelected ? color.withValues(alpha: 0.15) : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
+            color: isSelected
+                ? (isDark ? const Color(0xFF1E1E1E) : const Color(0xFFEDEDED))
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: isSelected ? color : (isDark ? AppColors.darkBorder : AppColors.border),
-              width: isSelected ? 1.5 : 1,
+              color: isSelected
+                  ? (isDark ? Colors.white : Colors.black)
+                  : (isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08)),
+              width: 0.8,
             ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                label,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                  color: isSelected ? color : (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
+                label.toUpperCase(),
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 10.5,
+                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                  letterSpacing: 0.6,
+                  color: isDark ? Colors.white : Colors.black,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
               Text(
                 subtitle,
-                style: TextStyle(
+                style: GoogleFonts.spaceGrotesk(
                   fontSize: 9,
-                  color: isSelected ? color.withValues(alpha: 0.85) : AppColors.textSecondary,
+                  color: isDark ? AppColors.nothingSubtext : const Color(0xFF888888),
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -1292,19 +1251,24 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
   Widget _buildQuickPill(String label, double value, bool isDark) {
     return InkWell(
       onTap: () => _addQuickAmount(value),
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(7),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
         decoration: BoxDecoration(
-          color: isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary,
-          borderRadius: BorderRadius.circular(8),
+          color: isDark ? const Color(0xFF181818) : const Color(0xFFF0F0F0),
+          borderRadius: BorderRadius.circular(7),
           border: Border.all(
-            color: isDark ? AppColors.darkBorder : AppColors.border.withValues(alpha: 0.6),
+            color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+            width: 0.8,
           ),
         ),
         child: Text(
           label,
-          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.primary),
+          style: GoogleFonts.shareTechMono(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            color: isDark ? Colors.white : Colors.black,
+          ),
         ),
       ),
     );
@@ -1326,29 +1290,33 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
             children: row.map((key) {
               return Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 3),
                   child: InkWell(
                     onTap: () => _onNumpadPress(key),
                     borderRadius: BorderRadius.circular(12),
                     child: Container(
                       height: 44,
                       decoration: BoxDecoration(
-                        color: isDark ? AppColors.darkSurfaceSecondary.withValues(alpha: 0.75) : AppColors.surfaceSecondary,
+                        color: isDark ? const Color(0xFF161616) : const Color(0xFFF4F4F4),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: isDark ? AppColors.darkBorder.withValues(alpha: 0.45) : AppColors.border.withValues(alpha: 0.5),
+                          color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.06),
                           width: 0.8,
                         ),
                       ),
                       alignment: Alignment.center,
                       child: key == '⌫'
-                          ? Icon(Icons.backspace_outlined, size: 18, color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary)
+                          ? Icon(
+                              Icons.backspace_outlined,
+                              size: 17,
+                              color: isDark ? Colors.white : Colors.black,
+                            )
                           : Text(
                               key,
-                              style: TextStyle(
+                              style: GoogleFonts.spaceGrotesk(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w700,
-                                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                                color: isDark ? Colors.white : Colors.black,
                               ),
                             ),
                     ),
@@ -1362,3 +1330,4 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
     );
   }
 }
+

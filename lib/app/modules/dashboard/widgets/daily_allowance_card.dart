@@ -3,13 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../routes/app_routes.dart';
 import '../../../theme/app_colors.dart';
+import '../../../widgets/nothing_ui_components.dart';
 import '../controllers/dashboard_controller.dart';
 
-/// บัตรแสดงโควตาค่ากินรายวัน (Daily Allowance & Run-rate)
-/// สไตล์ Luxury Modern FinTech 2026 พร้อมวงแหวนนีออนและแถบสถิติความเร็วการใช้จ่าย
+/// บัตรแสดงโควตาค่ากินรายวัน สไตล์ Nothing OS Design System
+/// ผสมผสานหน้าปัดดิจิทัลสไตล์ Nothing Dial, ตัวเลข Monospace คมชัด,
+/// และตัวชี้วัดความเร็วการใช้จ่าย (Run-rate) สไตล์วิศวกรรม
 class DailyAllowanceCard extends GetView<DashboardController> {
   const DailyAllowanceCard({super.key});
 
@@ -28,534 +31,335 @@ class DailyAllowanceCard extends GetView<DashboardController> {
       final usedProgress = targetDaily > 0 ? (todaySpent / targetDaily).clamp(0.0, 1.0) : 0.0;
       final usedPct = targetDaily > 0 ? (todaySpent / targetDaily * 100).toInt() : 0;
 
-      // Status classification
       final bool isWarning = usedProgress >= 0.7 && !isOverToday;
-      final Color statusAccent;
-      final Color statusBg;
-      final Color statusBorder;
-      final String statusLabel;
+      final Color statusAccent = isOverToday
+          ? AppColors.nothingRed
+          : (isWarning ? AppColors.warning : (isDark ? Colors.white : Colors.black));
 
-      if (isOverToday) {
-        statusAccent = AppColors.deficitText;
-        statusBg = isDark ? const Color(0xFF3B1219) : const Color(0xFFFEE2E2);
-        statusBorder = isDark ? const Color(0xFF7F1D1D) : const Color(0xFFFCA5A5);
-        statusLabel = 'over_quota_caution'.tr;
-      } else if (isWarning) {
-        statusAccent = const Color(0xFFF59E0B);
-        statusBg = isDark ? const Color(0xFF36200B) : const Color(0xFFFEF3C7);
-        statusBorder = isDark ? const Color(0xFF78350F) : const Color(0xFFFDE68A);
-        statusLabel = 'moderate_pacing'.tr;
-      } else {
-        statusAccent = AppColors.primary;
-        statusBg = isDark ? const Color(0xFF0D281E) : const Color(0xFFDCFCE7);
-        statusBorder = isDark ? const Color(0xFF065F46) : const Color(0xFF86EFAC);
-        statusLabel = 'on_track_safe'.tr;
-      }
+      final String statusLabel = isOverToday
+          ? 'over_quota_caution'.tr
+          : (isWarning ? 'moderate_pacing'.tr : 'on_track_safe'.tr);
 
       // Monthly Run-rate metrics
       final remainingDailyRunRate = controller.remainingDailyAllowance;
       final remainingDays = controller.remainingDaysInMonth;
-      final isMonthlySafe = remainingDailyRunRate >= targetDaily * 0.7;
 
-      // Smart incentive: calculate daily bonus if saved today
       final double todaySavings = targetDaily - todaySpent;
       final double dailyBonus = (todaySavings > 0 && remainingDays > 0)
           ? (todaySavings / remainingDays)
           : 0.0;
 
-      return Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-              color: statusAccent.withValues(alpha: isDark ? 0.12 : 0.07),
-              blurRadius: 24,
-              offset: const Offset(0, 8),
+      return NothingCard(
+        borderRadius: 28,
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // --- HEADER ROW: Glyph Icon, Title, Status Pill ---
+            Row(
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary,
+                    borderRadius: BorderRadius.circular(13),
+                    border: Border.all(
+                      color: isDark ? AppColors.darkBorder : AppColors.border,
+                      width: 1.0,
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.fastfood_outlined,
+                    color: isDark ? Colors.white : Colors.black,
+                    size: 18,
+                  ),
+                ),
+                const SizedBox(width: 12),
+
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              'daily_allowance_today'.tr.toUpperCase(),
+                              style: GoogleFonts.spaceGrotesk(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 1.5,
+                                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                              ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          InkWell(
+                            onTap: () {
+                              try {
+                                HapticFeedback.lightImpact();
+                              } catch (_) {}
+                              Get.toNamed(Routes.BUDGET_SETTINGS);
+                            },
+                            borderRadius: BorderRadius.circular(12),
+                            child: Padding(
+                              padding: const EdgeInsets.all(3),
+                              child: Icon(
+                                Icons.tune_rounded,
+                                size: 15,
+                                color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 1),
+                      Text(
+                        controller.formattedPeriodTitle.toUpperCase(),
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 1.2,
+                          color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                        ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+
+                // Nothing OS Status Pill
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: isOverToday
+                          ? AppColors.nothingRed.withValues(alpha: 0.6)
+                          : (isDark ? AppColors.darkBorder : AppColors.border),
+                      width: 1.0,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      NothingLedIndicator(
+                        size: 6,
+                        color: statusAccent,
+                        isPulsing: isOverToday,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        statusLabel,
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w700,
+                          color: statusAccent,
+                        ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.03),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+            const SizedBox(height: 18),
+
+            // --- HERO VIEW: Nothing Dial & Big Number ---
+            Row(
+              children: [
+                // Nothing OS Dial (Tick Marks + Segmented Ring)
+                SizedBox(
+                  width: 76,
+                  height: 76,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      CustomPaint(
+                        size: const Size(76, 76),
+                        painter: _NothingDialPainter(
+                          progress: usedProgress,
+                          isDark: isDark,
+                          activeColor: statusAccent,
+                        ),
+                      ),
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            isOverToday ? 'OVER' : '$usedPct%',
+                            style: GoogleFonts.shareTechMono(
+                              fontSize: isOverToday ? 12 : 14,
+                              fontWeight: FontWeight.w700,
+                              color: statusAccent,
+                            ),
+                          ),
+                          Text(
+                            'USED',
+                            style: GoogleFonts.spaceGrotesk(
+                              fontSize: 8.5,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.8,
+                              color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+
+                // Hero Remaining Balance
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        isOverToday
+                            ? '${'over_for_today'.tr.toUpperCase()} ${'today_over'.tr}'
+                            : '${'remaining_for_today'.tr.toUpperCase()} ${'today_used'.tr}',
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.2,
+                          color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                        ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+                      ),
+                      const SizedBox(height: 2),
+
+                      // Big Number (Dot Matrix / Monospace)
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.baseline,
+                          textBaseline: TextBaseline.alphabetic,
+                          children: [
+                            Text(
+                              isOverToday ? '-฿' : '฿',
+                              style: GoogleFonts.spaceGrotesk(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w600,
+                                color: statusAccent,
+                              ),
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              currencyFmt.format(todayRemaining.abs()).replaceAll('฿', ''),
+                              style: GoogleFonts.shareTechMono(
+                                fontSize: 32,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -0.5,
+                                color: statusAccent,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+
+                      Text(
+                        '${'today_spent'.tr} ${currencyFmt.format(todaySpent)} • ${'target'.tr} ${currencyFmt.format(targetDaily)}/${'day'.tr}',
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w500,
+                          color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                        ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // --- MACRO VIEW: Dynamic Monthly Run-rate Ribbon ---
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkSurfaceSecondary.withValues(alpha: 0.7) : AppColors.surfaceSecondary,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isDark ? AppColors.darkBorder : AppColors.border,
+                  width: 0.8,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const NothingLedIndicator(size: 5, color: AppColors.nothingRed),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'monthly_runrate_label'.tr.toUpperCase(),
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.2,
+                            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                          ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+                        ),
+                      ),
+                      Text(
+                        remainingDays > 0 ? '$remainingDays ${'days_left'.tr}' : 'month_ended'.tr,
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                        ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '${'remaining_rate'.tr}: ${currencyFmt.format(remainingDailyRunRate)}/${'day'.tr}',
+                        style: GoogleFonts.shareTechMono(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                        ),
+                      ),
+                      if (dailyBonus > 0)
+                        Text(
+                          '+${currencyFmt.format(dailyBonus)}/${'day'.tr} bonus',
+                          style: GoogleFonts.shareTechMono(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? Colors.white : Colors.black,
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ],
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: Stack(
-            children: [
-              // 1. Surface Background with Subtle Gradient
-              Positioned.fill(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkSurface : AppColors.surface,
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: isDark
-                          ? [
-                              AppColors.darkSurface,
-                              AppColors.darkSurfaceSecondary.withValues(alpha: 0.8),
-                            ]
-                          : [
-                              Colors.white,
-                              const Color(0xFFFAFCFF),
-                            ],
-                    ),
-                  ),
-                ),
-              ),
-
-              // 2. Ambient Aura Glow in top right corner
-              Positioned(
-                top: -24,
-                right: -24,
-                child: Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        statusAccent.withValues(alpha: isDark ? 0.18 : 0.12),
-                        statusAccent.withValues(alpha: 0.0),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-
-              // 3. Card Content
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: isDark
-                        ? AppColors.darkBorder
-                        : AppColors.border.withValues(alpha: 0.8),
-                    width: 1.1,
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // --- HEADER ROW: Food Icon, Title, Pulsing Status Badge & Settings ---
-                    Row(
-                      children: [
-                        // Food Icon Squircle
-                        Container(
-                          width: 38,
-                          height: 38,
-                          decoration: BoxDecoration(
-                            color: AppColors.variableCostAccent.withValues(alpha: isDark ? 0.16 : 0.12),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: AppColors.variableCostAccent.withValues(alpha: 0.25),
-                            ),
-                          ),
-                          child: const Icon(
-                            Icons.restaurant_rounded,
-                            color: AppColors.variableCostAccent,
-                            size: 19,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-
-                        // Title & Subtitle + Quick Settings Button
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Flexible(
-                                    child: Text(
-                                      'daily_allowance_today'.tr,
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w700,
-                                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                                        letterSpacing: -0.2,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  // Quick Settings Button (Tune Icon)
-                                  InkWell(
-                                    onTap: () {
-                                      HapticFeedback.selectionClick();
-                                      Get.toNamed(Routes.BUDGET_SETTINGS);
-                                    },
-                                    borderRadius: BorderRadius.circular(16),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(3),
-                                      child: Icon(
-                                        Icons.tune_rounded,
-                                        size: 16,
-                                        color: isDark ? AppColors.darkTextTertiary : AppColors.textSecondary,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 1),
-                              Text(
-                                controller.formattedPeriodTitle,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
-                                  color: isDark ? AppColors.darkTextTertiary : AppColors.textSecondary,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-
-                        // Pulsing Status Pill - Right-Aligned Flush to Card Edge
-                        FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerRight,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: statusBg,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: statusBorder, width: 0.9),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  width: 6,
-                                  height: 6,
-                                  decoration: BoxDecoration(
-                                    color: statusAccent,
-                                    shape: BoxShape.circle,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: statusAccent.withValues(alpha: 0.6),
-                                        blurRadius: 4,
-                                        spreadRadius: 1,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  statusLabel,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    color: statusAccent,
-                                  ),
-                                  maxLines: 1,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 18),
-
-                    // --- MICRO VIEW: Neon Progress Ring & Hero Numbers ---
-                    Row(
-                      children: [
-                        // Neon Progress Ring
-                        SizedBox(
-                          width: 74,
-                          height: 74,
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              CustomPaint(
-                                size: const Size(74, 74),
-                                painter: _NeumorphicProgressRingPainter(
-                                  progress: usedProgress,
-                                  isDark: isDark,
-                                  activeColor: statusAccent,
-                                ),
-                              ),
-                              Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    child: Text(
-                                      isOverToday ? 'over_for_today'.tr : '$usedPct%',
-                                      style: TextStyle(
-                                        fontSize: isOverToday ? 12 : 14,
-                                        fontWeight: FontWeight.w800,
-                                        letterSpacing: -0.3,
-                                        color: statusAccent,
-                                      ),
-                                    ),
-                                  ),
-                                  Text(
-                                    'today_used'.tr,
-                                    style: TextStyle(
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.w600,
-                                      color: isDark ? AppColors.darkTextTertiary : AppColors.textSecondary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-
-                        // Hero Remaining or Over Balance
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // "เหลือใช้วันนี้" / "เกินงบวันนี้"
-                              Text(
-                                isOverToday ? '${'over_for_today'.tr} ${'today_over'.tr}' : '${'remaining_for_today'.tr} ${'today_used'.tr}',
-                                style: TextStyle(
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.w600,
-                                  color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-
-                              // Big Hero Number with styled ฿
-                              FittedBox(
-                                fit: BoxFit.scaleDown,
-                                alignment: Alignment.centerLeft,
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                                  textBaseline: TextBaseline.alphabetic,
-                                  children: [
-                                    Text(
-                                      '฿',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w700,
-                                        color: statusAccent.withValues(alpha: 0.8),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 3),
-                                    Text(
-                                      currencyFmt.format(todayRemaining.abs()).replaceAll('฿', ''),
-                                      style: TextStyle(
-                                        fontSize: 28,
-                                        fontWeight: FontWeight.w900,
-                                        letterSpacing: -0.8,
-                                        color: statusAccent,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-
-                              // Spent vs Target Subtitle
-                              Text(
-                                '${'today_spent'.tr} ${currencyFmt.format(todaySpent)} • ${'target'.tr} ${currencyFmt.format(targetDaily)}/${'day'.tr}',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
-                                  color: isDark ? AppColors.darkTextTertiary : AppColors.textSecondary,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-
-                    // --- MACRO VIEW: Dynamic Monthly Run-rate Ribbon ---
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? Colors.black.withValues(alpha: 0.22)
-                            : AppColors.surfaceSecondary.withValues(alpha: 0.75),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: isDark ? AppColors.darkBorder : AppColors.border.withValues(alpha: 0.6),
-                          width: 0.8,
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                remainingDays == 0 ? Icons.event_available_rounded : Icons.auto_graph_rounded,
-                                size: 15,
-                                color: AppColors.variableCostAccent,
-                              ),
-                              const SizedBox(width: 7),
-                              Expanded(
-                                child: Text(
-                                  remainingDays == 0
-                                      ? 'last_day_of_month'.tr
-                                      : 'monthly_runrate_label'.tr,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w500,
-                                    color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              if (remainingDays > 0)
-                                Flexible(
-                                  child: FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    alignment: Alignment.centerRight,
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          '${currencyFmt.format(remainingDailyRunRate)}/${'day'.tr}',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w800,
-                                            color: isMonthlySafe
-                                                ? (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary)
-                                                : AppColors.deficitText,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          '(${'days_left'.trParams({'days': '$remainingDays'})})',
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            color: isDark ? AppColors.darkTextTertiary : AppColors.textSecondary,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                )
-                              else
-                                Text(
-                                  'ends_today'.tr,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                                  ),
-                                ),
-                            ],
-                          ),
-                          // Smart savings tag if user has saved money today
-                          if (dailyBonus >= 1 && remainingDays > 0) ...[
-                            const SizedBox(height: 5),
-                            Row(
-                              children: [
-                                const SizedBox(width: 22),
-                                Flexible(
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.primary.withValues(alpha: isDark ? 0.15 : 0.1),
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: Text(
-                                      'savings_bonus_runrate'.trParams({'amount': dailyBonus.toStringAsFixed(0)}),
-                                      style: const TextStyle(
-                                        fontSize: 9.5,
-                                        fontWeight: FontWeight.w700,
-                                        color: AppColors.primary,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                          // Real Balance Dynamic Quota hint: เงินปัจจุบัน - เงินออม - รายจ่ายคงที่
-                          if (controller.dynamicCalculatedDailyQuota > 0 && remainingDays > 0) ...[
-                            const SizedBox(height: 5),
-                            Row(
-                              children: [
-                                const SizedBox(width: 22),
-                                Flexible(
-                                  child: InkWell(
-                                    onTap: () {
-                                      HapticFeedback.selectionClick();
-                                      Get.toNamed(Routes.BUDGET_SETTINGS);
-                                    },
-                                    borderRadius: BorderRadius.circular(6),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.variableCostAccent.withValues(alpha: isDark ? 0.15 : 0.1),
-                                        borderRadius: BorderRadius.circular(6),
-                                        border: Border.all(
-                                          color: AppColors.variableCostAccent.withValues(alpha: 0.25),
-                                          width: 0.8,
-                                        ),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            Icons.auto_awesome_rounded,
-                                            size: 11,
-                                            color: AppColors.variableCostAccent,
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Flexible(
-                                            child: Text(
-                                              '${'dynamic_calculator_title'.tr}: ${currencyFmt.format(controller.dynamicCalculatedDailyQuota)}/${'day'.tr}',
-                                              style: TextStyle(
-                                                fontSize: 9.5,
-                                                fontWeight: FontWeight.w700,
-                                                color: isDark ? AppColors.variableCostAccent : const Color(0xFFD97706),
-                                              ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ).animate().fadeIn(duration: const Duration(milliseconds: 350)).slideY(begin: 0.04);
+      ).animate().fadeIn(duration: const Duration(milliseconds: 250));
     });
   }
 }
 
-/// Custom Painter สำหรับวงแหวนความเร็วการใช้โควตา (Neon Dynamic Progress Ring)
-class _NeumorphicProgressRingPainter extends CustomPainter {
+/// Nothing OS Radial Dial Custom Painter with segmented tick marks
+class _NothingDialPainter extends CustomPainter {
   final double progress;
   final bool isDark;
   final Color activeColor;
 
-  _NeumorphicProgressRingPainter({
+  _NothingDialPainter({
     required this.progress,
     required this.isDark,
     required this.activeColor,
@@ -564,57 +368,40 @@ class _NeumorphicProgressRingPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2 - 5;
-    const strokeWidth = 6.5;
+    final radius = size.width / 2 - 4;
 
-    // Background track
-    final bgPaint = Paint()
-      ..color = isDark ? const Color(0xFF1E2638) : const Color(0xFFE2E8F0)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth;
+    const totalTicks = 24;
+    final filledTicks = (progress.clamp(0.0, 1.0) * totalTicks).round();
 
-    canvas.drawCircle(center, radius, bgPaint);
+    for (int i = 0; i < totalTicks; i++) {
+      final angle = -math.pi / 2 + (2 * math.pi / totalTicks) * i;
+      final isFilled = i < filledTicks;
 
-    if (progress <= 0) return;
+      final tickLength = isFilled ? 6.0 : 4.0;
+      final outerPoint = Offset(
+        center.dx + radius * math.cos(angle),
+        center.dy + radius * math.sin(angle),
+      );
+      final innerPoint = Offset(
+        center.dx + (radius - tickLength) * math.cos(angle),
+        center.dy + (radius - tickLength) * math.sin(angle),
+      );
 
-    // Glowing aura behind the active arc
-    final glowPaint = Paint()
-      ..color = activeColor.withValues(alpha: 0.3)
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round
-      ..strokeWidth = strokeWidth + 3
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
+      final paint = Paint()
+        ..color = isFilled
+            ? activeColor
+            : (isDark ? Colors.white.withValues(alpha: 0.12) : Colors.black.withValues(alpha: 0.10))
+        ..strokeWidth = isFilled ? 2.2 : 1.5
+        ..strokeCap = StrokeCap.round;
 
-    final sweepAngle = 2 * math.pi * progress.clamp(0.0, 1.0);
-    final arcRect = Rect.fromCircle(center: center, radius: radius);
-
-    canvas.drawArc(
-      arcRect,
-      -math.pi / 2,
-      sweepAngle,
-      false,
-      glowPaint,
-    );
-
-    // Active arc with sharp round cap
-    final activePaint = Paint()
-      ..color = activeColor
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round
-      ..strokeWidth = strokeWidth;
-
-    canvas.drawArc(
-      arcRect,
-      -math.pi / 2,
-      sweepAngle,
-      false,
-      activePaint,
-    );
+      canvas.drawLine(innerPoint, outerPoint, paint);
+    }
   }
 
   @override
-  bool shouldRepaint(covariant _NeumorphicProgressRingPainter oldDelegate) =>
-      oldDelegate.progress != progress ||
-      oldDelegate.isDark != isDark ||
-      oldDelegate.activeColor != activeColor;
+  bool shouldRepaint(covariant _NothingDialPainter oldDelegate) {
+    return oldDelegate.progress != progress ||
+        oldDelegate.isDark != isDark ||
+        oldDelegate.activeColor != activeColor;
+  }
 }

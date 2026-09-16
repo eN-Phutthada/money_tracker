@@ -2,19 +2,19 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../routes/app_routes.dart';
 import '../modules/dashboard/controllers/dashboard_controller.dart';
 import '../modules/security/controllers/security_controller.dart';
-import '../routes/app_routes.dart';
 import '../theme/app_colors.dart';
+import 'nothing_ui_components.dart';
 
-/// วิดเจ็ตแถบเมนูด้านบนสไตล์ Modern FinTech 2026 (Modern Frosted Glass AppBar)
-/// มีเอกลักษณ์หรูหราเป็นหนึ่งเดียวทั่วทั้งแอปพลิเคชัน:
-/// - พื้นผิวกระจกฝ้า Frosted Glass พร้อม BackdropFilter Blur
-/// - ปุ่มย้อนกลับทรงมน Squircle สไตล์โมเดิร์น พร้อมสัมผัส Haptic
-/// - หัวข้อตัวหนา คมชัด พร้อมชิป Badge แสดงสถานะ/จำนวน พร้อมจุด LED Indicator
-/// - คำอธิบายย่อย (Subtitle) บอกหน้าที่ของหน้านั้น
-/// - ปุ่ม Action สไตล์ Radiant Gradient หรือ Squircle Surface
-/// - เส้นแบ่งขอบบางระดับ Ambient Hairline ที่นุ่มนวล
+/// วิดเจ็ตแถบเมนูด้านบนสไตล์ Nothing OS Design
+/// - สไตล์ Minimal Monochrome คมชัดแบบ High-Contrast
+/// - พื้นหลังโปร่งแสง Smoked Glass / Pitch Black พร้อม BackdropFilter Blur
+/// - ปุ่มย้อนกลับและ Action Button ทรง Squircle มน 13px พร้อมขอบ Hairline 0.8px
+/// - Typography: Space Grotesk / Monospace พร้อม Letter Spacing กว้าง
+/// - จุด LED Indicator สีแดง Nothing Red บน Badge แสดงสถานะ
 class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String? title;
   final Widget? titleWidget;
@@ -62,25 +62,20 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final canPop = ModalRoute.of(context)?.canPop ?? false;
 
-    // Leading Widget (Luxury Squircle Back Button by default if canPop or showBackButton)
+    // Leading Widget (Nothing Squircle Back Button by default if canPop or showBackButton)
     Widget? leadingWidget = leading;
     if (leadingWidget == null && showBackButton && canPop) {
       leadingWidget = Padding(
-        padding: const EdgeInsets.only(left: 14, top: 11, bottom: 11, right: 2),
+        padding: const EdgeInsets.only(left: 14, top: 12, bottom: 12, right: 2),
         child: Material(
-          color: isDark
-              ? AppColors.darkSurfaceSecondary.withValues(alpha: 0.85)
-              : AppColors.surfaceSecondary,
+          color: isDark ? const Color(0xFF141414) : const Color(0xFFF4F4F4),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(13),
+            borderRadius: BorderRadius.circular(12),
             side: BorderSide(
-              color: isDark
-                  ? AppColors.darkBorder.withValues(alpha: 0.6)
-                  : AppColors.border.withValues(alpha: 0.7),
+              color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
               width: 0.8,
             ),
           ),
-          elevation: isDark ? 0 : 0.5,
           child: InkWell(
             onTap: () {
               HapticFeedback.selectionClick();
@@ -90,15 +85,13 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
                 Navigator.of(context).maybePop();
               }
             },
-            borderRadius: BorderRadius.circular(13),
+            borderRadius: BorderRadius.circular(12),
             child: Container(
               alignment: Alignment.center,
               child: Icon(
                 Icons.arrow_back_ios_new_rounded,
-                size: 15,
-                color: isDark
-                    ? AppColors.darkTextPrimary
-                    : AppColors.textPrimary,
+                size: 14,
+                color: isDark ? Colors.white : Colors.black,
               ),
             ),
           ),
@@ -120,14 +113,12 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
             else if (title != null)
               Flexible(
                 child: Text(
-                  title!,
-                  style: TextStyle(
-                    fontSize: 16.5,
+                  title!.toUpperCase(),
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 16,
                     fontWeight: FontWeight.w800,
-                    letterSpacing: -0.35,
-                    color: isDark
-                        ? AppColors.darkTextPrimary
-                        : AppColors.textPrimary,
+                    letterSpacing: 1.2,
+                    color: isDark ? Colors.white : Colors.black,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -138,10 +129,13 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
               badgeWidget!,
             ] else if (badgeText != null) ...[
               const SizedBox(width: 8),
-              _buildBadgePill(
-                badgeText!,
-                badgeColor ?? AppColors.primary,
-                isDark,
+              NothingPill(
+                label: badgeText!,
+                color: (badgeColor ?? AppColors.nothingRed).withValues(alpha: isDark ? 0.18 : 0.12),
+                textColor: badgeColor ?? AppColors.nothingRed,
+                showDot: true,
+                dotColor: badgeColor ?? AppColors.nothingRed,
+                isDotMatrix: true,
               ),
             ],
           ],
@@ -153,13 +147,11 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
           const SizedBox(height: 2),
           Text(
             subtitle!,
-            style: TextStyle(
+            style: GoogleFonts.spaceGrotesk(
               fontSize: 11,
-              color: isDark
-                  ? AppColors.darkTextSecondary
-                  : AppColors.textSecondary,
+              color: isDark ? AppColors.nothingSubtext : const Color(0xFF777777),
               fontWeight: FontWeight.w500,
-              letterSpacing: -0.1,
+              letterSpacing: 0.2,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -169,8 +161,8 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
     );
 
     return AppBar(
-      backgroundColor: (isDark ? AppColors.darkSurface : AppColors.surface)
-          .withValues(alpha: isDark ? 0.86 : 0.90),
+      backgroundColor: (isDark ? const Color(0xFF000000) : Colors.white)
+          .withValues(alpha: isDark ? 0.88 : 0.92),
       elevation: 0,
       scrolledUnderElevation: 0,
       centerTitle: false,
@@ -198,18 +190,7 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
             if (showBottomBorder)
               Container(
                 height: 0.8,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      (isDark ? AppColors.darkBorder : AppColors.border)
-                          .withValues(alpha: 0.3),
-                      (isDark ? AppColors.darkBorder : AppColors.border)
-                          .withValues(alpha: 0.85),
-                      (isDark ? AppColors.darkBorder : AppColors.border)
-                          .withValues(alpha: 0.3),
-                    ],
-                  ),
-                ),
+                color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.07),
               ),
           ],
         ),
@@ -217,49 +198,13 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
     );
   }
 
-  static Widget _buildBadgePill(String text, Color color, bool isDark) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha: 0.30), width: 0.8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 4.5,
-            height: 4.5,
-            decoration: BoxDecoration(shape: BoxShape.circle, color: color),
-          ),
-          const SizedBox(width: 4.5),
-          Text(
-            text,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: color,
-              letterSpacing: 0.2,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// สร้างปุ่ม Action สไตล์ Radiant Gradient เด่น (Primary Action)
+  /// สร้างปุ่ม Action สไตล์ Nothing OS Red Accent (Primary Action)
   static Widget primaryActionButton({
     required VoidCallback onTap,
     required String label,
     required IconData icon,
-    List<Color> gradientColors = const [
-      AppColors.primary,
-      AppColors.primaryDark,
-    ],
-    Color shadowColor = AppColors.primary,
+    List<Color>? gradientColors,
+    Color shadowColor = AppColors.nothingRed,
   }) {
     return Padding(
       padding: const EdgeInsets.only(right: 14),
@@ -270,36 +215,29 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
             HapticFeedback.lightImpact();
             onTap();
           },
-          borderRadius: BorderRadius.circular(13),
+          borderRadius: BorderRadius.circular(12),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: gradientColors,
+              color: AppColors.nothingRed,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.3),
+                width: 0.8,
               ),
-              borderRadius: BorderRadius.circular(13),
-              boxShadow: [
-                BoxShadow(
-                  color: shadowColor.withValues(alpha: 0.32),
-                  blurRadius: 10,
-                  offset: const Offset(0, 3),
-                ),
-              ],
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(icon, size: 16, color: Colors.white),
+                Icon(icon, size: 15, color: Colors.white),
                 const SizedBox(width: 5),
                 Text(
-                  label,
-                  style: const TextStyle(
-                    fontSize: 12,
+                  label.toUpperCase(),
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 11,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
-                    letterSpacing: -0.1,
+                    letterSpacing: 0.8,
                   ),
                 ),
               ],
@@ -323,27 +261,21 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
     final btn = Padding(
       padding: const EdgeInsets.only(right: 8),
       child: Material(
-        color:
-            backgroundColor ??
-            (isDark
-                ? AppColors.darkSurfaceSecondary.withValues(alpha: 0.85)
-                : AppColors.surfaceSecondary),
+        color: backgroundColor ??
+            (isDark ? const Color(0xFF141414) : const Color(0xFFF4F4F4)),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(13),
+          borderRadius: BorderRadius.circular(12),
           side: BorderSide(
-            color: isDark
-                ? AppColors.darkBorder.withValues(alpha: 0.55)
-                : AppColors.border.withValues(alpha: 0.65),
+            color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
             width: 0.8,
           ),
         ),
-        elevation: isDark ? 0 : 0.5,
         child: InkWell(
           onTap: () {
             HapticFeedback.selectionClick();
             onTap();
           },
-          borderRadius: BorderRadius.circular(13),
+          borderRadius: BorderRadius.circular(12),
           child: Container(
             width: 38,
             height: 38,
@@ -351,9 +283,7 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
             child: Icon(
               icon,
               size: size,
-              color:
-                  iconColor ??
-                  (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
+              color: iconColor ?? (isDark ? Colors.white : Colors.black),
             ),
           ),
         ),
@@ -366,7 +296,7 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
     return btn;
   }
 
-  /// 1. วิดเจ็ตเข็มทิศความปลอดภัยพร้อมไฟ LED กระพริบ (Live Security Pulse Badge)
+  /// วิดเจ็ตสถานะความปลอดภัยสไตล์ Nothing OS Squircle พร้อมไฟ LED (Live Security Pulse Badge)
   static Widget securityBadge({
     required BuildContext context,
     required bool isDark,
@@ -374,9 +304,8 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
   }) {
     return Obx(() {
       final hasSec = Get.isRegistered<SecurityController>();
-      final isPinOn =
-          hasSec && Get.find<SecurityController>().isPinEnabled.value;
-      final statusColor = isPinOn ? const Color(0xFF10B981) : AppColors.primary;
+      final isPinOn = hasSec && Get.find<SecurityController>().isPinEnabled.value;
+      final statusColor = isPinOn ? const Color(0xFF10B981) : AppColors.nothingRed;
 
       return Padding(
         padding: const EdgeInsets.only(right: 6),
@@ -385,8 +314,7 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              onTap:
-                  onTap ??
+              onTap: onTap ??
                   () {
                     HapticFeedback.selectionClick();
                     if (Get.currentRoute != Routes.PIN_SETTINGS) {
@@ -398,11 +326,11 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                 decoration: BoxDecoration(
                   color: isDark
-                      ? statusColor.withValues(alpha: 0.12)
-                      : statusColor.withValues(alpha: 0.08),
+                      ? const Color(0xFF141414)
+                      : const Color(0xFFF4F4F4),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: statusColor.withValues(alpha: isDark ? 0.30 : 0.25),
+                    color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
                     width: 0.8,
                   ),
                 ),
@@ -410,16 +338,15 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                      width: 6.5,
-                      height: 6.5,
+                      width: 6,
+                      height: 6,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: statusColor,
                         boxShadow: [
                           BoxShadow(
-                            color: statusColor.withValues(alpha: 0.65),
-                            blurRadius: 5,
-                            spreadRadius: 0.5,
+                            color: statusColor.withValues(alpha: 0.6),
+                            blurRadius: 4,
                           ),
                         ],
                       ),
@@ -428,7 +355,7 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
                     Icon(
                       isPinOn ? Icons.shield_rounded : Icons.shield_outlined,
                       size: 13,
-                      color: statusColor,
+                      color: isDark ? Colors.white : Colors.black,
                     ),
                   ],
                 ),
@@ -440,7 +367,7 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
     });
   }
 
-  /// 2. วิดเจ็ตสลับธีม 1-Tap ทรง Squircle โมเดิร์น (Quick Theme Morphing Squircle)
+  /// วิดเจ็ตสลับธีม 1-Tap ทรง Squircle โมเดิร์นสไตล์ Nothing (Quick Theme Squircle)
   static Widget themeToggleButton({
     required BuildContext context,
     required bool isDark,
@@ -461,7 +388,7 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
         iconColor = const Color(0xFF6366F1);
       } else {
         themeIcon = Icons.brightness_auto_rounded;
-        iconColor = AppColors.primary;
+        iconColor = isDark ? Colors.white : Colors.black;
       }
 
       return Padding(
@@ -469,15 +396,13 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
         child: Tooltip(
           message: 'theme_label'.trParams({'theme': controller.themeModeName}),
           child: Material(
-            color: isDark
-                ? AppColors.darkSurfaceSecondary.withValues(alpha: 0.85)
-                : AppColors.surfaceSecondary,
+            color: isDark ? const Color(0xFF141414) : const Color(0xFFF4F4F4),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
               side: BorderSide(
                 color: isDark
-                    ? Colors.white.withValues(alpha: 0.14)
-                    : AppColors.border.withValues(alpha: 0.70),
+                    ? AppColors.nothingBorder
+                    : Colors.black.withValues(alpha: 0.08),
                 width: 0.8,
               ),
             ),
@@ -490,7 +415,7 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
               child: SizedBox(
                 width: 36,
                 height: 36,
-                child: Icon(themeIcon, size: 18, color: iconColor),
+                child: Icon(themeIcon, size: 17, color: iconColor),
               ),
             ),
           ),

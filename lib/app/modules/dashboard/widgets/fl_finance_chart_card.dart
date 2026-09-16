@@ -3,13 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../theme/app_colors.dart';
+import '../../../widgets/nothing_ui_components.dart';
 import '../controllers/dashboard_controller.dart';
 
-/// บัตรวิเคราะห์และแนวโน้มการเงินสไตล์ Luxury Modern FinTech Hub 2026
-/// 1. กราฟแนวโน้มกระแสเงินสดสุทธิย้อนหลัง 6 เดือน (Enhanced Spline Area Chart)
-/// 2. กราฟวงแหวนสัดส่วนรายจ่ายพร้อม Center Cutout Metric และการ์ดแคปซูลหมวดหมู่ (Interactive Donut)
+/// บัตรวิเคราะห์และแนวโน้มการเงินสไตล์ Nothing OS Design
+/// 1. กราฟแนวโน้มกระแสเงินสดสุทธิย้อนหลัง 6 เดือน (Nothing Monochrome Spline Chart w/ Red Peak Pulse)
+/// 2. กราฟวงแหวนสัดส่วนรายจ่ายพร้อม Center Cutout Metric และการ์ดหมวดหมู่สไตล์ Nothing OS (Monochrome & Red Accents)
 class FlFinanceChartCard extends StatefulWidget {
   const FlFinanceChartCard({super.key});
 
@@ -22,17 +24,17 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
   int _touchedPieIndex = -1;
 
   IconData _getCategoryIcon(String category) {
-    if (category.contains('อาหาร') || category.contains('ของกิน') || category.contains('Food')) return Icons.fastfood_rounded;
-    if (category.contains('กาแฟ') || category.contains('เครื่องดื่ม') || category.contains('Coffee')) return Icons.local_cafe_rounded;
-    if (category.contains('เดินทาง') || category.contains('รถ') || category.contains('Transport')) return Icons.directions_subway_rounded;
-    if (category.contains('ช้อปปิ้ง') || category.contains('Shopping')) return Icons.shopping_bag_rounded;
-    if (category.contains('ของใช้') || category.contains('Personal')) return Icons.inventory_2_rounded;
-    if (category.contains('ที่อยู่อาศัย') || category.contains('Housing')) return Icons.home_rounded;
-    if (category.contains('สาธารณูปโภค') || category.contains('Utilities')) return Icons.flash_on_rounded;
-    if (category.contains('บันเทิง') || category.contains('Entertainment')) return Icons.movie_rounded;
-    if (category.contains('สุขภาพ') || category.contains('Health')) return Icons.health_and_safety_rounded;
-    if (category.contains('การศึกษา') || category.contains('Education')) return Icons.school_rounded;
-    return Icons.category_rounded;
+    if (category.contains('อาหาร') || category.contains('ของกิน') || category.contains('Food')) return Icons.fastfood_outlined;
+    if (category.contains('กาแฟ') || category.contains('เครื่องดื่ม') || category.contains('Coffee')) return Icons.local_cafe_outlined;
+    if (category.contains('เดินทาง') || category.contains('รถ') || category.contains('Transport')) return Icons.directions_subway_outlined;
+    if (category.contains('ช้อปปิ้ง') || category.contains('Shopping')) return Icons.shopping_bag_outlined;
+    if (category.contains('ของใช้') || category.contains('Personal')) return Icons.inventory_2_outlined;
+    if (category.contains('ที่อยู่อาศัย') || category.contains('Housing')) return Icons.home_outlined;
+    if (category.contains('สาธารณูปโภค') || category.contains('Utilities')) return Icons.bolt_outlined;
+    if (category.contains('บันเทิง') || category.contains('Entertainment')) return Icons.movie_outlined;
+    if (category.contains('สุขภาพ') || category.contains('Health')) return Icons.health_and_safety_outlined;
+    if (category.contains('การศึกษา') || category.contains('Education')) return Icons.school_outlined;
+    return Icons.category_outlined;
   }
 
   @override
@@ -42,162 +44,142 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
     return Obx(() {
       final isSpline = controller.selectedChartIndex.value == 0;
 
-      return Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withValues(alpha: isDark ? 0.08 : 0.05),
-              blurRadius: 24,
-              offset: const Offset(0, 8),
-            ),
-            BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.03),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: isDark ? AppColors.darkSurface : AppColors.surface,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: isDark ? AppColors.darkBorder : AppColors.border.withValues(alpha: 0.8),
-                width: 1.1,
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // --- RESPONSIVE HEADER WITH ICON & SEGMENTED TOGGLE ---
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final isNarrow = constraints.maxWidth < 360;
+      return NothingCard(
+        showDotGrid: true,
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // --- HEADER WITH NOTHING OS GLYPH & SEGMENTED SWITCH ---
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final isNarrow = constraints.maxWidth < 360;
 
-                    final toggleWidget = Container(
-                      padding: const EdgeInsets.all(3.5),
+                final toggleWidget = Container(
+                  padding: const EdgeInsets.all(3),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF000000) : const Color(0xFFF1F1F1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                      width: 0.8,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: isNarrow ? MainAxisSize.max : MainAxisSize.min,
+                    children: [
+                      _buildNothingTabItem(
+                        index: 0,
+                        title: 'TREND',
+                        icon: Icons.show_chart_rounded,
+                        isDark: isDark,
+                        expand: isNarrow,
+                      ),
+                      _buildNothingTabItem(
+                        index: 1,
+                        title: 'DONUT',
+                        icon: Icons.pie_chart_outline_rounded,
+                        isDark: isDark,
+                        expand: isNarrow,
+                      ),
+                    ],
+                  ),
+                );
+
+                final titleWidget = Row(
+                  children: [
+                    Container(
+                      width: 38,
+                      height: 38,
                       decoration: BoxDecoration(
-                        color: isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary,
-                        borderRadius: BorderRadius.circular(13),
+                        color: isDark ? const Color(0xFF161616) : const Color(0xFFF5F5F5),
+                        borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: isDark ? AppColors.darkBorder : AppColors.border.withValues(alpha: 0.6),
+                          color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
                           width: 0.8,
                         ),
                       ),
-                      child: Row(
-                        mainAxisSize: isNarrow ? MainAxisSize.max : MainAxisSize.min,
-                        children: [
-                          _buildTabItem(
-                            index: 0,
-                            title: 'trend_spline'.tr,
-                            icon: Icons.show_chart_rounded,
-                            isDark: isDark,
-                            expand: isNarrow,
-                          ),
-                          _buildTabItem(
-                            index: 1,
-                            title: 'donut_pie'.tr,
-                            icon: Icons.pie_chart_outline_rounded,
-                            isDark: isDark,
-                            expand: isNarrow,
-                          ),
-                        ],
-                      ),
-                    );
-
-                    final titleWidget = Row(
-                      children: [
-                        Container(
-                          width: 38,
-                          height: 38,
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: isDark ? 0.16 : 0.12),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: AppColors.primary.withValues(alpha: 0.25),
-                            ),
-                          ),
-                          child: const Icon(
-                            Icons.insights_rounded,
-                            color: AppColors.primary,
-                            size: 19,
-                          ),
+                      child: Center(
+                        child: Icon(
+                          Icons.insights_rounded,
+                          color: isDark ? Colors.white : Colors.black,
+                          size: 18,
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
                             children: [
-                              Text(
-                                'analytics_and_trends'.tr,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                  color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                                  letterSpacing: -0.2,
+                              const NothingLedIndicator(color: AppColors.nothingRed, size: 6, isPulsing: true),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: NothingDotText(
+                                  'ANALYTICS // TRENDS',
+                                  fontSize: 12.5,
+                                  letterSpacing: 1.2,
+                                  color: isDark ? Colors.white : Colors.black,
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 1),
-                              Text(
-                                controller.formattedPeriodTitle,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
-                                  color: isDark ? AppColors.darkTextTertiary : AppColors.textSecondary,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
                               ),
                             ],
                           ),
-                        ),
-                      ],
-                    );
-
-                    if (isNarrow) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          titleWidget,
-                          const SizedBox(height: 12),
-                          toggleWidget,
+                          const SizedBox(height: 2),
+                          Text(
+                            controller.formattedPeriodTitle.toUpperCase(),
+                            style: GoogleFonts.spaceGrotesk(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w600,
+                              color: isDark ? AppColors.nothingSubtext : const Color(0xFF6B7280),
+                              letterSpacing: 0.6,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ],
-                      );
-                    }
+                      ),
+                    ),
+                  ],
+                );
 
-                    return Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(child: titleWidget),
-                        const SizedBox(width: 12),
-                        toggleWidget,
-                      ],
-                    );
-                  },
-                ),
-                const SizedBox(height: 18),
+                if (isNarrow) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      titleWidget,
+                      const SizedBox(height: 12),
+                      toggleWidget,
+                    ],
+                  );
+                }
 
-                // --- ANIMATED SWITCHER BETWEEN SPLINE AND DONUT ---
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 280),
-                  transitionBuilder: (child, anim) => FadeTransition(opacity: anim, child: child),
-                  child: isSpline ? _buildSplineLineChart(isDark) : _buildDonutPieChart(isDark),
-                ),
-              ],
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(child: titleWidget),
+                    const SizedBox(width: 12),
+                    toggleWidget,
+                  ],
+                );
+              },
             ),
-          ),
+            const SizedBox(height: 18),
+
+            // --- ANIMATED SWITCHER BETWEEN SPLINE AND DONUT ---
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 260),
+              transitionBuilder: (child, anim) => FadeTransition(opacity: anim, child: child),
+              child: isSpline ? _buildNothingSplineChart(isDark) : _buildNothingDonutChart(isDark),
+            ),
+          ],
         ),
-      ).animate().fadeIn(duration: const Duration(milliseconds: 380), delay: const Duration(milliseconds: 80)).slideY(begin: 0.04);
+      ).animate().fadeIn(duration: const Duration(milliseconds: 350)).slideY(begin: 0.04);
     });
   }
 
-  Widget _buildTabItem({
+  Widget _buildNothingTabItem({
     required int index,
     required String title,
     required IconData icon,
@@ -214,26 +196,17 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOutCubic,
-        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6.5),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
           color: isSelected
-              ? (isDark ? AppColors.darkSurface : Colors.white)
+              ? (isDark ? const Color(0xFF222222) : Colors.white)
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(9),
           border: isSelected
               ? Border.all(
-                  color: isDark ? AppColors.darkBorder : AppColors.border,
+                  color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.1),
                   width: 0.8,
                 )
-              : null,
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.05),
-                    blurRadius: 4,
-                    offset: const Offset(0, 1.5),
-                  ),
-                ]
               : null,
         ),
         child: Row(
@@ -242,22 +215,21 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
           children: [
             Icon(
               icon,
-              size: 13.5,
-              color: isSelected ? AppColors.primary : AppColors.textSecondary,
+              size: 13,
+              color: isSelected
+                  ? (isDark ? Colors.white : Colors.black)
+                  : (isDark ? AppColors.nothingSubtext : const Color(0xFF888888)),
             ),
             const SizedBox(width: 5),
-            Flexible(
-              child: Text(
-                title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
-                  color: isSelected
-                      ? (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary)
-                      : AppColors.textSecondary,
-                ),
+            Text(
+              title,
+              style: GoogleFonts.spaceGrotesk(
+                fontSize: 10.5,
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                letterSpacing: 0.8,
+                color: isSelected
+                    ? (isDark ? Colors.white : Colors.black)
+                    : (isDark ? AppColors.nothingSubtext : const Color(0xFF888888)),
               ),
             ),
           ],
@@ -270,9 +242,9 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
   }
 
   // ==========================================
-  // VIEW 1: ENHANCED SPLINE AREA LINE CHART
+  // VIEW 1: NOTHING OS MONOCHROME SPLINE CHART
   // ==========================================
-  Widget _buildSplineLineChart(bool isDark) {
+  Widget _buildNothingSplineChart(bool isDark) {
     final data = controller.trailing6MonthsData;
     if (data.isEmpty) return const SizedBox(height: 200);
 
@@ -299,24 +271,23 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
     final double avgNet = spots.isNotEmpty ? totalNet / spots.length : 0.0;
     final String peakMonthName = data[peakIndex]['month'] as String;
 
-    // Add padding to Y range
     final diff = maxY - minY;
-    final pad = diff == 0 ? 1000.0 : diff * 0.22;
+    final pad = diff == 0 ? 1000.0 : diff * 0.24;
     minY -= pad;
     maxY += pad;
 
     return Column(
-      key: const ValueKey('SplineView'),
+      key: const ValueKey('NothingSplineView'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Quick Stat Ribbon (Peak Month & Average Net)
+        // Quick Stat Ribbon (Nothing Monospace Pill)
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: isDark ? AppColors.darkSurfaceSecondary.withValues(alpha: 0.6) : AppColors.surfaceSecondary.withValues(alpha: 0.7),
+            color: isDark ? const Color(0xFF0D0D0D) : const Color(0xFFF7F7F7),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isDark ? AppColors.darkBorder : AppColors.border.withValues(alpha: 0.5),
+              color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
               width: 0.8,
             ),
           ),
@@ -328,15 +299,15 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.emoji_events_rounded, size: 14, color: Color(0xFFF59E0B)),
-                    const SizedBox(width: 5),
+                    const NothingLedIndicator(color: AppColors.nothingRed, size: 6),
+                    const SizedBox(width: 6),
                     Flexible(
                       child: Text(
-                        '${'peak_month'.tr}: $peakMonthName (${currencyFmt.format(peakNet)})',
-                        style: TextStyle(
-                          fontSize: 11,
+                        'PEAK: $peakMonthName // ${currencyFmt.format(peakNet)}',
+                        style: GoogleFonts.shareTechMono(
+                          fontSize: 10.5,
                           fontWeight: FontWeight.w700,
-                          color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                          color: isDark ? Colors.white : Colors.black,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -355,21 +326,19 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Container(
-                        width: 7,
-                        height: 7,
-                        decoration: BoxDecoration(
-                          color: avgNet >= 0 ? AppColors.primary : AppColors.deficitText,
-                          shape: BoxShape.circle,
-                        ),
+                      NothingLedIndicator(
+                        color: avgNet >= 0 ? (isDark ? Colors.white : Colors.black) : AppColors.nothingRed,
+                        size: 6,
                       ),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: 6),
                       Text(
-                        '${'monthly_avg_net'.tr}: ${currencyFmt.format(avgNet)}',
-                        style: TextStyle(
-                          fontSize: 11,
+                        'AVG: ${currencyFmt.format(avgNet)}',
+                        style: GoogleFonts.shareTechMono(
+                          fontSize: 10.5,
                           fontWeight: FontWeight.w700,
-                          color: avgNet >= 0 ? AppColors.primary : AppColors.deficitText,
+                          color: avgNet >= 0
+                              ? (isDark ? Colors.white : Colors.black)
+                              : AppColors.nothingRed,
                         ),
                         maxLines: 1,
                       ),
@@ -382,7 +351,7 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
         ),
         const SizedBox(height: 16),
 
-        // LineChart with Smooth Cubic Curves
+        // LineChart with Smooth Curves and Nothing Red Peak Accent
         SizedBox(
           height: 195,
           child: LineChart(
@@ -397,10 +366,10 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
                 horizontalInterval: (maxY - minY) / 4,
                 getDrawingHorizontalLine: (value) => FlLine(
                   color: isDark
-                      ? AppColors.darkDivider.withValues(alpha: 0.6)
-                      : AppColors.divider,
-                  strokeWidth: 1,
-                  dashArray: [5, 5],
+                      ? Colors.white.withValues(alpha: 0.07)
+                      : Colors.black.withValues(alpha: 0.05),
+                  strokeWidth: 0.9,
+                  dashArray: [4, 4],
                 ),
               ),
               titlesData: FlTitlesData(
@@ -420,13 +389,13 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
                         return Padding(
                           padding: const EdgeInsets.only(top: 6),
                           child: Text(
-                            data[index]['month'] as String,
-                            style: TextStyle(
-                              fontSize: 10.5,
+                            (data[index]['month'] as String).toUpperCase(),
+                            style: GoogleFonts.spaceGrotesk(
+                              fontSize: 10,
                               fontWeight: isPeak ? FontWeight.w800 : FontWeight.w500,
                               color: isPeak
-                                  ? AppColors.primary
-                                  : (isDark ? AppColors.darkTextTertiary : AppColors.textSecondary),
+                                  ? AppColors.nothingRed
+                                  : (isDark ? AppColors.nothingSubtext : const Color(0xFF888888)),
                             ),
                           ),
                         );
@@ -439,8 +408,8 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
               borderData: FlBorderData(show: false),
               lineTouchData: LineTouchData(
                 touchTooltipData: LineTouchTooltipData(
-                  getTooltipColor: (_) => isDark ? const Color(0xFF1B2236) : Colors.white,
-                  tooltipBorderRadius: BorderRadius.circular(12),
+                  getTooltipColor: (_) => isDark ? const Color(0xFF000000) : Colors.white,
+                  tooltipBorderRadius: BorderRadius.circular(10),
                   tooltipPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   getTooltipItems: (touchedSpots) {
                     return touchedSpots.map((spot) {
@@ -449,10 +418,12 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
                       final net = spot.y;
                       return LineTooltipItem(
                         '${item['month']}\n${currencyFmt.format(net)}',
-                        TextStyle(
-                          color: net >= 0 ? AppColors.primary : AppColors.deficitText,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 12,
+                        GoogleFonts.shareTechMono(
+                          color: net >= 0
+                              ? (isDark ? Colors.white : Colors.black)
+                              : AppColors.nothingRed,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 11.5,
                         ),
                       );
                     }).toList();
@@ -464,20 +435,20 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
                   spots: spots,
                   isCurved: true,
                   curveSmoothness: 0.35,
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF10B981), Color(0xFF06B6D4)],
-                  ),
-                  barWidth: 3.5,
+                  color: isDark ? Colors.white : Colors.black,
+                  barWidth: 2.5,
                   isStrokeCapRound: true,
                   dotData: FlDotData(
                     show: true,
                     getDotPainter: (spot, percent, barData, index) {
                       final isPeak = index == peakIndex;
                       return FlDotCirclePainter(
-                        radius: isPeak ? 5.5 : 4,
-                        color: isPeak ? const Color(0xFF06B6D4) : (isDark ? AppColors.darkSurface : Colors.white),
-                        strokeWidth: isPeak ? 3 : 2.5,
-                        strokeColor: isPeak ? Colors.white : AppColors.primary,
+                        radius: isPeak ? 5 : 3.5,
+                        color: isPeak
+                            ? AppColors.nothingRed
+                            : (isDark ? Colors.white : Colors.black),
+                        strokeWidth: isPeak ? 2.5 : 1.5,
+                        strokeColor: isDark ? const Color(0xFF000000) : Colors.white,
                       );
                     },
                   ),
@@ -487,8 +458,8 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        const Color(0xFF10B981).withValues(alpha: isDark ? 0.3 : 0.22),
-                        const Color(0xFF06B6D4).withValues(alpha: 0.0),
+                        (isDark ? Colors.white : Colors.black).withValues(alpha: isDark ? 0.08 : 0.05),
+                        Colors.transparent,
                       ],
                     ),
                   ),
@@ -502,9 +473,9 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
   }
 
   // ==========================================
-  // VIEW 2: INTERACTIVE DONUT PIE & CATEGORY CARDS
+  // VIEW 2: NOTHING OS MONOCHROME & RED DONUT
   // ==========================================
-  Widget _buildDonutPieChart(bool isDark) {
+  Widget _buildNothingDonutChart(bool isDark) {
     final categories = controller.categoryBreakdown;
     final currencyFmt = NumberFormat.currency(locale: 'th_TH', symbol: '฿', decimalDigits: 0);
 
@@ -517,16 +488,16 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
             children: [
               Icon(
                 Icons.pie_chart_outline_rounded,
-                size: 42,
-                color: isDark ? AppColors.darkTextTertiary : AppColors.textSecondary.withValues(alpha: 0.5),
+                size: 38,
+                color: isDark ? AppColors.nothingSubtext : const Color(0xFF999999),
               ),
               const SizedBox(height: 10),
               Text(
                 'no_expense_records'.tr,
-                style: TextStyle(
-                  fontSize: 12.5,
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                  color: isDark ? AppColors.nothingSubtext : const Color(0xFF777777),
                 ),
               ),
             ],
@@ -540,14 +511,26 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
         ? categories[_touchedPieIndex]
         : null;
 
+    // Palette with high contrast Nothing OS tones
+    final nothingPalette = [
+      AppColors.nothingRed,
+      isDark ? Colors.white : const Color(0xFF222222),
+      isDark ? const Color(0xFFB0B0B0) : const Color(0xFF666666),
+      isDark ? const Color(0xFF777777) : const Color(0xFFAAAAAA),
+      const Color(0xFFD97706), // Amber
+      const Color(0xFF6366F1), // Indigo
+      const Color(0xFF10B981), // Emerald
+    ];
+
     final sections = categories.asMap().entries.map((entry) {
       final index = entry.key;
       final item = entry.value;
       final isTouched = index == _touchedPieIndex;
-      final radius = isTouched ? 34.0 : 26.0;
+      final radius = isTouched ? 32.0 : 25.0;
+      final color = nothingPalette[index % nothingPalette.length];
 
       return PieChartSectionData(
-        color: item['color'] as Color,
+        color: color,
         value: (item['amount'] as num).toDouble(),
         title: '',
         radius: radius,
@@ -555,13 +538,17 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
             ? Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.8),
+                  color: isDark ? Colors.black : Colors.white,
                   borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.2),
+                    width: 0.8,
+                  ),
                 ),
                 child: Text(
                   '${(item['percentage'] as num).toStringAsFixed(0)}%',
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: GoogleFonts.shareTechMono(
+                    color: isDark ? Colors.white : Colors.black,
                     fontSize: 9.5,
                     fontWeight: FontWeight.w700,
                   ),
@@ -573,7 +560,7 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
     }).toList();
 
     return Column(
-      key: const ValueKey('DonutView'),
+      key: const ValueKey('NothingDonutView'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // Donut Chart with Center Cutout Metric
@@ -598,7 +585,7 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
                     },
                   ),
                   borderData: FlBorderData(show: false),
-                  sectionsSpace: 3.5,
+                  sectionsSpace: 3,
                   centerSpaceRadius: 44,
                   sections: sections,
                 ),
@@ -610,12 +597,13 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
                 children: [
                   Text(
                     activeCategory != null
-                        ? (activeCategory['name'] as String).tr
-                        : 'total_expenses_cutout'.tr,
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: isDark ? AppColors.darkTextTertiary : AppColors.textSecondary,
+                        ? (activeCategory['name'] as String).tr.toUpperCase()
+                        : 'EXPENSES',
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.0,
+                      color: isDark ? AppColors.nothingSubtext : const Color(0xFF777777),
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -627,22 +615,22 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
                       activeCategory != null
                           ? currencyFmt.format(activeCategory['amount'])
                           : currencyFmt.format(totalExpenses),
-                      style: TextStyle(
+                      style: GoogleFonts.shareTechMono(
                         fontSize: 14,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w700,
                         color: activeCategory != null
-                            ? (activeCategory['color'] as Color)
-                            : (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
+                            ? nothingPalette[_touchedPieIndex % nothingPalette.length]
+                            : (isDark ? Colors.white : Colors.black),
                       ),
                     ),
                   ),
                   if (activeCategory != null) ...[
                     Text(
                       '${(activeCategory['percentage'] as num).toStringAsFixed(1)}%',
-                      style: TextStyle(
+                      style: GoogleFonts.shareTechMono(
                         fontSize: 9.5,
                         fontWeight: FontWeight.w700,
-                        color: activeCategory['color'] as Color,
+                        color: nothingPalette[_touchedPieIndex % nothingPalette.length],
                       ),
                     ),
                   ],
@@ -653,9 +641,11 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
         ),
         const SizedBox(height: 16),
 
-        // Modern Category Capsule Cards (Top 4 Categories)
-        ...categories.take(4).map((item) {
-          final color = item['color'] as Color;
+        // Nothing OS Category Capsule Cards (Top 4 Categories)
+        ...categories.take(4).toList().asMap().entries.map((entry) {
+          final idx = entry.key;
+          final item = entry.value;
+          final color = nothingPalette[idx % nothingPalette.length];
           final String catName = (item['name'] as String).tr;
           final double pct = (item['percentage'] as num).toDouble();
           final double amount = (item['amount'] as num).toDouble();
@@ -666,10 +656,10 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               decoration: BoxDecoration(
-                color: isDark ? AppColors.darkSurfaceSecondary.withValues(alpha: 0.5) : AppColors.surfaceSecondary.withValues(alpha: 0.6),
+                color: isDark ? const Color(0xFF0A0A0A) : const Color(0xFFF9F9F9),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: isDark ? AppColors.darkBorder.withValues(alpha: 0.6) : AppColors.border.withValues(alpha: 0.5),
+                  color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.07),
                   width: 0.8,
                 ),
               ),
@@ -677,12 +667,12 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
                 children: [
                   Row(
                     children: [
-                      // Category Icon Squircle
+                      // Category Squircle Icon
                       Container(
                         width: 26,
                         height: 26,
                         decoration: BoxDecoration(
-                          color: color.withValues(alpha: isDark ? 0.2 : 0.14),
+                          color: color.withValues(alpha: isDark ? 0.18 : 0.12),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Icon(icon, size: 14, color: color),
@@ -693,10 +683,10 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
                       Expanded(
                         child: Text(
                           catName,
-                          style: TextStyle(
+                          style: GoogleFonts.spaceGrotesk(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
-                            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                            color: isDark ? Colors.white : Colors.black,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -713,7 +703,7 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
                         ),
                         child: Text(
                           '${pct.toStringAsFixed(1)}%',
-                          style: TextStyle(
+                          style: GoogleFonts.shareTechMono(
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
                             color: color,
@@ -728,10 +718,10 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
                         alignment: Alignment.centerRight,
                         child: Text(
                           currencyFmt.format(amount),
-                          style: TextStyle(
+                          style: GoogleFonts.shareTechMono(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                            color: isDark ? Colors.white : Colors.black,
                           ),
                         ),
                       ),
@@ -739,28 +729,12 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
                   ),
                   const SizedBox(height: 6),
 
-                  // Mini Progress Bar of Proportion
-                  Stack(
-                    children: [
-                      Container(
-                        height: 3,
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.04),
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                      FractionallySizedBox(
-                        widthFactor: (pct / 100).clamp(0.0, 1.0),
-                        child: Container(
-                          height: 3,
-                          decoration: BoxDecoration(
-                            color: color,
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                      ),
-                    ],
+                  // Mini Segmented Progress Indicator
+                  NothingSegmentedBar(
+                    progress: pct / 100,
+                    segments: 10,
+                    activeColor: color,
+                    height: 3,
                   ),
                 ],
               ),

@@ -2,22 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../data/models/transaction_model.dart';
 import '../../../theme/app_colors.dart';
+import '../../../widgets/nothing_ui_components.dart';
 import '../controllers/dashboard_controller.dart';
 
-/// แถบ Header แดชบอร์ดสไตล์ Modern FinTech 2026:
-/// 1. ตัวเลือกช่วงเวลาแบบ Floating Sliding Pill Segmented Control (รายเดือน [1] | รายปี [2] | ทั้งหมด [3])
-/// 2. แถบนำทางช่วงเวลาอัจฉริยะ (Intelligent Date Navigator Hub) พร้อม Interactive Month Capsule,
-///    ปุ่มเลื่อน Squircle Haptic, ปุ่มลัดกลับสู่ปัจจุบันแบบเรืองแสง และสถานะรอบบัญชีแบบเรียลไทม์
-/// 3. ปฏิทินเลือกเดือนระดับพรีเมียม (Luxury FinTech Month Picker Modal) พร้อมการแบ่งไตรมาสและจุดสถานะธุรกรรม
+/// แถบ Header แดชบอร์ดสไตล์ Nothing OS Design System
+/// 1. ตัวเลือกช่วงเวลาทรงแคปซูลความคมชัดสูง (Nothing Segmented Pills: MONTH / YEAR / ALL)
+/// 2. แถบนำทางช่วงเวลามินิมอล (Nothing Date Navigator Hub) พร้อมปุ่ม Squircle และไฟ LED แสดงรอบปัจจุบัน
+/// 3. ปฏิทินเลือกเดือนสไตล์ Nothing Grid พร้อมการแบ่งไตรมาสแบบเรขาคณิต
 class DashboardHeader extends GetView<DashboardController> {
   const DashboardHeader({super.key});
 
-  static const Color _secondaryAccent = Color(0xFF00C49F);
-
   // ==========================================
-  // LUXURY FINTECH MONTH PICKER MODAL SHEET
+  // NOTHING OS MONTH PICKER MODAL SHEET
   // ==========================================
   void _showMonthPickerSheet(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -33,58 +32,48 @@ class DashboardHeader extends GetView<DashboardController> {
           decoration: BoxDecoration(
             color: isDark ? AppColors.darkSurface : AppColors.surface,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.16),
-                blurRadius: 28,
-                offset: const Offset(0, -6),
+            border: Border(
+              top: BorderSide(
+                color: isDark ? AppColors.darkBorder : AppColors.border,
+                width: 1.0,
               ),
-            ],
+            ),
           ),
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // 1. Frosted Drag Handle Bar
+              // 1. Drag Handle Bar
               Center(
                 child: Container(
-                  width: 44,
-                  height: 4.5,
+                  width: 40,
+                  height: 4.0,
                   decoration: BoxDecoration(
-                    color: isDark
-                        ? AppColors.darkBorder.withValues(alpha: 0.8)
-                        : AppColors.border.withValues(alpha: 0.9),
-                    borderRadius: BorderRadius.circular(3),
+                    color: isDark ? Colors.white24 : Colors.black26,
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
               ),
               const SizedBox(height: 18),
 
-              // 2. Modal Header (Title + Subtitle + Squircle Close Button)
+              // 2. Modal Header
               Row(
                 children: [
                   Container(
                     width: 38,
                     height: 38,
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [AppColors.primary, Color(0xFF6366F1)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
+                      color: isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary,
                       borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.28),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
+                      border: Border.all(
+                        color: isDark ? AppColors.darkBorder : AppColors.border,
+                        width: 0.8,
+                      ),
                     ),
                     child: const Icon(
-                      Icons.calendar_month_rounded,
-                      color: Colors.white,
-                      size: 20,
+                      Icons.calendar_month_outlined,
+                      color: AppColors.nothingRed,
+                      size: 19,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -93,24 +82,23 @@ class DashboardHeader extends GetView<DashboardController> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'select_period'.tr,
-                          style: TextStyle(
-                            fontSize: 16.5,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.3,
+                          'select_period'.tr.toUpperCase(),
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.2,
                             color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                          ),
+                          ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 2),
                         Text(
                           'select_period_desc'.tr,
-                          style: TextStyle(
-                            fontSize: 11.5,
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 11,
                             fontWeight: FontWeight.w500,
                             color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                          ),
+                          ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -138,7 +126,7 @@ class DashboardHeader extends GetView<DashboardController> {
                         child: Icon(
                           Icons.close_rounded,
                           size: 18,
-                          color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                          color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                         ),
                       ),
                     ),
@@ -147,13 +135,11 @@ class DashboardHeader extends GetView<DashboardController> {
               ),
               const SizedBox(height: 18),
 
-              // 3. Year Stepper Ribbon
+              // 3. Year Selector
               Obx(() {
                 final year = rxYear.value;
-                final isCurrentYear = year == now.year;
-
                 return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
                     color: isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary,
                     borderRadius: BorderRadius.circular(16),
@@ -163,150 +149,36 @@ class DashboardHeader extends GetView<DashboardController> {
                     ),
                   ),
                   child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Prev Year Squircle Button
-                      Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onTap: () {
-                            HapticFeedback.selectionClick();
-                            rxYear.value--;
-                          },
-                          borderRadius: BorderRadius.circular(10),
-                          child: Container(
-                            width: 34,
-                            height: 34,
-                            decoration: BoxDecoration(
-                              color: isDark ? AppColors.darkSurface : AppColors.surface,
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: isDark ? AppColors.darkBorder : AppColors.border,
-                                width: 0.8,
-                              ),
-                            ),
-                            child: Icon(
-                              Icons.chevron_left_rounded,
-                              size: 20,
-                              color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                            ),
-                          ),
+                      IconButton(
+                        icon: const Icon(Icons.chevron_left_rounded),
+                        onPressed: () {
+                          HapticFeedback.selectionClick();
+                          rxYear.value--;
+                        },
+                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                      ),
+                      Text(
+                        '${year + 543} ($year)',
+                        style: GoogleFonts.shareTechMono(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.0,
+                          color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                         ),
                       ),
-
-                      // Year Title & Interactive Badge
-                      Expanded(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(
-                              Icons.event_note_rounded,
-                              size: 16,
-                              color: AppColors.primary,
-                            ),
-                            const SizedBox(width: 6),
-                            Flexible(
-                              child: Text(
-                                'year_format'.trParams({
-                                  'year': (controller.isEnglish ? year : year + 543).toString(),
-                                }),
-                                style: TextStyle(
-                                  fontSize: 15.5,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: -0.2,
-                                  color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            if (isCurrentYear) ...[
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primary.withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: AppColors.primary.withValues(alpha: 0.3),
-                                    width: 0.8,
-                                  ),
-                                ),
-                                child: Text(
-                                  'current_year'.tr,
-                                  style: const TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.primary,
-                                  ),
-                                ),
-                              ),
-                            ] else ...[
-                              const SizedBox(width: 8),
-                              Material(
-                                color: AppColors.primary.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(8),
-                                child: InkWell(
-                                  onTap: () {
-                                    HapticFeedback.selectionClick();
-                                    rxYear.value = now.year;
-                                  },
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        const Icon(
-                                          Icons.refresh_rounded,
-                                          size: 11,
-                                          color: AppColors.primary,
-                                        ),
-                                        const SizedBox(width: 3),
-                                        Text(
-                                          'current_year'.tr,
-                                          style: const TextStyle(
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.w700,
-                                            color: AppColors.primary,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-
-                      // Next Year Squircle Button
-                      Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onTap: () {
-                            HapticFeedback.selectionClick();
-                            rxYear.value++;
-                          },
-                          borderRadius: BorderRadius.circular(10),
-                          child: Container(
-                            width: 34,
-                            height: 34,
-                            decoration: BoxDecoration(
-                              color: isDark ? AppColors.darkSurface : AppColors.surface,
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: isDark ? AppColors.darkBorder : AppColors.border,
-                                width: 0.8,
-                              ),
-                            ),
-                            child: Icon(
-                              Icons.chevron_right_rounded,
-                              size: 20,
-                              color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                            ),
-                          ),
-                        ),
+                      IconButton(
+                        icon: const Icon(Icons.chevron_right_rounded),
+                        onPressed: () {
+                          HapticFeedback.selectionClick();
+                          rxYear.value++;
+                        },
+                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                       ),
                     ],
                   ),
@@ -314,140 +186,73 @@ class DashboardHeader extends GetView<DashboardController> {
               }),
               const SizedBox(height: 16),
 
-              // 4. 12 Months Bento Grid with Quarter Highlights
+              // 4. 12-Month Nothing Grid
               Obx(() {
                 final year = rxYear.value;
-                final selectedDate = controller.selectedDate.value;
+                final selected = controller.selectedDate.value;
 
                 return GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  itemCount: 12,
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 4,
-                    mainAxisSpacing: 10,
+                    crossAxisCount: 3,
                     crossAxisSpacing: 10,
-                    childAspectRatio: 1.35,
+                    mainAxisSpacing: 10,
+                    childAspectRatio: 2.2,
                   ),
+                  itemCount: 12,
                   itemBuilder: (context, index) {
                     final monthIndex = index + 1;
-                    final isSelected = selectedDate.year == year && selectedDate.month == monthIndex;
-                    final isNowMonth = now.year == year && now.month == monthIndex;
+                    final isSelected = selected.year == year && selected.month == monthIndex;
+                    final isCurrentMonth = now.year == year && now.month == monthIndex;
 
-                    // Check if there are transactions recorded in this month
-                    final hasTransactions = controller.transactions.any(
-                      (t) => t.date.year == year && t.date.month == monthIndex,
-                    );
+                    final monthNames = [
+                      'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
+                      'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.',
+                    ];
 
                     return Material(
-                      color: Colors.transparent,
+                      color: isSelected
+                          ? (isDark ? Colors.white : Colors.black)
+                          : (isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary),
+                      borderRadius: BorderRadius.circular(14),
                       child: InkWell(
                         onTap: () {
                           HapticFeedback.selectionClick();
-                          controller.setSelectedDate(DateTime(year, monthIndex));
-                          controller.setTimeFilter(TimeFilterPeriod.monthly);
+                          controller.setSelectedDate(DateTime(year, monthIndex, 1));
                           Navigator.of(ctx).pop();
                         },
                         borderRadius: BorderRadius.circular(14),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          curve: Curves.easeOutCubic,
+                        child: Container(
                           decoration: BoxDecoration(
-                            gradient: isSelected
-                                ? const LinearGradient(
-                                    colors: [AppColors.primary, Color(0xFF6366F1)],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                  )
-                                : null,
-                            color: isSelected
-                                ? null
-                                : (isNowMonth
-                                    ? AppColors.primary.withValues(alpha: isDark ? 0.12 : 0.08)
-                                    : (isDark
-                                        ? AppColors.darkSurfaceSecondary
-                                        : AppColors.surfaceSecondary)),
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
                               color: isSelected
-                                  ? Colors.transparent
-                                  : (isNowMonth
-                                      ? AppColors.primary.withValues(alpha: 0.6)
+                                  ? (isDark ? Colors.white : Colors.black)
+                                  : (isCurrentMonth
+                                      ? AppColors.nothingRed
                                       : (isDark ? AppColors.darkBorder : AppColors.border)),
-                              width: isNowMonth && !isSelected ? 1.4 : 0.8,
+                              width: isCurrentMonth || isSelected ? 1.2 : 0.8,
                             ),
-                            boxShadow: isSelected
-                                ? [
-                                    BoxShadow(
-                                      color: AppColors.primary.withValues(alpha: 0.35),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 3),
-                                    ),
-                                  ]
-                                : null,
                           ),
                           alignment: Alignment.center,
-                          child: Column(
+                          child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              FittedBox(
-                                fit: BoxFit.scaleDown,
-                                child: Text(
-                                  controller.isEnglish
-                                      ? DashboardController.englishMonthShortNames[monthIndex]
-                                      : DashboardController.thaiMonthShortNames[monthIndex],
-                                  style: TextStyle(
-                                    fontSize: 13.5,
-                                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w700,
-                                    color: isSelected
-                                        ? Colors.white
-                                        : (isNowMonth
-                                            ? AppColors.primary
-                                            : (isDark
-                                                ? AppColors.darkTextPrimary
-                                                : AppColors.textPrimary)),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-
-                              // Month State or Activity Dot
-                              if (isNowMonth && !isSelected) ...[
-                                Text(
-                                  'current_month'.tr,
-                                  style: const TextStyle(
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.primary,
-                                  ),
-                                ),
-                              ] else if (hasTransactions && !isSelected) ...[
-                                Container(
-                                  width: 4,
-                                  height: 4,
-                                  decoration: BoxDecoration(
-                                    color: _secondaryAccent,
-                                    shape: BoxShape.circle,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: _secondaryAccent.withValues(alpha: 0.6),
-                                        blurRadius: 4,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ] else if (isSelected) ...[
-                                Container(
-                                  width: 4,
-                                  height: 4,
-                                  decoration: const BoxDecoration(
-                                    color: Colors.white,
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                              ] else ...[
-                                const SizedBox(height: 4),
+                              if (isCurrentMonth) ...[
+                                const NothingLedIndicator(size: 4.5, color: AppColors.nothingRed),
+                                const SizedBox(width: 5),
                               ],
+                              Text(
+                                monthNames[index],
+                                style: GoogleFonts.spaceGrotesk(
+                                  fontSize: 12,
+                                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                  color: isSelected
+                                      ? (isDark ? Colors.black : Colors.white)
+                                      : (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
+                                ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+                              ),
                             ],
                           ),
                         ),
@@ -458,60 +263,42 @@ class DashboardHeader extends GetView<DashboardController> {
               }),
               const SizedBox(height: 18),
 
-              // 5. Jump to Current Month Button (Action Button)
-              Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
+              // 5. Jump to Current Month Button
+              Material(
+                color: isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary,
+                borderRadius: BorderRadius.circular(14),
+                child: InkWell(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    controller.resetToCurrentPeriod();
+                    Navigator.of(ctx).pop();
+                  },
                   borderRadius: BorderRadius.circular(14),
-                  gradient: LinearGradient(
-                    colors: isDark
-                        ? [
-                            AppColors.primary.withValues(alpha: 0.2),
-                            const Color(0xFF6366F1).withValues(alpha: 0.2),
-                          ]
-                        : [
-                            AppColors.primary.withValues(alpha: 0.12),
-                            const Color(0xFF6366F1).withValues(alpha: 0.1),
-                          ],
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                  ),
-                  border: Border.all(
-                    color: AppColors.primary.withValues(alpha: 0.4),
-                    width: 1.2,
-                  ),
-                ),
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: () {
-                      HapticFeedback.lightImpact();
-                      controller.resetToCurrentPeriod();
-                      controller.setTimeFilter(TimeFilterPeriod.monthly);
-                      Navigator.of(ctx).pop();
-                    },
-                    borderRadius: BorderRadius.circular(14),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.today_rounded,
-                            size: 18,
-                            color: AppColors.primary,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'jump_to_current_month'.tr,
-                            style: const TextStyle(
-                              fontSize: 13.5,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                        ],
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: isDark ? AppColors.darkBorder : AppColors.border,
+                        width: 0.8,
                       ),
+                    ),
+                    alignment: Alignment.center,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const NothingLedIndicator(size: 6, color: AppColors.nothingRed),
+                        const SizedBox(width: 8),
+                        Text(
+                          'jump_to_current_month'.tr.toUpperCase(),
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.0,
+                            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                          ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -523,9 +310,6 @@ class DashboardHeader extends GetView<DashboardController> {
     );
   }
 
-  // ==========================================
-  // MAIN WIDGET BUILD
-  // ==========================================
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -533,38 +317,29 @@ class DashboardHeader extends GetView<DashboardController> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // 1. SMART PERIOD SWITCHER (Floating Pill Segmented Control)
+        // 1. NOTHING OS PERIOD SEGMENTED PILLS
         _buildPeriodSwitcher(isDark),
         const SizedBox(height: 10),
 
-        // 2. INTELLIGENT DATE NAVIGATOR HUB
+        // 2. NOTHING DATE NAVIGATOR HUB
         _buildDateNavigatorHub(context, isDark),
       ],
-    ).animate().fadeIn(duration: const Duration(milliseconds: 320)).slideY(begin: -0.04);
+    ).animate().fadeIn(duration: const Duration(milliseconds: 220));
   }
 
   // ==========================================
-  // PERIOD SEGMENTED SWITCHER
+  // NOTHING OS PERIOD SEGMENTED PILLS
   // ==========================================
   Widget _buildPeriodSwitcher(bool isDark) {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary,
-        borderRadius: BorderRadius.circular(16),
+        color: isDark ? AppColors.darkSurface : AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isDark
-              ? AppColors.darkBorder.withValues(alpha: 0.8)
-              : AppColors.border.withValues(alpha: 0.7),
-          width: 0.8,
+          color: isDark ? AppColors.darkBorder : AppColors.border,
+          width: 1.0,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.02),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: Obx(() {
         final period = controller.currentPeriod.value;
@@ -572,9 +347,8 @@ class DashboardHeader extends GetView<DashboardController> {
         return Row(
           children: [
             Expanded(
-              child: _buildSegmentItem(
-                title: 'monthly'.tr,
-                icon: Icons.calendar_view_month_rounded,
+              child: _buildSegmentPill(
+                title: 'monthly'.tr.toUpperCase(),
                 isSelected: period == TimeFilterPeriod.monthly,
                 onTap: () => controller.setTimeFilter(TimeFilterPeriod.monthly),
                 isDark: isDark,
@@ -582,9 +356,8 @@ class DashboardHeader extends GetView<DashboardController> {
             ),
             const SizedBox(width: 4),
             Expanded(
-              child: _buildSegmentItem(
-                title: 'yearly'.tr,
-                icon: Icons.calendar_today_rounded,
+              child: _buildSegmentPill(
+                title: 'yearly'.tr.toUpperCase(),
                 isSelected: period == TimeFilterPeriod.yearly,
                 onTap: () => controller.setTimeFilter(TimeFilterPeriod.yearly),
                 isDark: isDark,
@@ -592,9 +365,8 @@ class DashboardHeader extends GetView<DashboardController> {
             ),
             const SizedBox(width: 4),
             Expanded(
-              child: _buildSegmentItem(
-                title: 'all_time'.tr,
-                icon: Icons.all_inclusive_rounded,
+              child: _buildSegmentPill(
+                title: 'all_time'.tr.toUpperCase(),
                 isSelected: period == TimeFilterPeriod.allTime,
                 onTap: () => controller.setTimeFilter(TimeFilterPeriod.allTime),
                 isDark: isDark,
@@ -606,75 +378,43 @@ class DashboardHeader extends GetView<DashboardController> {
     );
   }
 
-  Widget _buildSegmentItem({
+  Widget _buildSegmentPill({
     required String title,
-    required IconData icon,
     required bool isSelected,
     required VoidCallback onTap,
     required bool isDark,
   }) {
+    final Color bg = isSelected
+        ? (isDark ? Colors.white : Colors.black)
+        : Colors.transparent;
+
+    final Color fg = isSelected
+        ? (isDark ? Colors.black : Colors.white)
+        : (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary);
+
     return Material(
-      color: Colors.transparent,
+      color: bg,
+      borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: () {
           HapticFeedback.selectionClick();
           onTap();
         },
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 220),
-          curve: Curves.easeOutCubic,
+          duration: const Duration(milliseconds: 180),
           padding: const EdgeInsets.symmetric(vertical: 8),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? (isDark ? AppColors.darkSurface : Colors.white)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
-            border: isSelected
-                ? Border.all(
-                    color: isDark
-                        ? AppColors.darkBorder
-                        : AppColors.border.withValues(alpha: 0.8),
-                    width: 0.8,
-                  )
-                : null,
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: isDark ? 0.2 : 0.08),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                size: 14,
-                color: isSelected
-                    ? AppColors.primary
-                    : (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
-              ),
-              const SizedBox(width: 5),
-              Flexible(
-                child: Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                    letterSpacing: -0.2,
-                    color: isSelected
-                        ? (isDark ? AppColors.darkTextPrimary : AppColors.primary)
-                        : (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
+          alignment: Alignment.center,
+          child: Text(
+            title,
+            style: GoogleFonts.spaceGrotesk(
+              fontSize: 11.5,
+              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+              letterSpacing: 1.2,
+              color: fg,
+            ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ),
@@ -682,14 +422,13 @@ class DashboardHeader extends GetView<DashboardController> {
   }
 
   // ==========================================
-  // INTELLIGENT DATE NAVIGATOR HUB
+  // NOTHING DATE NAVIGATOR HUB
   // ==========================================
   Widget _buildDateNavigatorHub(BuildContext context, bool isDark) {
     return Obx(() {
       final period = controller.currentPeriod.value;
       final isCurrent = controller.isCurrentPeriod;
       final isMonthly = period == TimeFilterPeriod.monthly;
-      final isYearly = period == TimeFilterPeriod.yearly;
       final isAllTime = period == TimeFilterPeriod.allTime;
 
       return Container(
@@ -699,19 +438,12 @@ class DashboardHeader extends GetView<DashboardController> {
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isDark ? AppColors.darkBorder : AppColors.border,
-            width: 0.8,
+            width: 1.0,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.035),
-              blurRadius: 12,
-              offset: const Offset(0, 3),
-            ),
-          ],
         ),
         child: Row(
           children: [
-            // Left Navigator Button (Monthly & Yearly)
+            // Left Navigator Button
             if (!isAllTime) ...[
               Material(
                 color: isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary,
@@ -757,41 +489,29 @@ class DashboardHeader extends GetView<DashboardController> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // Squircle Icon Tint
                         Container(
                           width: 28,
                           height: 28,
                           decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: isMonthly
-                                  ? const [AppColors.primary, Color(0xFF6366F1)]
-                                  : (isYearly
-                                      ? const [Color(0xFF8B5CF6), Color(0xFFEC4899)]
-                                      : const [_secondaryAccent, AppColors.primary]),
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
+                            color: isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary,
                             borderRadius: BorderRadius.circular(9),
-                            boxShadow: [
-                              BoxShadow(
-                                color: (isMonthly ? AppColors.primary : _secondaryAccent)
-                                    .withValues(alpha: 0.25),
-                                blurRadius: 6,
-                                offset: const Offset(0, 1.5),
-                              ),
-                            ],
+                            border: Border.all(
+                              color: isDark ? AppColors.darkBorder : AppColors.border,
+                              width: 0.8,
+                            ),
                           ),
                           child: Icon(
                             isMonthly
-                                ? Icons.calendar_month_rounded
-                                : (isYearly ? Icons.event_note_rounded : Icons.all_inclusive_rounded),
-                            color: Colors.white,
+                                ? Icons.calendar_month_outlined
+                                : (period == TimeFilterPeriod.yearly
+                                    ? Icons.event_note_outlined
+                                    : Icons.all_inclusive_rounded),
+                            color: isDark ? Colors.white : Colors.black,
                             size: 15,
                           ),
                         ),
                         const SizedBox(width: 8),
 
-                        // Title with scale-down overflow protection
                         Flexible(
                           child: FittedBox(
                             fit: BoxFit.scaleDown,
@@ -800,27 +520,20 @@ class DashboardHeader extends GetView<DashboardController> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
-                                  controller.formattedPeriodTitle,
-                                  style: TextStyle(
-                                    fontSize: 14.5,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: -0.2,
+                                  controller.formattedPeriodTitle.toUpperCase(),
+                                  style: GoogleFonts.spaceGrotesk(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 1.0,
                                     color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                                  ),
+                                  ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
                                 ),
                                 if (isMonthly) ...[
                                   const SizedBox(width: 4),
-                                  Container(
-                                    padding: const EdgeInsets.all(2),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.primary.withValues(alpha: 0.1),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Icon(
-                                      Icons.keyboard_arrow_down_rounded,
-                                      size: 14,
-                                      color: isDark ? AppColors.darkTextPrimary : AppColors.primary,
-                                    ),
+                                  Icon(
+                                    Icons.keyboard_arrow_down_rounded,
+                                    size: 16,
+                                    color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
                                   ),
                                 ],
                               ],
@@ -837,9 +550,9 @@ class DashboardHeader extends GetView<DashboardController> {
             // Dynamic Right Status Action / Badge
             if (!isAllTime) ...[
               if (!isCurrent) ...[
-                // Jump to Current Month/Year Pill (If looking at past or future)
+                // Jump to Current Month/Year Pill
                 Material(
-                  color: AppColors.primary.withValues(alpha: isDark ? 0.16 : 0.1),
+                  color: isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary,
                   borderRadius: BorderRadius.circular(10),
                   child: InkWell(
                     onTap: () {
@@ -852,28 +565,24 @@ class DashboardHeader extends GetView<DashboardController> {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: AppColors.primary.withValues(alpha: 0.35),
+                          color: AppColors.nothingRed.withValues(alpha: 0.6),
                           width: 0.8,
                         ),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(
-                            Icons.restart_alt_rounded,
-                            size: 12.5,
-                            color: AppColors.primary,
-                          ),
-                          const SizedBox(width: 3.5),
+                          const NothingLedIndicator(size: 4.5, color: AppColors.nothingRed),
+                          const SizedBox(width: 4),
                           FittedBox(
                             fit: BoxFit.scaleDown,
                             child: Text(
                               isMonthly ? 'current_month'.tr : 'current_year'.tr,
-                              style: const TextStyle(
-                                fontSize: 10.5,
+                              style: GoogleFonts.spaceGrotesk(
+                                fontSize: 10,
                                 fontWeight: FontWeight.w700,
-                                color: AppColors.primary,
-                              ),
+                                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                              ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
                             ),
                           ),
                         ],
@@ -883,38 +592,30 @@ class DashboardHeader extends GetView<DashboardController> {
                 ),
                 const SizedBox(width: 6),
               ] else ...[
-                // Active Period Micro LED Dot Indicator
+                // Active Period LED Dot Indicator
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: _secondaryAccent.withValues(alpha: 0.1),
+                    color: isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary,
                     borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: isDark ? AppColors.darkBorder : AppColors.border,
+                      width: 0.8,
+                    ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Container(
-                        width: 5,
-                        height: 5,
-                        decoration: BoxDecoration(
-                          color: _secondaryAccent,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: _secondaryAccent.withValues(alpha: 0.6),
-                              blurRadius: 4,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 4),
+                      const NothingLedIndicator(size: 4.5, color: AppColors.nothingRed),
+                      const SizedBox(width: 5),
                       Text(
-                        'active_period'.tr,
-                        style: const TextStyle(
-                          fontSize: 9.5,
+                        'active_period'.tr.toUpperCase(),
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 9,
                           fontWeight: FontWeight.w700,
-                          color: _secondaryAccent,
-                        ),
+                          letterSpacing: 0.8,
+                          color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                        ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
                       ),
                     ],
                   ),
@@ -955,28 +656,24 @@ class DashboardHeader extends GetView<DashboardController> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.12),
+                  color: isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary,
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: AppColors.primary.withValues(alpha: 0.25),
+                    color: isDark ? AppColors.darkBorder : AppColors.border,
                     width: 0.8,
                   ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
-                      Icons.auto_awesome_rounded,
-                      size: 11,
-                      color: AppColors.primary,
-                    ),
-                    const SizedBox(width: 3.5),
+                    const NothingLedIndicator(size: 4.5, color: AppColors.nothingRed),
+                    const SizedBox(width: 4),
                     Text(
                       'items_count_badge'.trParams({'count': '${controller.transactions.length}'}),
-                      style: const TextStyle(
-                        fontSize: 10.5,
+                      style: GoogleFonts.spaceGrotesk(
+                        fontSize: 10,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.primary,
+                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                       ),
                     ),
                   ],

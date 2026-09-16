@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:liquid_glass_easy/liquid_glass_easy.dart';
 import '../modules/dashboard/controllers/dashboard_controller.dart';
 import '../modules/security/controllers/security_controller.dart';
@@ -9,15 +10,14 @@ import '../modules/transactions/views/bank_slip_sheet.dart';
 import '../routes/app_routes.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_popup_decorations.dart';
+import 'nothing_ui_components.dart';
 
-/// แถบนำทางกระจกใสเหลวลอยตัวบนหน้าจอระดับอัลตร้าพรีเมียม (Ultra-Translucent Liquid Glass Navigation Dock)
-/// สไตล์ FinTech 2026 ขับเคลื่อนด้วย Flutter Package `liquid_glass_easy`:
-/// - ลอยอยู่บนหน้าจอ (Floating on Screen Overlay) ไม่ใส่ไว้ที่ bottom bar ของ Scaffold
-/// - ทำงานแบบ Universal พร้อมแสดงบนทุกหน้าจอของแอปพลิเคชัน (Windows, Android, iOS, macOS, Web)
-/// - เลนส์กระจกหักเหแสง Superellipse ขอบมน 28px สไตล์ Squircle พร้อม OpticalBorder
-/// - ขอบสะท้อนแสง Hairline Specular Highlight (1.2px)
-/// - รองรับทั้ง Skia (SkSL-compatible shaders) และ Impeller 100% โดยไม่มีคำเตือน compiler
-/// - รวมศูนย์ควบคุม Hub & Vault Center Menu สำหรับสลับธีม ภาษา สำรองข้อมูล และความปลอดภัย
+/// แถบนำทางกระจกใสเหลวลอยตัวสไตล์ Nothing OS Design
+/// - สไตล์ Smoked Black / Minimal Monochrome Dock ลอยตัวเหนือพื้นหลัง
+/// - เลนส์กระจก Squircle ขอบมน 28px พร้อม OpticalBorder บางเบา
+/// - ปุ่มบันทึกด่วนสีแดงเอกลักษณ์ Nothing Red ตรงกลาง
+/// - จุดสถานะ Active สไตล์ LED Dot Indicator สีแดง Nothing Red
+/// - เมนูศูนย์ควบคุม Hub & Vault สไตล์ Nothing UI
 class LiquidGlassNavDock extends StatelessWidget {
   final String currentRoute;
   final GlobalKey? backgroundKey;
@@ -54,7 +54,7 @@ class LiquidGlassNavDock extends StatelessWidget {
           Positioned(
             left: 0,
             right: 0,
-            bottom: 12,
+            bottom: 14,
             child: LiquidGlassNavDock(
               currentRoute: currentRoute,
               backgroundKey: actualBgKey,
@@ -73,25 +73,25 @@ class LiquidGlassNavDock extends StatelessWidget {
     final style = LiquidGlassStyle(
       shape: const LiquidGlassShape.squircle(
         cornerRadius: 28,
-        borderWidth: 1.2,
-        lightIntensity: 1.35,
+        borderWidth: 1.0,
+        lightIntensity: 1.1,
         lightDirection: 75,
         borderType: OpticalBorder(
-          borderSaturation: 1.4,
-          ambientIntensity: 1.2,
-          borderSolidity: 0.25,
+          borderSaturation: 1.1,
+          ambientIntensity: 1.0,
+          borderSolidity: 0.20,
         ),
       ),
       appearance: LiquidGlassAppearance(
         color: isDark
-            ? const Color(0xFF111726).withValues(alpha: 0.48)
-            : const Color(0xFFFFFFFF).withValues(alpha: 0.58),
-        blur: const LiquidGlassBlur(sigmaX: 12, sigmaY: 12),
+            ? const Color(0xFF000000).withValues(alpha: 0.76)
+            : const Color(0xFFFFFFFF).withValues(alpha: 0.85),
+        blur: const LiquidGlassBlur(sigmaX: 14, sigmaY: 14),
       ),
       refraction: const LiquidGlassRefraction(
-        distortion: 0.10,
-        distortionWidth: 30,
-        chromaticAberration: 0.003,
+        distortion: 0.05,
+        distortionWidth: 20,
+        chromaticAberration: 0.001,
       ),
     );
 
@@ -109,18 +109,12 @@ class LiquidGlassNavDock extends StatelessWidget {
                 child: Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(28),
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: isDark
-                          ? [
-                              AppColors.darkSurface.withValues(alpha: 0.22),
-                              AppColors.darkSurfaceSecondary.withValues(alpha: 0.12),
-                            ]
-                          : [
-                              Colors.white.withValues(alpha: 0.28),
-                              Colors.white.withValues(alpha: 0.14),
-                            ],
+                    color: isDark
+                        ? const Color(0xFF0A0A0A).withValues(alpha: 0.6)
+                        : Colors.white.withValues(alpha: 0.7),
+                    border: Border.all(
+                      color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                      width: 0.8,
                     ),
                   ),
                   padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -129,7 +123,8 @@ class LiquidGlassNavDock extends StatelessWidget {
                     children: [
                       // 1. Home / Overview
                       _buildDockItem(
-                        icon: Icons.dashboard_rounded,
+                        icon: Icons.dashboard_outlined,
+                        activeIcon: Icons.dashboard_rounded,
                         tooltip: 'dashboard_overview'.tr,
                         isActive: currentRoute == Routes.DASHBOARD,
                         isDark: isDark,
@@ -144,7 +139,8 @@ class LiquidGlassNavDock extends StatelessWidget {
 
                       // 2. Transactions History
                       _buildDockItem(
-                        icon: Icons.receipt_long_rounded,
+                        icon: Icons.receipt_long_outlined,
+                        activeIcon: Icons.receipt_long_rounded,
                         tooltip: 'all_transactions'.tr,
                         isActive: currentRoute == Routes.TRANSACTIONS_LIST,
                         isDark: isDark,
@@ -159,12 +155,13 @@ class LiquidGlassNavDock extends StatelessWidget {
                         },
                       ),
 
-                      // 3. Center Liquid Neon Quick Add Button
+                      // 3. Center Nothing Red Quick Add Button
                       _buildCenterAddButton(context),
 
                       // 4. Budget Settings
                       _buildDockItem(
-                        icon: Icons.tune_rounded,
+                        icon: Icons.tune_outlined,
+                        activeIcon: Icons.tune_rounded,
                         tooltip: 'budget_settings'.tr,
                         isActive: currentRoute == Routes.BUDGET_SETTINGS,
                         isDark: isDark,
@@ -192,9 +189,10 @@ class LiquidGlassNavDock extends StatelessWidget {
     );
   }
 
-  /// รายการนำทางเดี่ยวบน Dock พร้อมสถานะ Active สไตล์ Apple iOS 26 Liquid Droplet Pill
+  /// รายการนำทางเดี่ยวบน Dock พร้อมสถานะ Active สไตล์ Nothing OS
   Widget _buildDockItem({
     required IconData icon,
+    IconData? activeIcon,
     required String tooltip,
     required bool isActive,
     required bool isDark,
@@ -202,96 +200,58 @@ class LiquidGlassNavDock extends StatelessWidget {
   }) {
     return Tooltip(
       message: tooltip,
-        child: InkWell(
-          onTap: () {
-            HapticFeedback.selectionClick();
-            onTap();
-          },
-          borderRadius: BorderRadius.circular(16),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 260),
-            curve: Curves.easeOutCubic,
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              gradient: isActive
-                  ? LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: isDark
-                          ? [
-                              Colors.white.withValues(alpha: 0.20),
-                              AppColors.primary.withValues(alpha: 0.22),
-                              AppColors.primary.withValues(alpha: 0.08),
-                            ]
-                          : [
-                              Colors.white.withValues(alpha: 0.75),
-                              AppColors.primary.withValues(alpha: 0.16),
-                              Colors.white.withValues(alpha: 0.35),
-                            ],
-                      stops: const [0.0, 0.55, 1.0],
-                    )
-                  : null,
-              border: isActive
-                  ? Border.all(
-                      color: isDark
-                          ? Colors.white.withValues(alpha: 0.35)
-                          : Colors.white.withValues(alpha: 0.85),
-                      width: 1.0,
-                    )
-                  : null,
-              boxShadow: isActive
-                  ? [
-                      BoxShadow(
-                        color: AppColors.primary.withValues(alpha: isDark ? 0.25 : 0.14),
-                        blurRadius: 10,
-                        offset: const Offset(0, 2),
-                      ),
-                      BoxShadow(
-                        color: Colors.white.withValues(alpha: isDark ? 0.15 : 0.60),
-                        blurRadius: 4,
-                        offset: const Offset(0, -1),
-                      ),
-                    ]
-                  : null,
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  icon,
-                  size: 22,
-                  color: isActive
-                      ? AppColors.primary
-                      : (isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569)),
-                ),
-                if (isActive) ...[
-                  const SizedBox(height: 3),
-                  Container(
-                    width: 4.5,
-                    height: 4.5,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppColors.primary,
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.primary,
-                          blurRadius: 6,
-                          spreadRadius: 0.8,
-                        ),
-                      ],
-                    ),
+      child: InkWell(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onTap();
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          width: 46,
+          height: 46,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            color: isActive
+                ? (isDark ? const Color(0xFF1E1E1E) : const Color(0xFFEDEDED))
+                : Colors.transparent,
+            border: isActive
+                ? Border.all(
+                    color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.1),
+                    width: 0.8,
+                  )
+                : null,
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                isActive ? (activeIcon ?? icon) : icon,
+                size: 21,
+                color: isActive
+                    ? (isDark ? Colors.white : Colors.black)
+                    : (isDark ? const Color(0xFF888888) : const Color(0xFF777777)),
+              ),
+              if (isActive) ...[
+                const SizedBox(height: 3),
+                Container(
+                  width: 4,
+                  height: 4,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppColors.nothingRed,
                   ),
-                ],
+                ),
               ],
-            ),
+            ],
           ),
         ),
-      );
+      ),
+    );
   }
 
-  /// เมนูศูนย์ควบคุม Hub & Vault สไตล์ Liquid Glass (ย้ายมาจากแถบ AppBar ด้านบนขวา)
+  /// เมนูศูนย์ควบคุม Hub & Vault สไตล์ Nothing OS
   Widget _buildDockVaultMenu(
     BuildContext context,
     bool isDark,
@@ -302,29 +262,29 @@ class LiquidGlassNavDock extends StatelessWidget {
     return Theme(
       data: Theme.of(context).copyWith(
         popupMenuTheme: PopupMenuThemeData(
-          color: (isDark ? AppColors.darkSurface : AppColors.surface).withValues(alpha: 0.96),
+          color: (isDark ? const Color(0xFF121212) : Colors.white).withValues(alpha: 0.98),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(20),
             side: BorderSide(
-              color: isDark ? Colors.white.withValues(alpha: 0.16) : AppColors.border.withValues(alpha: 0.8),
-              width: 1,
+              color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.1),
+              width: 0.8,
             ),
           ),
-          elevation: 14,
+          elevation: 16,
         ),
       ),
       child: PopupMenuButton<String>(
         tooltip: 'data_management_short'.tr,
         offset: const Offset(0, -10),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(20),
           side: BorderSide(
-            color: isDark ? Colors.white.withValues(alpha: 0.16) : AppColors.border.withValues(alpha: 0.8),
-            width: 1,
+            color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.1),
+            width: 0.8,
           ),
         ),
-        color: (isDark ? AppColors.darkSurface : AppColors.surface).withValues(alpha: 0.96),
-        elevation: 14,
+        color: (isDark ? const Color(0xFF121212) : Colors.white).withValues(alpha: 0.98),
+        elevation: 16,
         onSelected: (val) {
           HapticFeedback.selectionClick();
           if (val == 'slip') {
@@ -366,23 +326,13 @@ class LiquidGlassNavDock extends StatelessWidget {
               height: 32,
               child: Row(
                 children: [
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppColors.primary,
-                    ),
-                  ),
+                  const NothingLedIndicator(color: AppColors.nothingRed, size: 5),
                   const SizedBox(width: 8),
-                  Text(
-                    'HUB & VAULT CENTER',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.8,
-                      color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                    ),
+                  NothingDotText(
+                    'SYSTEM // VAULT',
+                    fontSize: 10,
+                    letterSpacing: 1.2,
+                    color: isDark ? Colors.white : Colors.black,
                   ),
                 ],
               ),
@@ -398,52 +348,41 @@ class LiquidGlassNavDock extends StatelessWidget {
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(
-                      color: ((controller.themeMode.value == ThemeMode.dark ||
-                              (controller.themeMode.value == ThemeMode.system && isDark))
-                              ? const Color(0xFF6366F1)
-                              : const Color(0xFFF59E0B))
-                          .withValues(alpha: 0.14),
-                      borderRadius: BorderRadius.circular(10),
+                      color: isDark ? const Color(0xFF1E1E1E) : const Color(0xFFEEEEEE),
+                      borderRadius: BorderRadius.circular(9),
+                      border: Border.all(
+                        color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.06),
+                        width: 0.8,
+                      ),
                     ),
                     child: Icon(
                       (controller.themeMode.value == ThemeMode.dark ||
                               (controller.themeMode.value == ThemeMode.system && isDark))
-                          ? Icons.dark_mode_rounded
-                          : Icons.light_mode_rounded,
-                      size: 17,
-                      color: (controller.themeMode.value == ThemeMode.dark ||
-                              (controller.themeMode.value == ThemeMode.system && isDark))
-                          ? const Color(0xFF818CF8)
-                          : const Color(0xFFF59E0B),
+                          ? Icons.dark_mode_outlined
+                          : Icons.light_mode_outlined,
+                      size: 16,
+                      color: isDark ? Colors.white : Colors.black,
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       'theme_settings'.tr,
-                      style: TextStyle(
+                      style: GoogleFonts.spaceGrotesk(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                        color: isDark ? Colors.white : Colors.black,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      controller.themeModeName,
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                      ),
-                    ),
+                  NothingPill(
+                    label: controller.themeModeName.toUpperCase(),
+                    color: isDark ? const Color(0xFF222222) : const Color(0xFFEEEEEE),
+                    textColor: isDark ? Colors.white : Colors.black,
+                    isDotMatrix: true,
+                    fontSize: 9.5,
                   ),
                 ],
               ),
@@ -458,42 +397,38 @@ class LiquidGlassNavDock extends StatelessWidget {
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF3B82F6).withValues(alpha: 0.14),
-                      borderRadius: BorderRadius.circular(10),
+                      color: isDark ? const Color(0xFF1E1E1E) : const Color(0xFFEEEEEE),
+                      borderRadius: BorderRadius.circular(9),
+                      border: Border.all(
+                        color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.06),
+                        width: 0.8,
+                      ),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.language_rounded,
-                      size: 17,
-                      color: Color(0xFF3B82F6),
+                      size: 16,
+                      color: isDark ? Colors.white : Colors.black,
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       'language_settings'.tr,
-                      style: TextStyle(
+                      style: GoogleFonts.spaceGrotesk(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                        color: isDark ? Colors.white : Colors.black,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      controller.isEnglish ? 'EN' : 'TH',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                      ),
-                    ),
+                  NothingPill(
+                    label: controller.isEnglish ? 'EN' : 'TH',
+                    color: isDark ? const Color(0xFF222222) : const Color(0xFFEEEEEE),
+                    textColor: isDark ? Colors.white : Colors.black,
+                    isDotMatrix: true,
+                    fontSize: 9.5,
                   ),
                 ],
               ),
@@ -508,23 +443,27 @@ class LiquidGlassNavDock extends StatelessWidget {
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.14),
-                      borderRadius: BorderRadius.circular(10),
+                      color: isDark ? const Color(0xFF1E1E1E) : const Color(0xFFEEEEEE),
+                      borderRadius: BorderRadius.circular(9),
+                      border: Border.all(
+                        color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.06),
+                        width: 0.8,
+                      ),
                     ),
-                    child: const Icon(
-                      Icons.storage_rounded,
-                      size: 17,
-                      color: AppColors.primary,
+                    child: Icon(
+                      Icons.storage_outlined,
+                      size: 16,
+                      color: isDark ? Colors.white : Colors.black,
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       'data_management_short'.tr,
-                      style: TextStyle(
+                      style: GoogleFonts.spaceGrotesk(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                        color: isDark ? Colors.white : Colors.black,
                       ),
                     ),
                   ),
@@ -541,23 +480,27 @@ class LiquidGlassNavDock extends StatelessWidget {
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF10B981).withValues(alpha: 0.14),
-                      borderRadius: BorderRadius.circular(10),
+                      color: isDark ? const Color(0xFF1E1E1E) : const Color(0xFFEEEEEE),
+                      borderRadius: BorderRadius.circular(9),
+                      border: Border.all(
+                        color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.06),
+                        width: 0.8,
+                      ),
                     ),
-                    child: const Icon(
-                      Icons.security_rounded,
-                      size: 17,
-                      color: Color(0xFF10B981),
+                    child: Icon(
+                      Icons.security_outlined,
+                      size: 16,
+                      color: isDark ? Colors.white : Colors.black,
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       'security_pin_short'.tr,
-                      style: TextStyle(
+                      style: GoogleFonts.spaceGrotesk(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                        color: isDark ? Colors.white : Colors.black,
                       ),
                     ),
                   ),
@@ -574,23 +517,27 @@ class LiquidGlassNavDock extends StatelessWidget {
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF00A3E0).withValues(alpha: 0.14),
-                      borderRadius: BorderRadius.circular(10),
+                      color: isDark ? const Color(0xFF1E1E1E) : const Color(0xFFEEEEEE),
+                      borderRadius: BorderRadius.circular(9),
+                      border: Border.all(
+                        color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.06),
+                        width: 0.8,
+                      ),
                     ),
-                    child: const Icon(
-                      Icons.document_scanner_rounded,
-                      size: 17,
-                      color: Color(0xFF00A3E0),
+                    child: Icon(
+                      Icons.document_scanner_outlined,
+                      size: 16,
+                      color: isDark ? Colors.white : Colors.black,
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       'scan_bank_slip'.tr,
-                      style: TextStyle(
+                      style: GoogleFonts.spaceGrotesk(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                        color: isDark ? Colors.white : Colors.black,
                       ),
                     ),
                   ),
@@ -608,23 +555,27 @@ class LiquidGlassNavDock extends StatelessWidget {
                       width: 32,
                       height: 32,
                       decoration: BoxDecoration(
-                        color: AppColors.deficitText.withValues(alpha: 0.14),
-                        borderRadius: BorderRadius.circular(10),
+                        color: AppColors.nothingRed.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(9),
+                        border: Border.all(
+                          color: AppColors.nothingRed.withValues(alpha: 0.3),
+                          width: 0.8,
+                        ),
                       ),
                       child: const Icon(
                         Icons.lock_outline_rounded,
-                        size: 17,
-                        color: AppColors.deficitText,
+                        size: 16,
+                        color: AppColors.nothingRed,
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         'lock_screen_now'.tr,
-                        style: const TextStyle(
+                        style: GoogleFonts.spaceGrotesk(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.deficitText,
+                          color: AppColors.nothingRed,
                         ),
                       ),
                     ),
@@ -634,51 +585,20 @@ class LiquidGlassNavDock extends StatelessWidget {
           ];
         },
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 260),
+          duration: const Duration(milliseconds: 200),
           curve: Curves.easeOutCubic,
           width: 46,
           height: 46,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            gradient: isVaultActive
-                ? LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: isDark
-                        ? [
-                            Colors.white.withValues(alpha: 0.20),
-                            AppColors.primary.withValues(alpha: 0.22),
-                            AppColors.primary.withValues(alpha: 0.08),
-                          ]
-                        : [
-                            Colors.white.withValues(alpha: 0.75),
-                            AppColors.primary.withValues(alpha: 0.16),
-                            Colors.white.withValues(alpha: 0.35),
-                          ],
-                    stops: const [0.0, 0.55, 1.0],
-                  )
-                : null,
+            color: isVaultActive
+                ? (isDark ? const Color(0xFF1E1E1E) : const Color(0xFFEDEDED))
+                : Colors.transparent,
             border: isVaultActive
                 ? Border.all(
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.35)
-                        : Colors.white.withValues(alpha: 0.85),
-                    width: 1.0,
+                    color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.1),
+                    width: 0.8,
                   )
-                : null,
-            boxShadow: isVaultActive
-                ? [
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: isDark ? 0.25 : 0.14),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
-                    ),
-                    BoxShadow(
-                      color: Colors.white.withValues(alpha: isDark ? 0.15 : 0.60),
-                      blurRadius: 4,
-                      offset: const Offset(0, -1),
-                    ),
-                  ]
                 : null,
           ),
           child: Column(
@@ -689,31 +609,21 @@ class LiquidGlassNavDock extends StatelessWidget {
                 clipBehavior: Clip.none,
                 children: [
                   Icon(
-                    Icons.widgets_rounded,
-                    size: 22,
+                    Icons.widgets_outlined,
+                    size: 21,
                     color: isVaultActive
-                        ? AppColors.primary
-                        : (isDark ? AppColors.darkTextSecondary : const Color(0xFF64748B)),
+                        ? (isDark ? Colors.white : Colors.black)
+                        : (isDark ? const Color(0xFF888888) : const Color(0xFF777777)),
                   ),
-                  // Glowing status dot
                   Positioned(
                     top: -1,
                     right: -2,
                     child: Container(
-                      width: 5,
-                      height: 5,
-                      decoration: BoxDecoration(
+                      width: 4,
+                      height: 4,
+                      decoration: const BoxDecoration(
                         shape: BoxShape.circle,
-                        color: isVaultActive ? AppColors.primary : AppColors.primary.withValues(alpha: 0.6),
-                        boxShadow: isVaultActive
-                            ? [
-                                BoxShadow(
-                                  color: AppColors.primary,
-                                  blurRadius: 6,
-                                  spreadRadius: 0.8,
-                                ),
-                              ]
-                            : null,
+                        color: AppColors.nothingRed,
                       ),
                     ),
                   ),
@@ -722,18 +632,11 @@ class LiquidGlassNavDock extends StatelessWidget {
               if (isVaultActive) ...[
                 const SizedBox(height: 3),
                 Container(
-                  width: 4.5,
-                  height: 4.5,
-                  decoration: BoxDecoration(
+                  width: 4,
+                  height: 4,
+                  decoration: const BoxDecoration(
                     shape: BoxShape.circle,
-                    color: AppColors.primary,
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary,
-                        blurRadius: 6,
-                        spreadRadius: 0.8,
-                      ),
-                    ],
+                    color: AppColors.nothingRed,
                   ),
                 ),
               ],
@@ -744,87 +647,46 @@ class LiquidGlassNavDock extends StatelessWidget {
     );
   }
 
-  /// ปุ่มวงกลมมนนีออนตรงกลางสำหรับบันทึกรายการด่วน สไตล์ Apple iOS 26 Liquid Action Jewel
+  /// ปุ่มวงกลมมนสีแดง Nothing Red ตรงกลางสำหรับบันทึกรายการด่วน
   Widget _buildCenterAddButton(BuildContext context) {
     return Tooltip(
       message: 'save'.tr,
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () {
-              HapticFeedback.mediumImpact();
-              QuickAddBottomSheet.show(context);
-            },
-            borderRadius: BorderRadius.circular(19),
-            child: Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFF34D399), // Radiant Mint
-                    Color(0xFF10B981), // Core Emerald
-                    Color(0xFF047857), // Deep Forest Jewel
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(19),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.65),
-                  width: 1.4,
-                ),
-                boxShadow: [
-                  // Radiant emerald halo
-                  BoxShadow(
-                    color: const Color(0xFF10B981).withValues(alpha: 0.48),
-                    blurRadius: 20,
-                    offset: const Offset(0, 5),
-                    spreadRadius: 1,
-                  ),
-                  // Specular razor glint
-                  BoxShadow(
-                    color: Colors.white.withValues(alpha: 0.50),
-                    blurRadius: 5,
-                    offset: const Offset(0, -1),
-                  ),
-                ],
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.mediumImpact();
+            QuickAddBottomSheet.show(context);
+          },
+          borderRadius: BorderRadius.circular(18),
+          child: Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: AppColors.nothingRed,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.3),
+                width: 1.0,
               ),
-              child: Stack(
-                children: [
-                  // Upper glass dome sheen overlay
-                  Positioned(
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: 24,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(17.5)),
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.white.withValues(alpha: 0.35),
-                            Colors.white.withValues(alpha: 0.0),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  // Center icon
-                  const Center(
-                    child: Icon(
-                      Icons.add_rounded,
-                      color: Colors.white,
-                      size: 29,
-                    ),
-                  ),
-                ],
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.nothingRed.withValues(alpha: 0.4),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: const Center(
+              child: Icon(
+                Icons.add_rounded,
+                color: Colors.white,
+                size: 26,
               ),
             ),
           ),
         ),
-      );
+      ),
+    );
   }
 }
