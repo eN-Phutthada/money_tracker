@@ -222,17 +222,17 @@ class NothingCard extends StatelessWidget {
         shape: LiquidGlassShape.squircle(
           cornerRadius: borderRadius,
           borderWidth: 1.0,
-          lightIntensity: 1.25,
+          lightIntensity: isDark ? 0.35 : 1.25,
           lightDirection: 65,
-          borderType: const OpticalBorder(
-            borderSaturation: 1.2,
-            ambientIntensity: 1.1,
-            borderSolidity: 0.18,
+          borderType: OpticalBorder(
+            borderSaturation: isDark ? 0.8 : 1.2,
+            ambientIntensity: isDark ? 0.6 : 1.1,
+            borderSolidity: isDark ? 0.25 : 0.18,
           ),
         ),
         appearance: LiquidGlassAppearance(
           color: isDark
-              ? Colors.white.withValues(alpha: 0.85)
+              ? const Color(0xFF141416).withValues(alpha: 0.65)
               : Colors.white.withValues(alpha: 0.50),
           blur: const LiquidGlassBlur(sigmaX: 1, sigmaY: 1),
         ),

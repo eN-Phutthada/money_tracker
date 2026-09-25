@@ -100,17 +100,25 @@ class BudgetSettingsView extends GetView<BudgetController> {
                       child: Row(
                         children: [
                           Container(
-                            width: 36,
-                            height: 36,
+                            width: 38,
+                            height: 38,
                             decoration: BoxDecoration(
-                              color: isDark
-                                  ? const Color(0xFF161616)
-                                  : const Color(0xFFF4F4F4),
+                              color: isPositive
+                                  ? (isDark
+                                      ? const Color(0xFF10B981).withValues(alpha: 0.12)
+                                      : const Color(0xFF10B981).withValues(alpha: 0.08))
+                                  : (isDark
+                                      ? AppColors.nothingRed.withValues(alpha: 0.15)
+                                      : AppColors.nothingRed.withValues(alpha: 0.08)),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: isDark
-                                    ? AppColors.nothingBorder
-                                    : Colors.black.withValues(alpha: 0.08),
+                                color: isPositive
+                                    ? (isDark
+                                        ? const Color(0xFF10B981).withValues(alpha: 0.35)
+                                        : const Color(0xFF10B981).withValues(alpha: 0.25))
+                                    : (isDark
+                                        ? AppColors.nothingRed.withValues(alpha: 0.40)
+                                        : AppColors.nothingRed.withValues(alpha: 0.25)),
                                 width: 0.8,
                               ),
                             ),
@@ -119,9 +127,9 @@ class BudgetSettingsView extends GetView<BudgetController> {
                                   ? Icons.auto_graph_rounded
                                   : Icons.trending_down_rounded,
                               color: isPositive
-                                  ? (isDark ? Colors.white : Colors.black)
+                                  ? (isDark ? const Color(0xFF10B981) : const Color(0xFF059669))
                                   : AppColors.nothingRed,
-                              size: 17,
+                              size: 18,
                             ),
                           ),
                           const SizedBox(width: 10),
@@ -133,27 +141,45 @@ class BudgetSettingsView extends GetView<BudgetController> {
                                   fit: BoxFit.scaleDown,
                                   alignment: Alignment.centerLeft,
                                   child: NothingDotText(
-                                    'PROJECTED // ENDING BALANCE',
-                                    fontSize: 11,
-                                    letterSpacing: 0.8,
-                                    color: isDark ? Colors.white : Colors.black,
+                                    'projected_ending_balance_header'.tr.toUpperCase(),
+                                    fontSize: 12,
+                                    letterSpacing: 1.0,
+                                    fontWeight: FontWeight.w700,
+                                    color: isPositive
+                                        ? (isDark ? Colors.white : const Color(0xFF111111))
+                                        : AppColors.nothingRed,
                                   ),
                                 ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  'days_in_cycle'.trParams({
-                                    'days': '${controller.daysInMonth}',
-                                  }).toUpperCase(),
-                                  style: GoogleFonts.spaceGrotesk(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 0.6,
+                                const SizedBox(height: 3),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                  decoration: BoxDecoration(
                                     color: isDark
-                                        ? AppColors.nothingSubtext
-                                        : const Color(0xFF777777),
+                                        ? const Color(0xFF1C1C1E)
+                                        : const Color(0xFFF0F0F2),
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(
+                                      color: isDark
+                                          ? AppColors.nothingBorder
+                                          : Colors.black.withValues(alpha: 0.08),
+                                      width: 0.8,
+                                    ),
                                   ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                                  child: Text(
+                                    'days_in_cycle'.trParams({
+                                      'days': '${controller.daysInMonth}',
+                                    }).toUpperCase(),
+                                    style: GoogleFonts.shareTechMono(
+                                      fontSize: 9.5,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 0.8,
+                                      color: isDark
+                                          ? const Color(0xFFB0B0B0)
+                                          : const Color(0xFF555555),
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
                               ],
                             ),
@@ -167,14 +193,14 @@ class BudgetSettingsView extends GetView<BudgetController> {
                     FittedBox(
                       fit: BoxFit.scaleDown,
                       child: NothingPill(
-                        label: isPositive ? 'BALANCED' : 'DEFICIT',
+                        label: isPositive
+                            ? 'good_balance'.tr.toUpperCase()
+                            : 'over_budget'.tr.toUpperCase(),
                         color: isPositive
-                            ? (isDark
-                                  ? const Color(0xFF1A1A1A)
-                                  : const Color(0xFFEEEEEE))
-                            : AppColors.nothingRed.withValues(alpha: 0.15),
+                            ? const Color(0xFF10B981)
+                            : AppColors.nothingRed,
                         textColor: isPositive
-                            ? (isDark ? Colors.white : Colors.black)
+                            ? (isDark ? const Color(0xFF34D399) : const Color(0xFF059669))
                             : AppColors.nothingRed,
                         showDot: true,
                         dotColor: isPositive
@@ -183,8 +209,8 @@ class BudgetSettingsView extends GetView<BudgetController> {
                         isDotMatrix: true,
                         fontSize: 9.5,
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 7,
-                          vertical: 3,
+                          horizontal: 8,
+                          vertical: 3.5,
                         ),
                       ),
                     ),
@@ -321,6 +347,12 @@ class BudgetSettingsView extends GetView<BudgetController> {
       double.infinity,
     );
 
+    // High-contrast, distinct 4-pillar colors
+    final fixedColor = isDark ? const Color(0xFFD4D4D8) : const Color(0xFF4B5563);
+    final varColor = AppColors.expenseColor(isDark);
+    final savingsColor = AppColors.savingsColor(isDark);
+    final surplusColor = isDark ? const Color(0xFF10B981) : const Color(0xFF059669);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -329,26 +361,30 @@ class BudgetSettingsView extends GetView<BudgetController> {
           children: [
             Text(
               'allocation_breakdown'.tr,
-              style: TextStyle(
+              style: GoogleFonts.spaceGrotesk(
                 fontSize: 11.5,
                 fontWeight: FontWeight.w700,
                 color: isDark
                     ? AppColors.darkTextSecondary
                     : AppColors.textSecondary,
-              ),
+              ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
               decoration: BoxDecoration(
-                color: AppColors.accent.withValues(alpha: 0.12),
+                color: savingsColor.withValues(alpha: isDark ? 0.16 : 0.10),
                 borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: savingsColor.withValues(alpha: isDark ? 0.35 : 0.25),
+                  width: 0.8,
+                ),
               ),
               child: Text(
                 'DCA ${(savingsRatio * 100).toStringAsFixed(0)}%',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.accent,
+                  color: savingsColor,
                 ),
               ),
             ),
@@ -371,14 +407,10 @@ class BudgetSettingsView extends GetView<BudgetController> {
                 varRatio: varRatio,
                 savingsRatio: savingsRatio,
                 surplusRatio: surplusRatio,
-                fixedColor: isDark
-                    ? const Color(0xFFE5E5EA)
-                    : const Color(0xFF4B5563),
-                varColor: isDark
-                    ? AppColors.nothingRedLight
-                    : AppColors.nothingRed,
-                savingsColor: const Color(0xFF3B82F6),
-                surplusColor: isDark ? Colors.white : Colors.black,
+                fixedColor: fixedColor,
+                varColor: varColor,
+                savingsColor: savingsColor,
+                surplusColor: surplusColor,
               ),
             ),
           ),
@@ -394,21 +426,21 @@ class BudgetSettingsView extends GetView<BudgetController> {
               label: 'fixed_cost_short'.tr,
               percent: (fixedRatio * 100).toInt(),
               amount: currencyFmt.format(fixedAmount),
-              color: isDark ? const Color(0xFFE5E5EA) : const Color(0xFF3A3A3C),
+              color: fixedColor,
               isDark: isDark,
             ),
             _buildAllocationChip(
               label: 'variable_cost_short'.tr,
               percent: (varRatio * 100).toInt(),
               amount: currencyFmt.format(varAmount),
-              color: isDark ? AppColors.nothingRedLight : AppColors.nothingRed,
+              color: varColor,
               isDark: isDark,
             ),
             _buildAllocationChip(
               label: 'savings_short'.tr,
               percent: (savingsRatio * 100).toInt(),
               amount: currencyFmt.format(savingsAmount),
-              color: const Color(0xFF3B82F6),
+              color: savingsColor,
               isDark: isDark,
             ),
             if (surplusRatio > 0)
@@ -416,7 +448,7 @@ class BudgetSettingsView extends GetView<BudgetController> {
                 label: 'buffer_short'.tr,
                 percent: (surplusRatio * 100).toInt(),
                 amount: currencyFmt.format(surplusAmount),
-                color: isDark ? Colors.white : Colors.black,
+                color: surplusColor,
                 isDark: isDark,
               ),
           ],
@@ -437,7 +469,7 @@ class BudgetSettingsView extends GetView<BudgetController> {
       decoration: BoxDecoration(
         color: color.withValues(alpha: isDark ? 0.12 : 0.08),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.25), width: 0.8),
+        border: Border.all(color: color.withValues(alpha: isDark ? 0.35 : 0.25), width: 0.8),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -450,21 +482,19 @@ class BudgetSettingsView extends GetView<BudgetController> {
           const SizedBox(width: 5),
           Text(
             '$label $percent%',
-            style: TextStyle(
+            style: GoogleFonts.spaceGrotesk(
               fontSize: 10,
               fontWeight: FontWeight.w700,
               color: color,
-            ),
+            ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 5),
           Text(
             amount,
-            style: TextStyle(
+            style: GoogleFonts.shareTechMono(
               fontSize: 10,
-              fontWeight: FontWeight.w600,
-              color: isDark
-                  ? AppColors.darkTextSecondary
-                  : AppColors.textSecondary,
+              fontWeight: FontWeight.w700,
+              color: isDark ? Colors.white70 : Colors.black87,
             ),
           ),
         ],

@@ -652,7 +652,6 @@ class _TransactionsListViewState extends State<TransactionsListView> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
       child: NothingCard(
-        isGlass: true,
         showDotGrid: false,
         padding: const EdgeInsets.all(14),
         child: Column(
@@ -674,7 +673,7 @@ class _TransactionsListViewState extends State<TransactionsListView> {
                       style: GoogleFonts.shareTechMono(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
-                        color: const Color(0xFF666666),
+                        color: isDark ? AppColors.nothingSubtext : const Color(0xFF666666),
                         letterSpacing: 1.2,
                       ),
                     ),
@@ -691,10 +690,9 @@ class _TransactionsListViewState extends State<TransactionsListView> {
                     dotColor: netFlow >= 0
                         ? AppColors.incomeColor(isDark)
                         : AppColors.expenseColor(isDark),
-                    color: (netFlow >= 0
-                            ? AppColors.incomeColor(isDark)
-                            : AppColors.expenseColor(isDark))
-                        .withValues(alpha: isDark ? 0.16 : 0.10),
+                    color: netFlow >= 0
+                        ? AppColors.incomeColor(isDark)
+                        : AppColors.expenseColor(isDark),
                     textColor: netFlow >= 0
                         ? AppColors.incomeColor(isDark)
                         : AppColors.expenseColor(isDark),
@@ -718,12 +716,12 @@ class _TransactionsListViewState extends State<TransactionsListView> {
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
                         color: isDark
-                            ? const Color(0xFF1A1A1A)
+                            ? const Color(0xFF181818)
                             : const Color(0xFFF5F5F5),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: isDark
-                              ? Colors.white.withValues(alpha: 0.08)
+                              ? AppColors.nothingBorder
                               : Colors.black.withValues(alpha: 0.06),
                           width: 0.8,
                         ),
@@ -765,12 +763,12 @@ class _TransactionsListViewState extends State<TransactionsListView> {
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
                         color: isDark
-                            ? const Color(0xFF1A1A1A)
+                            ? const Color(0xFF181818)
                             : const Color(0xFFF5F5F5),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: isDark
-                              ? Colors.white.withValues(alpha: 0.08)
+                              ? AppColors.nothingBorder
                               : Colors.black.withValues(alpha: 0.06),
                           width: 0.8,
                         ),
@@ -822,12 +820,12 @@ class _TransactionsListViewState extends State<TransactionsListView> {
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
                           color: isDark
-                              ? const Color(0xFF1A1A1A)
+                              ? const Color(0xFF181818)
                               : const Color(0xFFF5F5F5),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: isDark
-                                ? Colors.white.withValues(alpha: 0.08)
+                                ? AppColors.nothingBorder
                                 : Colors.black.withValues(alpha: 0.06),
                             width: 0.8,
                           ),
