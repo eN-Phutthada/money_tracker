@@ -1,9 +1,70 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:liquid_glass_easy/liquid_glass_easy.dart';
 import '../theme/app_colors.dart';
 
 /// วิดเจ็ตพื้นฐานสไตล์ Nothing OS Design System
 /// ผสมผสานความเรียบหรูแบบอินดัสเทรียล, เรขาคณิต Squircle, และไฟ LED Glyph
+
+/// ตัวช่วยกำหนดรูปแบบตัวอักษรสไตล์ Nothing OS Design System
+/// พร้อม fallback ฟอนต์ไทย (Prompt) และระบบป้องกันตัวอักษรไทยสระลอย/ห่างเกินไป
+class NothingTypography {
+  static const List<String> fallbackFonts = ['Prompt', 'sans-serif'];
+
+  /// ตรวจสอบว่าข้อความมีอักขระภาษาไทยหรือไม่
+  static bool hasThai(String text) => RegExp(r'[\u0E00-\u0E7F]').hasMatch(text);
+
+  /// คืนค่า letterSpacing ที่ปลอดภัย (สำหรับภาษาไทยห้ามเกิน 0.3 ป้องกันสระลอย/วรรณยุกต์หลุด)
+  static double safeSpacing(String? text, double desiredSpacing) {
+    if (text == null || text.isEmpty) return desiredSpacing;
+    return hasThai(text) ? 0.2 : desiredSpacing;
+  }
+
+  /// ฟอนต์ Space Grotesk สำหรับหัวข้อ, ปุ่ม, แท็บ, ฉลาก, ป้ายสถานะ
+  static TextStyle grotesk({
+    double fontSize = 13,
+    FontWeight fontWeight = FontWeight.w600,
+    Color? color,
+    double letterSpacing = 0.2,
+    double? height,
+    TextDecoration? decoration,
+    FontStyle? fontStyle,
+  }) {
+    return GoogleFonts.spaceGrotesk(
+      fontSize: fontSize,
+      fontWeight: fontWeight,
+      color: color,
+      letterSpacing: letterSpacing,
+      height: height,
+      decoration: decoration,
+      fontStyle: fontStyle,
+    ).copyWith(
+      fontFamilyFallback: fallbackFonts,
+    );
+  }
+
+  /// ฟอนต์ Share Tech Mono สำหรับตัวเลข, จำนวนเงิน, สถิติ, วันที่เวลา, มาตรวัด
+  static TextStyle mono({
+    double fontSize = 13,
+    FontWeight fontWeight = FontWeight.w700,
+    Color? color,
+    double letterSpacing = 0.0,
+    double? height,
+    FontStyle? fontStyle,
+  }) {
+    return GoogleFonts.shareTechMono(
+      fontSize: fontSize,
+      fontWeight: fontWeight,
+      color: color,
+      letterSpacing: letterSpacing,
+      height: height,
+      fontStyle: fontStyle,
+    ).copyWith(
+      fontFamilyFallback: fallbackFonts,
+    );
+  }
+}
 
 /// 1. ข้อความสไตล์ Nothing Dot Matrix / Monospace สำหรับตัวเลขและหัวข้อ
 class NothingDotText extends StatelessWidget {
@@ -14,6 +75,9 @@ class NothingDotText extends StatelessWidget {
   final double letterSpacing;
   final bool isMono;
   final TextAlign? textAlign;
+  final TextStyle? style;
+  final int? maxLines;
+  final TextOverflow? overflow;
 
   const NothingDotText(
     this.text, {
@@ -24,33 +88,37 @@ class NothingDotText extends StatelessWidget {
     this.letterSpacing = 0.5,
     this.isMono = true,
     this.textAlign,
+    this.style,
+    this.maxLines,
+    this.overflow,
   });
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final defaultColor = isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
+    final effectiveSpacing = NothingTypography.safeSpacing(text, letterSpacing);
 
-    final baseStyle = isMono
-        ? GoogleFonts.shareTechMono(
+    final baseStyle = style ?? (isMono
+        ? NothingTypography.mono(
             fontSize: fontSize,
             fontWeight: fontWeight,
             color: color ?? defaultColor,
-            letterSpacing: letterSpacing,
+            letterSpacing: effectiveSpacing,
           )
-        : GoogleFonts.spaceGrotesk(
+        : NothingTypography.grotesk(
             fontSize: fontSize,
             fontWeight: fontWeight,
             color: color ?? defaultColor,
-            letterSpacing: letterSpacing,
-          );
+            letterSpacing: effectiveSpacing,
+          ));
 
     return Text(
       text,
       textAlign: textAlign,
-      style: baseStyle.copyWith(
-        fontFamilyFallback: ['Prompt', 'sans-serif'],
-      ),
+      style: baseStyle,
+      maxLines: maxLines,
+      overflow: overflow,
     );
   }
 }
@@ -97,6 +165,7 @@ class NothingCard extends StatelessWidget {
   final Color? borderColor;
   final bool showDotGrid;
   final VoidCallback? onTap;
+  final bool isGlass;
 
   const NothingCard({
     super.key,
@@ -107,6 +176,7 @@ class NothingCard extends StatelessWidget {
     this.borderColor,
     this.showDotGrid = true,
     this.onTap,
+    this.isGlass = false,
   });
 
   @override
@@ -115,53 +185,139 @@ class NothingCard extends StatelessWidget {
     final defaultBg = isDark ? AppColors.darkSurface : AppColors.surface;
     final defaultBorder = isDark ? AppColors.darkBorder : AppColors.border;
 
-    Widget content = Container(
+    Widget cardBody = Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: backgroundColor ?? defaultBg,
         borderRadius: BorderRadius.circular(borderRadius),
-        border: Border.all(
-          color: borderColor ?? defaultBorder,
-          width: 1.0,
-        ),
+        border: isGlass
+            ? null
+            : Border.all(
+                color: borderColor ?? defaultBorder,
+                width: 1.0,
+              ),
       ),
       child: child,
     );
 
     if (showDotGrid) {
-      content = ClipRRect(
-        borderRadius: BorderRadius.circular(borderRadius),
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: CustomPaint(
-                painter: _NothingDotGridPainter(
-                  dotColor: isDark
-                      ? Colors.white.withValues(alpha: 0.04)
-                      : Colors.black.withValues(alpha: 0.03),
-                  spacing: 16.0,
+      cardBody = Stack(
+        children: [
+          Positioned.fill(
+            child: CustomPaint(
+              painter: _NothingDotGridPainter(
+                dotColor: isDark
+                    ? Colors.white.withValues(alpha: 0.04)
+                    : Colors.black.withValues(alpha: 0.03),
+                spacing: 16.0,
+              ),
+            ),
+          ),
+          cardBody,
+        ],
+      );
+    }
+
+    if (isGlass) {
+      final glassStyle = LiquidGlassStyle(
+        shape: LiquidGlassShape.squircle(
+          cornerRadius: borderRadius,
+          borderWidth: 1.0,
+          lightIntensity: 1.25,
+          lightDirection: 65,
+          borderType: const OpticalBorder(
+            borderSaturation: 1.2,
+            ambientIntensity: 1.1,
+            borderSolidity: 0.18,
+          ),
+        ),
+        appearance: LiquidGlassAppearance(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.85)
+              : Colors.white.withValues(alpha: 0.50),
+          blur: const LiquidGlassBlur(sigmaX: 1, sigmaY: 1),
+        ),
+        refraction: const LiquidGlassRefraction(
+          distortion: 0.06,
+          distortionWidth: 18,
+          chromaticAberration: 0.002,
+        ),
+      );
+
+      final adaptiveTextColor = isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
+
+      return Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(borderRadius),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.06),
+              blurRadius: 18,
+              offset: const Offset(0, 6),
+              spreadRadius: -2,
+            ),
+          ],
+        ),
+        child: LiquidGlassLens(
+          style: glassStyle,
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(borderRadius),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: isDark
+                    ? [
+                        Colors.white.withValues(alpha: 0.06),
+                        Colors.white.withValues(alpha: 0.02),
+                      ]
+                    : [
+                        Colors.white.withValues(alpha: 0.45),
+                        Colors.white.withValues(alpha: 0.15),
+                      ],
+              ),
+              border: Border.all(
+                color: borderColor ??
+                    (isDark
+                        ? Colors.white.withValues(alpha: 0.14)
+                        : Colors.black.withValues(alpha: 0.10)),
+                width: 0.8,
+              ),
+            ),
+            child: Material(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(borderRadius),
+              clipBehavior: Clip.antiAlias,
+              child: DefaultTextStyle.merge(
+                style: TextStyle(color: adaptiveTextColor),
+                child: IconTheme.merge(
+                  data: IconThemeData(color: adaptiveTextColor),
+                  child: onTap != null
+                      ? InkWell(
+                          onTap: onTap,
+                          borderRadius: BorderRadius.circular(borderRadius),
+                          child: cardBody,
+                        )
+                      : cardBody,
                 ),
               ),
             ),
-            content,
-          ],
+          ),
         ),
       );
     }
 
-    if (onTap != null) {
-      return Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(borderRadius),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(borderRadius),
-          child: content,
-        ),
-      );
-    }
-
-    return content;
+    return Material(
+      color: backgroundColor ?? defaultBg,
+      borderRadius: BorderRadius.circular(borderRadius),
+      clipBehavior: Clip.antiAlias,
+      child: onTap != null
+          ? InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(borderRadius),
+              child: cardBody,
+            )
+          : cardBody,
+    );
   }
 }
 
@@ -174,6 +330,7 @@ class NothingSegmentedBar extends StatelessWidget {
   final Color? inactiveColor;
   final double height;
   final double spacing;
+  final bool animate;
 
   const NothingSegmentedBar({
     super.key,
@@ -185,6 +342,7 @@ class NothingSegmentedBar extends StatelessWidget {
     this.inactiveColor,
     this.height = 5.0,
     this.spacing = 3.0,
+    this.animate = true,
   }) : totalSegments = totalSegments ?? segments ?? 16;
 
   @override
@@ -201,25 +359,43 @@ class NothingSegmentedBar extends StatelessWidget {
     return Row(
       children: List.generate(count, (index) {
         final isFilled = index < filled;
-        return Expanded(
-          child: Container(
-            height: height,
-            margin: EdgeInsets.only(right: index == count - 1 ? 0 : spacing),
-            decoration: BoxDecoration(
-              color: isFilled ? activeColor : (inactiveColor ?? defaultInactive),
-              borderRadius: BorderRadius.circular(height / 2),
-              boxShadow: isFilled
-                  ? [
-                      BoxShadow(
-                        color: activeColor.withValues(alpha: 0.35),
-                        blurRadius: 3,
-                        offset: const Offset(0, 1),
-                      ),
-                    ]
-                  : null,
-            ),
+        Widget segment = Container(
+          height: height,
+          margin: EdgeInsets.only(right: index == count - 1 ? 0 : spacing),
+          decoration: BoxDecoration(
+            color: isFilled ? activeColor : (inactiveColor ?? defaultInactive),
+            borderRadius: BorderRadius.circular(height / 2),
+            boxShadow: isFilled
+                ? [
+                    BoxShadow(
+                      color: activeColor.withValues(alpha: 0.35),
+                      blurRadius: 3,
+                      offset: const Offset(0, 1),
+                    ),
+                  ]
+                : null,
           ),
         );
+
+        if (animate && isFilled) {
+          segment = segment
+              .animate()
+              .fadeIn(
+                delay: Duration(milliseconds: 18 * index),
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOutCubic,
+              )
+              .scaleX(
+                begin: 0.0,
+                end: 1.0,
+                alignment: Alignment.centerLeft,
+                delay: Duration(milliseconds: 18 * index),
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOutCubic,
+              );
+        }
+
+        return Expanded(child: segment);
       }),
     );
   }
@@ -270,7 +446,9 @@ class NothingPill extends StatelessWidget {
 
     final Color fg = textColor ??
         (isSelected
-            ? (effectiveAccent != null ? Colors.white : (isDark ? Colors.black : Colors.white))
+            ? (effectiveAccent != null
+                ? (effectiveAccent.computeLuminance() > 0.5 ? Colors.black : Colors.white)
+                : (isDark ? Colors.black : Colors.white))
             : (effectiveAccent ?? (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary)));
 
     final Color border = isSelected
@@ -295,19 +473,27 @@ class NothingPill extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (showDot) ...[
-                Container(
-                  width: 5,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: dotColor ?? (isSelected ? Colors.white : AppColors.nothingRed),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: (dotColor ?? AppColors.nothingRed).withValues(alpha: 0.4),
-                        blurRadius: 3,
+                Builder(
+                  builder: (context) {
+                    final activeDot = dotColor ??
+                        (isSelected
+                            ? Colors.white
+                            : (isDark ? AppColors.nothingRedLight : AppColors.nothingRed));
+                    return Container(
+                      width: 5,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: activeDot,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: activeDot.withValues(alpha: 0.4),
+                            blurRadius: 3,
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
                 const SizedBox(width: 6),
               ],
@@ -315,21 +501,25 @@ class NothingPill extends StatelessWidget {
                 prefixIcon!,
                 const SizedBox(width: 6),
               ],
-              Text(
-                label,
-                style: (isDotMatrix
-                    ? GoogleFonts.shareTechMono(
-                        fontSize: fontSize ?? 12,
-                        fontWeight: FontWeight.w700,
-                        color: fg,
-                        letterSpacing: 0.6,
-                      )
-                    : GoogleFonts.spaceGrotesk(
-                        fontSize: fontSize ?? 12,
-                        fontWeight: FontWeight.w700,
-                        color: fg,
-                        letterSpacing: 0.3,
-                      )).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+              Flexible(
+                child: Text(
+                  label,
+                  style: isDotMatrix
+                      ? NothingTypography.mono(
+                          fontSize: fontSize ?? 12,
+                          fontWeight: FontWeight.w700,
+                          color: fg,
+                          letterSpacing: NothingTypography.safeSpacing(label, 0.6),
+                        )
+                      : NothingTypography.grotesk(
+                          fontSize: fontSize ?? 12,
+                          fontWeight: FontWeight.w700,
+                          color: fg,
+                          letterSpacing: NothingTypography.safeSpacing(label, 0.3),
+                        ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),
@@ -365,12 +555,12 @@ class NothingSectionHeader extends StatelessWidget {
         Expanded(
           child: Text(
             title.toUpperCase(),
-            style: GoogleFonts.spaceGrotesk(
+            style: NothingTypography.grotesk(
               fontSize: 11,
               fontWeight: FontWeight.w700,
-              letterSpacing: 2.2,
+              letterSpacing: NothingTypography.safeSpacing(title, 1.8),
               color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-            ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -409,3 +599,49 @@ class _NothingDotGridPainter extends CustomPainter {
     return oldDelegate.dotColor != dotColor || oldDelegate.spacing != spacing;
   }
 }
+
+/// วิดเจ็ตแสดงตราสัญลักษณ์/ไอคอนแอพสไตล์ Nothing OS Design
+/// โชว์ Minimalist Wallet Glyph พร้อมไฟสถานะ Nothing Red LED
+class NothingAppLogo extends StatelessWidget {
+  final double size;
+  final double? borderRadius;
+  final bool showBorder;
+
+  const NothingAppLogo({
+    super.key,
+    this.size = 32,
+    this.borderRadius,
+    this.showBorder = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final radius = borderRadius ?? (size * 0.30);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: const Color(0xFF000000),
+        borderRadius: BorderRadius.circular(radius),
+        border: showBorder
+            ? Border.all(
+                color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.15),
+                width: 0.8,
+              )
+            : null,
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(radius),
+        child: Image.asset(
+          'assets/icons/app_icon.png',
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+        ),
+      ),
+    );
+  }
+}
+

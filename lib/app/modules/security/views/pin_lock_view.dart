@@ -1,19 +1,26 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:ui';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
-import 'package:liquid_glass_easy/liquid_glass_easy.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_popup_decorations.dart';
+import '../../../widgets/app_feedback.dart';
+import '../../../widgets/nothing_ui_components.dart';
 import '../../../data/services/security_service.dart';
 import '../controllers/security_controller.dart';
 
 enum _RecoveryMode { none, options, confirmReset }
 
-/// หน้าจอล็อก PIN สำหรับ GetX Architecture (FinTech 2026 Vault Edition)
+/// หน้าจอล็อก PIN สไตล์ Nothing OS Design System
+/// - สุนทรียภาพ Pitch Black Minimalist คมชัดระดับ Hi-Contrast
+/// - แป้นพิมพ์ตัวเลข Industrial Numpad ทรงกลม/Squircle ขอบ Hairline 0.8px
+/// - หลอดไฟ LED Pips 4 ดวงพร้อมระบบสั่นสะเทือนเตือนความผิดพลาด (Shake & Nothing Red)
+/// - แอนิเมชันปลดล็อกสุดพรีเมียม (LED Wave Pulse, Halo Glow & Vault Spring Transition)
+/// - ระบบกู้คืนรหัสผ่าน (Forgot PIN Recovery) พร้อมการนับถอยหลังเพื่อความปลอดภัย
+/// - รองรับการปลดล็อกด้วยสแกนลายนิ้วมือ/ใบหน้า (Biometrics) และแป้นพิมพ์ฮาร์ดแวร์
 class PinLockView extends StatefulWidget {
   final VoidCallback? onUnlocked;
   final bool canCancel;
@@ -34,13 +41,7 @@ class _PinLockViewState extends State<PinLockView> with TickerProviderStateMixin
   int _failCount = 0;
   String _errorMessage = '';
   late AnimationController _shakeController;
-  late AnimationController _successAnimationController;
-  late Animation<double> _ring1Scale;
-  late Animation<double> _ring1Opacity;
-  late Animation<double> _ring2Scale;
-  late Animation<double> _ring2Opacity;
-  late Animation<double> _crestPopScale;
-  late Animation<double> _checkIconRotation;
+  late AnimationController _unlockAnimationController;
   final FocusNode _keyboardFocusNode = FocusNode();
 
   // In-stack recovery and scanning overlay states
@@ -56,70 +57,22 @@ class _PinLockViewState extends State<PinLockView> with TickerProviderStateMixin
       vsync: this,
       duration: const Duration(milliseconds: 380),
     );
-
-    _successAnimationController = AnimationController(
+    _unlockAnimationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 650),
-    );
-
-    _ring1Scale = Tween<double>(begin: 0.6, end: 1.85).animate(
-      CurvedAnimation(
-        parent: _successAnimationController,
-        curve: const Interval(0.0, 0.80, curve: Curves.easeOutCubic),
-      ),
-    );
-    _ring1Opacity = Tween<double>(begin: 0.85, end: 0.0).animate(
-      CurvedAnimation(
-        parent: _successAnimationController,
-        curve: const Interval(0.0, 0.80, curve: Curves.easeOut),
-      ),
-    );
-
-    _ring2Scale = Tween<double>(begin: 0.45, end: 2.3).animate(
-      CurvedAnimation(
-        parent: _successAnimationController,
-        curve: const Interval(0.12, 0.98, curve: Curves.easeOutCubic),
-      ),
-    );
-    _ring2Opacity = Tween<double>(begin: 0.70, end: 0.0).animate(
-      CurvedAnimation(
-        parent: _successAnimationController,
-        curve: const Interval(0.12, 0.98, curve: Curves.easeOut),
-      ),
-    );
-
-    _crestPopScale = TweenSequence<double>([
-      TweenSequenceItem(
-        tween: Tween<double>(begin: 1.0, end: 1.25).chain(CurveTween(curve: Curves.easeOutCubic)),
-        weight: 35,
-      ),
-      TweenSequenceItem(
-        tween: Tween<double>(begin: 1.25, end: 1.0).chain(CurveTween(curve: Curves.elasticOut)),
-        weight: 65,
-      ),
-    ]).animate(
-      CurvedAnimation(
-        parent: _successAnimationController,
-        curve: const Interval(0.0, 0.90),
-      ),
-    );
-
-    _checkIconRotation = Tween<double>(begin: -0.20, end: 0.0).animate(
-      CurvedAnimation(
-        parent: _successAnimationController,
-        curve: const Interval(0.05, 0.75, curve: Curves.elasticOut),
-      ),
+      duration: const Duration(milliseconds: 400),
     );
 
     final isTest = WidgetsBinding.instance.runtimeType.toString().contains('Test') ||
         Platform.environment.containsKey('FLUTTER_TEST');
 
-    // Auto-prompt real biometrics on launch if enabled
+    // Auto-prompt real biometrics on launch after window gains focus
     if (!isTest && controller.isBiometricsEnabled.value) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          _authenticateWithBiometrics();
-        }
+        Future.delayed(const Duration(milliseconds: 350), () {
+          if (mounted && !_isSuccess && !_isExiting) {
+            _authenticateWithBiometrics();
+          }
+        });
       });
     }
   }
@@ -129,7 +82,7 @@ class _PinLockViewState extends State<PinLockView> with TickerProviderStateMixin
     _countdownTimer?.cancel();
     _keyboardFocusNode.dispose();
     _shakeController.dispose();
-    _successAnimationController.dispose();
+    _unlockAnimationController.dispose();
     super.dispose();
   }
 
@@ -198,35 +151,29 @@ class _PinLockViewState extends State<PinLockView> with TickerProviderStateMixin
         _isSuccess = true;
         _isError = false;
       });
-      _successAnimationController.forward(from: 0.0);
       HapticFeedback.mediumImpact();
-      Timer(const Duration(milliseconds: 220), () {
-        if (mounted && _isSuccess) {
-          HapticFeedback.lightImpact();
-        }
-      });
-
-      // Show the animated success state (glowing open lock & bouncing green dots)
-      await Future.delayed(const Duration(milliseconds: 500));
+      _unlockAnimationController.forward(from: 0.0);
+      await Future.delayed(const Duration(milliseconds: 300));
+      HapticFeedback.lightImpact();
       if (!mounted) return;
-
       setState(() {
         _isExiting = true;
       });
-
-      // Smooth exit transition into the dashboard
-      await Future.delayed(const Duration(milliseconds: 250));
+      await Future.delayed(const Duration(milliseconds: 220));
       if (!mounted) return;
-
       controller.unlock();
       widget.onUnlocked?.call();
     } else {
       _failCount++;
-      HapticFeedback.heavyImpact();
-      _shakeController.forward(from: 0.0);
       setState(() {
         _isError = true;
-        _errorMessage = 'pin_incorrect'.tr;
+        _errorMessage = 'pin_wrong'.tr;
+      });
+      HapticFeedback.heavyImpact();
+      _shakeController.forward(from: 0.0);
+      await Future.delayed(const Duration(milliseconds: 400));
+      if (!mounted) return;
+      setState(() {
         _enteredPin = '';
       });
     }
@@ -234,64 +181,61 @@ class _PinLockViewState extends State<PinLockView> with TickerProviderStateMixin
 
   Future<void> _authenticateWithBiometrics() async {
     if (_isBiometricScanning || _isSuccess || _isExiting) return;
-
-    HapticFeedback.mediumImpact();
     setState(() {
       _isBiometricScanning = true;
-      _recoveryMode = _RecoveryMode.none;
     });
 
-    final result = await controller.authenticateWithBiometricsDetailed(
-      localizedReason: 'biometric_reason'.tr,
-    );
+    try {
+      final result = await controller.authenticateWithBiometricsDetailed(
+        localizedReason: 'biometric_prompt_unlock'.tr,
+      );
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    if (result.success) {
-      setState(() {
-        _isBiometricScanning = false;
-        _isSuccess = true;
-        _isError = false;
-        _errorMessage = '';
-        _enteredPin = '••••';
-      });
-      _successAnimationController.forward(from: 0.0);
-      HapticFeedback.mediumImpact();
-      Timer(const Duration(milliseconds: 220), () {
-        if (mounted && _isSuccess) {
-          HapticFeedback.lightImpact();
-        }
-      });
-      await Future.delayed(const Duration(milliseconds: 350));
-      if (!mounted) return;
-      setState(() {
-        _isExiting = true;
-      });
-      await Future.delayed(const Duration(milliseconds: 200));
-      if (!mounted) return;
-      controller.unlock();
-      widget.onUnlocked?.call();
-    } else {
-      setState(() {
-        _isBiometricScanning = false;
+      if (result.success) {
+        setState(() {
+          _isSuccess = true;
+          _isError = false;
+          _errorMessage = '';
+          _enteredPin = '••••';
+        });
+        HapticFeedback.mediumImpact();
+        _unlockAnimationController.forward(from: 0.0);
+        await Future.delayed(const Duration(milliseconds: 300));
+        HapticFeedback.lightImpact();
+        if (!mounted) return;
+        setState(() {
+          _isExiting = true;
+        });
+        await Future.delayed(const Duration(milliseconds: 220));
+        if (!mounted) return;
+        controller.unlock();
+        widget.onUnlocked?.call();
+      } else {
         if (result.failureReason != BiometricAuthFailureReason.canceled) {
-          _isError = true;
-          _errorMessage = result.errorMessage ?? 'biometric_failed'.tr;
+          setState(() {
+            _isError = true;
+            _errorMessage = result.errorMessage ?? 'biometric_failed'.tr;
+          });
           HapticFeedback.heavyImpact();
           _shakeController.forward(from: 0.0);
+          if (result.failureReason != null) {
+            AppFeedback.showWarning(
+              title: 'biometric_auth_failed_title'.tr,
+              message: result.errorMessage ?? 'biometric_failed'.tr,
+            );
+          }
         }
-      });
-      if (result.failureReason != BiometricAuthFailureReason.canceled &&
-          result.failureReason != null) {
-        AppFeedback.showWarning(
-          title: 'biometric_auth_failed_title'.tr,
-          message: result.errorMessage ?? 'biometric_failed'.tr,
-        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isBiometricScanning = false;
+        });
       }
     }
   }
 
-  /// แสดงตัวเลือกกู้คืนการเข้าใช้งานเมื่อลืมรหัส PIN (แสดงทับบนหน้าจอล็อกโดยตรง)
   void _showForgotPinDialog() {
     HapticFeedback.mediumImpact();
     setState(() {
@@ -329,526 +273,6 @@ class _PinLockViewState extends State<PinLockView> with TickerProviderStateMixin
     });
   }
 
-  Widget _buildBiometricsOverlay(bool isDark) {
-    return Positioned.fill(
-      child: Container(
-        color: Colors.black.withValues(alpha: isDark ? 0.65 : 0.45),
-        alignment: Alignment.center,
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 300),
-            margin: const EdgeInsets.symmetric(horizontal: 24),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.12),
-                  blurRadius: 32,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            child: LiquidGlassLens(
-              style: LiquidGlassStyle(
-                shape: const LiquidGlassShape.squircle(
-                  cornerRadius: 24,
-                  borderWidth: 1.2,
-                  lightIntensity: 1.3,
-                  lightDirection: 65,
-                  borderType: OpticalBorder(
-                    borderSaturation: 1.35,
-                    ambientIntensity: 1.15,
-                    borderSolidity: 0.25,
-                  ),
-                ),
-                appearance: LiquidGlassAppearance(
-                  color: isDark
-                      ? const Color(0xFF111726).withValues(alpha: 0.65)
-                      : const Color(0xFFFFFFFF).withValues(alpha: 0.76),
-                  blur: const LiquidGlassBlur(sigmaX: 18, sigmaY: 18),
-                ),
-                refraction: const LiquidGlassRefraction(
-                  distortion: 0.08,
-                  distortionWidth: 26,
-                  chromaticAberration: 0.002,
-                ),
-              ),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24),
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: isDark
-                        ? [
-                            AppColors.darkSurface.withValues(alpha: 0.30),
-                            AppColors.darkSurfaceSecondary.withValues(alpha: 0.16),
-                          ]
-                        : [
-                            Colors.white.withValues(alpha: 0.38),
-                            Colors.white.withValues(alpha: 0.20),
-                          ],
-                  ),
-                  border: Border.all(
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.16)
-                        : AppColors.border.withValues(alpha: 0.8),
-                    width: 1.2,
-                  ),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 72,
-                      height: 72,
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.12),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: AppColors.primary.withValues(alpha: 0.35),
-                          width: 2,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.25),
-                            blurRadius: 18,
-                            spreadRadius: 2,
-                          ),
-                        ],
-                      ),
-                      child: const Icon(Icons.fingerprint_rounded, size: 44, color: AppColors.primary),
-                    )
-                        .animate(onPlay: (c) => c.repeat(reverse: true))
-                        .scale(
-                          begin: const Offset(1, 1),
-                          end: const Offset(1.08, 1.08),
-                          duration: const Duration(milliseconds: 600),
-                          curve: Curves.easeInOut,
-                        ),
-                    const SizedBox(height: 20),
-                    Text(
-                      'scanning_biometrics'.tr,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                        shadows: [
-                          Shadow(
-                            color: (isDark ? Colors.black : Colors.white).withValues(alpha: 0.45),
-                            blurRadius: 2,
-                            offset: const Offset(0, 1),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'biometric_verified'.tr,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.surplusText,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRecoveryModal(bool isDark) {
-    return Positioned.fill(
-      child: Stack(
-        children: [
-          // Dim backdrop dismissible only in options mode
-          Positioned.fill(
-            child: GestureDetector(
-              onTap: _recoveryMode == _RecoveryMode.options ? _closeRecovery : null,
-              child: Container(
-                color: Colors.black.withValues(alpha: isDark ? 0.65 : 0.45),
-              ),
-            ),
-          ),
-
-          // Centered Glass Modal
-          Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-                child: Container(
-                  constraints: const BoxConstraints(maxWidth: 380),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(26),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: isDark ? 0.5 : 0.15),
-                        blurRadius: 36,
-                        spreadRadius: -4,
-                        offset: const Offset(0, 14),
-                      ),
-                    ],
-                  ),
-                  child: LiquidGlassLens(
-                    style: LiquidGlassStyle(
-                      shape: const LiquidGlassShape.squircle(
-                        cornerRadius: 26,
-                        borderWidth: 1.2,
-                        lightIntensity: 1.3,
-                        lightDirection: 65,
-                        borderType: OpticalBorder(
-                          borderSaturation: 1.35,
-                          ambientIntensity: 1.15,
-                          borderSolidity: 0.25,
-                        ),
-                      ),
-                      appearance: LiquidGlassAppearance(
-                        color: isDark
-                            ? const Color(0xFF111726).withValues(alpha: 0.65)
-                            : const Color(0xFFFFFFFF).withValues(alpha: 0.76),
-                        blur: const LiquidGlassBlur(sigmaX: 18, sigmaY: 18),
-                      ),
-                      refraction: const LiquidGlassRefraction(
-                        distortion: 0.08,
-                        distortionWidth: 28,
-                        chromaticAberration: 0.002,
-                      ),
-                    ),
-                    child: Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(26),
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: isDark
-                              ? [
-                                  AppColors.darkSurface.withValues(alpha: 0.30),
-                                  AppColors.darkSurfaceSecondary.withValues(alpha: 0.16),
-                                ]
-                              : [
-                                  Colors.white.withValues(alpha: 0.38),
-                                  Colors.white.withValues(alpha: 0.20),
-                                ],
-                        ),
-                        border: Border.all(
-                          color: isDark
-                              ? Colors.white.withValues(alpha: 0.16)
-                              : AppColors.border.withValues(alpha: 0.8),
-                          width: 1.2,
-                        ),
-                      ),
-                      child: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 250),
-                        child: _recoveryMode == _RecoveryMode.options
-                            ? _buildRecoveryOptionsCard(isDark)
-                            : _buildRecoveryConfirmCard(isDark),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    ).animate().fadeIn(duration: const Duration(milliseconds: 200));
-  }
-
-  Widget _buildRecoveryOptionsCard(bool isDark) {
-    return Column(
-      key: const ValueKey('recovery_options'),
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        AppPopupHeader(
-          title: 'forgot_pin_title'.tr,
-          subtitle: 'forgot_pin_desc'.tr,
-          icon: Icons.lock_reset_rounded,
-          iconColor: AppColors.primary,
-          onClose: _closeRecovery,
-        ),
-        const SizedBox(height: 20),
-
-        // Recovery Option 1: Biometrics (if enabled)
-        if (controller.isBiometricsEnabled.value) ...[
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () {
-                _closeRecovery();
-                _authenticateWithBiometrics();
-              },
-              borderRadius: BorderRadius.circular(16),
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: AppColors.primary.withValues(alpha: 0.25),
-                    width: 1,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.15),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.fingerprint_rounded,
-                        color: AppColors.primary,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'recovery_biometric_title'.tr,
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            'recovery_biometric_desc'.tr,
-                            style: TextStyle(
-                              fontSize: 11.5,
-                              color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569),
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      size: 14,
-                      color: AppColors.primary,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-        ],
-
-        // Recovery Option 2: Safety PIN Reset (Zero Data Loss)
-        Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: _startConfirmResetPin,
-            borderRadius: BorderRadius.circular(16),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? AppColors.darkSurfaceSecondary.withValues(alpha: 0.6)
-                    : AppColors.surfaceSecondary,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: isDark ? AppColors.darkBorder : AppColors.border,
-                  width: 1,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF10B981).withValues(alpha: 0.14),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.shield_outlined,
-                      color: Color(0xFF10B981),
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'recovery_reset_title'.tr,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          'recovery_reset_desc'.tr,
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Icon(
-                    Icons.arrow_forward_ios_rounded,
-                    size: 14,
-                    color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildRecoveryConfirmCard(bool isDark) {
-    return Column(
-      key: const ValueKey('recovery_confirm'),
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        AppPopupHeader(
-          title: 'recovery_confirm_reset'.tr,
-          subtitle: 'recovery_confirm_reset_subtitle'.tr,
-          icon: Icons.lock_open_rounded,
-          iconColor: const Color(0xFF10B981),
-          onClose: _closeRecovery,
-        ),
-        const SizedBox(height: 18),
-
-        // Safe Guarantee Banner
-        Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: const Color(0xFF10B981).withValues(alpha: 0.10),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: const Color(0xFF10B981).withValues(alpha: 0.30),
-              width: 1,
-            ),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Icon(
-                Icons.check_circle_outline_rounded,
-                color: Color(0xFF10B981),
-                size: 20,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  'recovery_warning'.tr,
-                  style: TextStyle(
-                    fontSize: 12,
-                    height: 1.45,
-                    color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF1E293B),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 22),
-
-        // Action Buttons
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: _closeRecovery,
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  side: BorderSide(
-                    color: isDark ? AppColors.darkBorder : AppColors.border,
-                  ),
-                ),
-                child: Text(
-                  'cancel'.tr,
-                  style: TextStyle(
-                    color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              flex: 2,
-              child: ElevatedButton(
-                onPressed: _resetCountdown > 0
-                    ? null
-                    : () async {
-                        _countdownTimer?.cancel();
-                        HapticFeedback.heavyImpact();
-                        await controller.disablePin();
-                        controller.unlock();
-                        _closeRecovery();
-                        widget.onUnlocked?.call();
-
-                        AppFeedback.showSuccess(
-                          title: 'recovery_reset_success_title'.tr,
-                          message: 'recovery_reset_success'.tr,
-                          duration: const Duration(seconds: 4),
-                        );
-                      },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  disabledBackgroundColor: isDark
-                      ? AppColors.darkSurfaceSecondary
-                      : AppColors.surfaceSecondary,
-                  foregroundColor: Colors.white,
-                  disabledForegroundColor: isDark
-                      ? AppColors.darkTextSecondary
-                      : AppColors.textSecondary,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  elevation: 0,
-                ),
-                child: Text(
-                  _resetCountdown > 0
-                      ? 'recovery_countdown_wait'.trParams({'seconds': '$_resetCountdown'})
-                      : 'recovery_confirm_reset'.tr,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -865,48 +289,18 @@ class _PinLockViewState extends State<PinLockView> with TickerProviderStateMixin
         autofocus: true,
         onKeyEvent: _handleHardwareKeyEvent,
         child: Scaffold(
-          backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
+          backgroundColor: isDark ? const Color(0xFF000000) : const Color(0xFFF7F7F7),
           body: Stack(
             children: [
-              // Ambient Vault Glow Orb behind the crest (expands and illuminates on success)
-              Positioned(
-                top: _isSuccess ? -100 : -60,
-                left: MediaQuery.of(context).size.width / 2 - (_isSuccess ? 220 : 140),
-                child: IgnorePointer(
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 550),
-                    curve: Curves.easeOutCubic,
-                    width: _isSuccess ? 440 : 280,
-                    height: _isSuccess ? 440 : 280,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: RadialGradient(
-                        colors: [
-                          (_isSuccess
-                                  ? const Color(0xFF10B981)
-                                  : (_isError ? AppColors.deficitText : AppColors.primary))
-                              .withValues(alpha: _isSuccess ? (isDark ? 0.35 : 0.25) : (isDark ? 0.16 : 0.08)),
-                          (_isSuccess
-                                  ? const Color(0xFF059669).withValues(alpha: isDark ? 0.16 : 0.10)
-                                  : Colors.transparent),
-                          Colors.transparent,
-                        ],
-                        stops: const [0.0, 0.55, 1.0],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
               SafeArea(
-                child: AnimatedOpacity(
-                  duration: const Duration(milliseconds: 250),
-                  opacity: _isExiting ? 0.0 : 1.0,
-                  curve: Curves.easeInOut,
-                  child: AnimatedScale(
-                    duration: const Duration(milliseconds: 250),
-                    scale: _isExiting ? 1.05 : 1.0,
-                    curve: Curves.easeInOut,
+                child: AnimatedScale(
+                  scale: _isExiting ? 0.93 : 1.0,
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeInOutCubic,
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 200),
+                    opacity: _isExiting ? 0.0 : 1.0,
+                    curve: Curves.easeOut,
                     child: Center(
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 380),
@@ -914,9 +308,6 @@ class _PinLockViewState extends State<PinLockView> with TickerProviderStateMixin
                           builder: (context, constraints) {
                             final availableHeight = constraints.maxHeight;
                             final isCompact = availableHeight < 680;
-                            final badgeSize = _isSuccess
-                                ? (isCompact ? 58.0 : 68.0)
-                                : (isCompact ? 50.0 : 60.0);
 
                             return SingleChildScrollView(
                               physics: const BouncingScrollPhysics(),
@@ -925,8 +316,8 @@ class _PinLockViewState extends State<PinLockView> with TickerProviderStateMixin
                                 child: IntrinsicHeight(
                                   child: Padding(
                                     padding: EdgeInsets.symmetric(
-                                      horizontal: 20,
-                                      vertical: isCompact ? 4 : 8,
+                                      horizontal: 24,
+                                      vertical: isCompact ? 12 : 20,
                                     ),
                                     child: Column(
                                       mainAxisAlignment: MainAxisAlignment.center,
@@ -935,538 +326,30 @@ class _PinLockViewState extends State<PinLockView> with TickerProviderStateMixin
                                           Align(
                                             alignment: Alignment.topLeft,
                                             child: IconButton(
-                                              icon: const Icon(Icons.close_rounded),
-                                              padding: isCompact ? EdgeInsets.zero : const EdgeInsets.all(8),
-                                              constraints: isCompact ? const BoxConstraints() : null,
+                                              icon: Icon(
+                                                Icons.close_rounded,
+                                                color: isDark ? Colors.white : Colors.black,
+                                              ),
                                               onPressed: () => Get.back(),
                                             ),
                                           ),
                                         const Spacer(),
 
-                                        // Shield Crest / Success Badge Stack with Concentric Liquid Rings & LiquidGlassLens
-                                        Stack(
-                                          alignment: Alignment.center,
-                                          clipBehavior: Clip.none,
-                                          children: [
-                                            // Outer Liquid Shockwave Ring 2
-                                            if (_isSuccess)
-                                              AnimatedBuilder(
-                                                animation: _successAnimationController,
-                                                builder: (context, child) {
-                                                  return FadeTransition(
-                                                    opacity: _ring2Opacity,
-                                                    child: ScaleTransition(
-                                                      scale: _ring2Scale,
-                                                      child: Container(
-                                                        width: badgeSize,
-                                                        height: badgeSize,
-                                                        decoration: BoxDecoration(
-                                                          shape: BoxShape.circle,
-                                                          border: Border.all(
-                                                            color: const Color(0xFF10B981).withValues(alpha: 0.55),
-                                                            width: 1.8,
-                                                          ),
-                                                          boxShadow: [
-                                                            BoxShadow(
-                                                              color: const Color(0xFF10B981).withValues(alpha: 0.25),
-                                                              blurRadius: 14,
-                                                              spreadRadius: 2,
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  );
-                                                },
-                                              ),
+                                        // 1. Nothing OS Security Crest & Header
+                                        _buildHeaderSection(isDark),
+                                        SizedBox(height: isCompact ? 16 : 24),
 
-                                            // Inner Liquid Shockwave Ring 1
-                                            if (_isSuccess)
-                                              AnimatedBuilder(
-                                                animation: _successAnimationController,
-                                                builder: (context, child) {
-                                                  return FadeTransition(
-                                                    opacity: _ring1Opacity,
-                                                    child: ScaleTransition(
-                                                      scale: _ring1Scale,
-                                                      child: Container(
-                                                        width: badgeSize,
-                                                        height: badgeSize,
-                                                        decoration: BoxDecoration(
-                                                          shape: BoxShape.circle,
-                                                          border: Border.all(
-                                                            color: const Color(0xFF34D399).withValues(alpha: 0.80),
-                                                            width: 2.2,
-                                                          ),
-                                                          boxShadow: [
-                                                            BoxShadow(
-                                                              color: const Color(0xFF10B981).withValues(alpha: 0.35),
-                                                              blurRadius: 18,
-                                                              spreadRadius: 2.5,
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  );
-                                                },
-                                              ),
+                                        // 2. 4 Nothing OS LED Pip Indicators
+                                        _buildLedPips(isDark),
+                                        SizedBox(height: isCompact ? 20 : 32),
 
-                                            // Pop-Scale Animated LiquidGlassLens Crest Badge (Pure Icon, Zero Text)
-                                            AnimatedBuilder(
-                                              animation: _successAnimationController,
-                                              builder: (context, child) {
-                                                return ScaleTransition(
-                                                  scale: _crestPopScale,
-                                                  child: child,
-                                                );
-                                              },
-                                              child: SizedBox(
-                                                width: badgeSize,
-                                                height: badgeSize,
-                                                child: LiquidGlassLens(
-                                                  style: LiquidGlassStyle(
-                                                    shape: LiquidGlassShape.squircle(
-                                                      cornerRadius: badgeSize / 2,
-                                                      borderWidth: _isSuccess ? 1.6 : 1.1,
-                                                      lightIntensity: 1.35,
-                                                      lightDirection: 65,
-                                                      borderType: const OpticalBorder(
-                                                        borderSaturation: 1.4,
-                                                        ambientIntensity: 1.2,
-                                                        borderSolidity: 0.25,
-                                                      ),
-                                                    ),
-                                                    appearance: LiquidGlassAppearance(
-                                                      color: _isSuccess
-                                                          ? const Color(0xFF10B981).withValues(alpha: isDark ? 0.35 : 0.28)
-                                                          : (isDark
-                                                              ? AppColors.darkSurfaceSecondary.withValues(alpha: 0.35)
-                                                              : Colors.white.withValues(alpha: 0.50)),
-                                                      blur: const LiquidGlassBlur(sigmaX: 14, sigmaY: 14),
-                                                    ),
-                                                    refraction: const LiquidGlassRefraction(
-                                                      distortion: 0.08,
-                                                      distortionWidth: 16,
-                                                      chromaticAberration: 0.002,
-                                                    ),
-                                                  ),
-                                                  child: Container(
-                                                    decoration: BoxDecoration(
-                                                      shape: BoxShape.circle,
-                                                      gradient: LinearGradient(
-                                                        begin: Alignment.topLeft,
-                                                        end: Alignment.bottomRight,
-                                                        colors: _isSuccess
-                                                            ? [
-                                                                const Color(0xFF10B981).withValues(alpha: 0.88),
-                                                                const Color(0xFF059669).withValues(alpha: 0.95),
-                                                              ]
-                                                            : [
-                                                                AppColors.primary.withValues(alpha: isDark ? 0.22 : 0.16),
-                                                                AppColors.accent.withValues(alpha: isDark ? 0.14 : 0.08),
-                                                              ],
-                                                      ),
-                                                      border: Border.all(
-                                                        color: _isSuccess
-                                                            ? Colors.white.withValues(alpha: 0.55)
-                                                            : AppColors.primary.withValues(alpha: 0.35),
-                                                        width: _isSuccess ? 2.0 : 1.3,
-                                                      ),
-                                                      boxShadow: [
-                                                        if (_isSuccess)
-                                                          BoxShadow(
-                                                            color: const Color(0xFF10B981).withValues(alpha: 0.45),
-                                                            blurRadius: 28,
-                                                            spreadRadius: 6,
-                                                          ),
-                                                        BoxShadow(
-                                                          color: (_isSuccess ? const Color(0xFF10B981) : AppColors.primary)
-                                                              .withValues(alpha: _isSuccess ? 0.50 : 0.18),
-                                                          blurRadius: _isSuccess ? 20 : 12,
-                                                          offset: _isSuccess ? const Offset(0, 3) : Offset.zero,
-                                                        ),
-                                                      ],
-                                                    ),
-                                                    alignment: Alignment.center,
-                                                    child: AnimatedSwitcher(
-                                                      duration: const Duration(milliseconds: 280),
-                                                      transitionBuilder: (child, anim) => ScaleTransition(
-                                                        scale: CurvedAnimation(parent: anim, curve: Curves.elasticOut),
-                                                        child: child,
-                                                      ),
-                                                      child: _isSuccess
-                                                          ? AnimatedBuilder(
-                                                              animation: _successAnimationController,
-                                                              builder: (context, child) {
-                                                                return RotationTransition(
-                                                                  turns: _checkIconRotation,
-                                                                  child: child,
-                                                                );
-                                                              },
-                                                              child: Icon(
-                                                                Icons.check_rounded,
-                                                                key: const ValueKey(true),
-                                                                color: Colors.white,
-                                                                size: isCompact ? 28 : 34,
-                                                              ),
-                                                            )
-                                                          : Icon(
-                                                              Icons.lock_outline_rounded,
-                                                              key: const ValueKey(false),
-                                                              color: AppColors.primary,
-                                                              size: isCompact ? 24 : 28,
-                                                            ),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        SizedBox(height: isCompact ? 6 : 10),
+                                        // 3. Nothing Industrial 3x4 Numpad
+                                        _buildNumpadGrid(isDark, isCompact),
 
-                                        // Security Vault Tag Pill
-                                        AnimatedContainer(
-                                          duration: const Duration(milliseconds: 300),
-                                          padding: EdgeInsets.symmetric(
-                                            horizontal: _isSuccess ? 10 : 8,
-                                            vertical: isCompact ? 2.0 : (_isSuccess ? 3.5 : 2.0),
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: (_isSuccess ? const Color(0xFF10B981) : AppColors.primary)
-                                                .withValues(alpha: _isSuccess ? 0.15 : 0.10),
-                                            borderRadius: BorderRadius.circular(20),
-                                            border: Border.all(
-                                              color: (_isSuccess ? const Color(0xFF10B981) : AppColors.primary)
-                                                  .withValues(alpha: _isSuccess ? 0.45 : 0.25),
-                                              width: _isSuccess ? 1.0 : 0.8,
-                                            ),
-                                            boxShadow: _isSuccess
-                                                ? [
-                                                    BoxShadow(
-                                                      color: const Color(0xFF10B981).withValues(alpha: 0.22),
-                                                      blurRadius: 10,
-                                                      spreadRadius: 1,
-                                                    ),
-                                                  ]
-                                                : null,
-                                          ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              AnimatedContainer(
-                                                duration: const Duration(milliseconds: 300),
-                                                width: _isSuccess ? 5 : 4,
-                                                height: _isSuccess ? 5 : 4,
-                                                decoration: BoxDecoration(
-                                                  shape: BoxShape.circle,
-                                                  color: _isSuccess ? const Color(0xFF10B981) : AppColors.primary,
-                                                  boxShadow: _isSuccess
-                                                      ? [
-                                                          BoxShadow(
-                                                            color: const Color(0xFF10B981),
-                                                            blurRadius: 6,
-                                                            spreadRadius: 1.5,
-                                                          ),
-                                                        ]
-                                                      : null,
-                                                ),
-                                              ),
-                                              const SizedBox(width: 5),
-                                              AnimatedSwitcher(
-                                                duration: const Duration(milliseconds: 250),
-                                                child: Text(
-                                                  _isSuccess ? 'pin_access_granted'.tr : 'pin_vault_active'.tr,
-                                                  key: ValueKey(_isSuccess),
-                                                  style: TextStyle(
-                                                    fontSize: isCompact ? 8.0 : 8.5,
-                                                    fontWeight: FontWeight.w800,
-                                                    letterSpacing: 0.5,
-                                                    color: _isSuccess ? const Color(0xFF10B981) : AppColors.primary,
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        SizedBox(height: isCompact ? 6 : 10),
-
-                                        AnimatedSwitcher(
-                                          duration: const Duration(milliseconds: 300),
-                                          transitionBuilder: (child, anim) => FadeTransition(
-                                            opacity: anim,
-                                            child: SlideTransition(
-                                              position: Tween<Offset>(
-                                                begin: const Offset(0, 0.15),
-                                                end: Offset.zero,
-                                              ).animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic)),
-                                              child: child,
-                                            ),
-                                          ),
-                                          child: _isSuccess
-                                              ? Column(
-                                                  key: const ValueKey('success_state'),
-                                                  children: [
-                                                    Text(
-                                                      'pin_success'.tr,
-                                                      style: TextStyle(
-                                                        fontSize: isCompact ? 18 : 20,
-                                                        fontWeight: FontWeight.w800,
-                                                        letterSpacing: -0.3,
-                                                        color: isDark ? const Color(0xFF34D399) : const Color(0xFF059669),
-                                                      ),
-                                                    ),
-                                                    SizedBox(height: isCompact ? 2 : 4),
-                                                    Text(
-                                                      'pin_welcome'.tr,
-                                                      textAlign: TextAlign.center,
-                                                      style: TextStyle(
-                                                        fontSize: isCompact ? 11 : 12,
-                                                        fontWeight: FontWeight.w600,
-                                                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                )
-                                              : Column(
-                                                  key: const ValueKey('normal_state'),
-                                                  children: [
-                                                    Text(
-                                                      'pin_security_title'.tr,
-                                                      style: TextStyle(
-                                                        fontSize: isCompact ? 16 : 18,
-                                                        fontWeight: FontWeight.w800,
-                                                        letterSpacing: -0.3,
-                                                      ),
-                                                    ),
-                                                    SizedBox(height: isCompact ? 2 : 4),
-                                                    Text(
-                                                      _isError ? _errorMessage : 'enter_pin'.tr,
-                                                      style: TextStyle(
-                                                        fontSize: isCompact ? 11 : 12,
-                                                        fontWeight: _isError ? FontWeight.w700 : FontWeight.w500,
-                                                        color: _isError ? AppColors.deficitText : AppColors.textSecondary,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                        ),
-                                        SizedBox(height: isCompact ? 10 : 16),
-
-                                        // 4 Dots with staggered scale bounce & ripple wave inside Liquid Glass Pod (Pure Visual, Zero Text)
-                                        AnimatedBuilder(
-                                          animation: _shakeController,
-                                          builder: (context, child) {
-                                            final dx = _shakeController.value == 0
-                                                ? 0.0
-                                                : (1.0 - _shakeController.value) *
-                                                    12.0 *
-                                                    (1.0 - (2.0 * ((_shakeController.value * 6) % 1)));
-                                            return Transform.translate(
-                                              offset: Offset(dx, 0),
-                                              child: LiquidGlassLens(
-                                                style: LiquidGlassStyle(
-                                                  shape: const LiquidGlassShape.squircle(
-                                                    cornerRadius: 22,
-                                                    borderWidth: 1.0,
-                                                    lightIntensity: 1.25,
-                                                    lightDirection: 60,
-                                                    borderType: OpticalBorder(
-                                                      borderSaturation: 1.3,
-                                                      ambientIntensity: 1.15,
-                                                      borderSolidity: 0.25,
-                                                    ),
-                                                  ),
-                                                  appearance: LiquidGlassAppearance(
-                                                    color: isDark
-                                                        ? const Color(0xFF111726).withValues(alpha: 0.35)
-                                                        : Colors.white.withValues(alpha: 0.45),
-                                                    blur: const LiquidGlassBlur(sigmaX: 12, sigmaY: 12),
-                                                  ),
-                                                  refraction: const LiquidGlassRefraction(
-                                                    distortion: 0.06,
-                                                    distortionWidth: 16,
-                                                    chromaticAberration: 0.002,
-                                                  ),
-                                                ),
-                                                child: Container(
-                                                  padding: EdgeInsets.symmetric(
-                                                    horizontal: isCompact ? 14 : 18,
-                                                    vertical: isCompact ? 8 : 11,
-                                                  ),
-                                                  decoration: BoxDecoration(
-                                                    borderRadius: BorderRadius.circular(22),
-                                                    border: Border.all(
-                                                      color: _isSuccess
-                                                          ? const Color(0xFF10B981).withValues(alpha: 0.40)
-                                                          : (_isError
-                                                              ? AppColors.deficitText.withValues(alpha: 0.40)
-                                                              : (isDark
-                                                                  ? AppColors.darkBorder.withValues(alpha: 0.35)
-                                                                  : AppColors.border.withValues(alpha: 0.50))),
-                                                      width: 1.0,
-                                                    ),
-                                                    boxShadow: [
-                                                      BoxShadow(
-                                                        color: (_isSuccess
-                                                                ? const Color(0xFF10B981)
-                                                                : (_isError ? AppColors.deficitText : Colors.black))
-                                                            .withValues(alpha: _isSuccess ? 0.20 : (isDark ? 0.20 : 0.04)),
-                                                        blurRadius: 16,
-                                                        offset: const Offset(0, 4),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                  child: Row(
-                                                    mainAxisSize: MainAxisSize.min,
-                                                    mainAxisAlignment: MainAxisAlignment.center,
-                                                    children: List.generate(4, (index) {
-                                                      final isFilled = index < _enteredPin.length;
-                                                      final color = _isSuccess
-                                                          ? const Color(0xFF10B981)
-                                                          : (_isError ? AppColors.deficitText : AppColors.primary);
-
-                                                      final dotSize = _isSuccess
-                                                          ? (isCompact ? 14.0 : 16.0)
-                                                          : (isCompact ? 12.0 : 14.0);
-
-                                                      Widget dot = AnimatedContainer(
-                                                        duration: const Duration(milliseconds: 220),
-                                                        margin: EdgeInsets.symmetric(horizontal: isCompact ? 6 : 8),
-                                                        width: dotSize,
-                                                        height: dotSize,
-                                                        decoration: BoxDecoration(
-                                                          shape: BoxShape.circle,
-                                                          color: isFilled ? color : Colors.transparent,
-                                                          border: Border.all(
-                                                            color: isFilled
-                                                                ? color
-                                                                : (isDark ? AppColors.darkBorder : AppColors.border),
-                                                            width: 2,
-                                                          ),
-                                                          boxShadow: isFilled
-                                                              ? [
-                                                                  BoxShadow(
-                                                                    color: color.withValues(alpha: _isSuccess ? 0.70 : 0.4),
-                                                                    blurRadius: _isSuccess ? 14 : 8,
-                                                                    spreadRadius: _isSuccess ? 2.5 : 1.5,
-                                                                  ),
-                                                                ]
-                                                              : null,
-                                                        ),
-                                                      );
-
-                                                      if (_isSuccess) {
-                                                        dot = dot
-                                                            .animate(delay: Duration(milliseconds: index * 60))
-                                                            .scale(
-                                                              begin: const Offset(0.8, 0.8),
-                                                              end: const Offset(1.3, 1.3),
-                                                              duration: const Duration(milliseconds: 220),
-                                                              curve: Curves.easeOutBack,
-                                                            )
-                                                            .then()
-                                                            .scale(
-                                                              begin: const Offset(1.3, 1.3),
-                                                              end: const Offset(1.0, 1.0),
-                                                              duration: const Duration(milliseconds: 180),
-                                                            );
-                                                      }
-                                                      return dot;
-                                                    }),
-                                                  ),
-                                                ),
-                                              ),
-                                            );
-                                          },
-                                        ),
-
-                                        // Prompt if multiple failed attempts
-                                        if (_failCount >= 3 && !_isSuccess) ...[
-                                          SizedBox(height: isCompact ? 8 : 12),
-                                          GestureDetector(
-                                            onTap: _showForgotPinDialog,
-                                            child: Container(
-                                              padding: EdgeInsets.symmetric(
-                                                horizontal: isCompact ? 10 : 14,
-                                                vertical: isCompact ? 4 : 6,
-                                              ),
-                                              decoration: BoxDecoration(
-                                                color: AppColors.deficitText.withValues(alpha: 0.10),
-                                                borderRadius: BorderRadius.circular(20),
-                                                border: Border.all(
-                                                  color: AppColors.deficitText.withValues(alpha: 0.30),
-                                                  width: 0.8,
-                                                ),
-                                              ),
-                                              child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  const Icon(Icons.info_outline_rounded, size: 14, color: AppColors.deficitText),
-                                                  const SizedBox(width: 6),
-                                                  Text(
-                                                    'forgot_pin_hint'.tr,
-                                                    style: TextStyle(
-                                                      fontSize: isCompact ? 10.5 : 11.5,
-                                                      fontWeight: FontWeight.w600,
-                                                      color: AppColors.deficitText,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                        ],
+                                        // 4. Forgot PIN Recovery Link
+                                        const SizedBox(height: 16),
+                                        _buildForgotPinButton(isDark),
                                         const Spacer(),
-
-                                        // FinTech Numpad & Recovery (Smoothly slides down & fades out on success)
-                                        AnimatedSlide(
-                                          duration: const Duration(milliseconds: 320),
-                                          curve: Curves.easeInCubic,
-                                          offset: _isSuccess ? const Offset(0, 0.25) : Offset.zero,
-                                          child: AnimatedOpacity(
-                                            opacity: _isSuccess ? 0.0 : 1.0,
-                                            duration: const Duration(milliseconds: 250),
-                                            curve: Curves.easeOut,
-                                            child: IgnorePointer(
-                                              ignoring: _isSuccess,
-                                              child: Column(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  _buildNumpad(
-                                                    isDark,
-                                                    keySize: isCompact ? 54.0 : 62.0,
-                                                    verticalPadding: isCompact ? 1.5 : 3.0,
-                                                  ),
-                                                  SizedBox(height: isCompact ? 4 : 10),
-
-                                                  // Forgot PIN Recovery Trigger Button
-                                                  TextButton.icon(
-                                                    onPressed: _showForgotPinDialog,
-                                                    icon: Icon(Icons.help_outline_rounded, size: isCompact ? 14 : 15),
-                                                    label: Text(
-                                                      'forgot_pin'.tr,
-                                                      style: TextStyle(
-                                                        fontSize: isCompact ? 12 : 13,
-                                                        fontWeight: FontWeight.w600,
-                                                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                                                      ),
-                                                    ),
-                                                    style: TextButton.styleFrom(
-                                                      padding: EdgeInsets.symmetric(
-                                                        horizontal: isCompact ? 12 : 16,
-                                                        vertical: isCompact ? 4 : 8,
-                                                      ),
-                                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                                    ),
-                                                  ),
-                                                  SizedBox(height: isCompact ? 2 : 6),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                        ),
                                       ],
                                     ),
                                   ),
@@ -1481,11 +364,9 @@ class _PinLockViewState extends State<PinLockView> with TickerProviderStateMixin
                 ),
               ),
 
-              // Biometrics Scanning Overlay
-              if (_isBiometricScanning) _buildBiometricsOverlay(isDark),
-
-              // Forgot PIN / Recovery Modal Overlay
-              if (_recoveryMode != _RecoveryMode.none) _buildRecoveryModal(isDark),
+              // Recovery Dialog Sheet Overlay
+              if (_recoveryMode != _RecoveryMode.none)
+                _buildRecoveryOverlay(isDark),
             ],
           ),
         ),
@@ -1493,74 +374,272 @@ class _PinLockViewState extends State<PinLockView> with TickerProviderStateMixin
     );
   }
 
-  static const Map<String, String> _numpadSubtitles = {
-    '1': '',
-    '2': 'ABC',
-    '3': 'DEF',
-    '4': 'GHI',
-    '5': 'JKL',
-    '6': 'MNO',
-    '7': 'PQRS',
-    '8': 'TUV',
-    '9': 'WXYZ',
-    '0': '',
-  };
+  /// 4. Forgot PIN Button (Always accessible, highlighted when failed)
+  Widget _buildForgotPinButton(bool isDark) {
+    final bool hasFailed = _failCount >= 1;
+    return TextButton.icon(
+      onPressed: _showForgotPinDialog,
+      style: TextButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: hasFailed
+              ? BorderSide(color: AppColors.nothingRed.withValues(alpha: 0.35), width: 0.8)
+              : BorderSide.none,
+        ),
+        backgroundColor: hasFailed
+            ? AppColors.nothingRed.withValues(alpha: 0.08)
+            : Colors.transparent,
+      ),
+      icon: Icon(
+        Icons.help_outline_rounded,
+        size: 14,
+        color: hasFailed
+            ? AppColors.nothingRed
+            : (isDark ? AppColors.nothingSubtext : const Color(0xFF888888)),
+      ),
+      label: Text(
+        'forgot_pin_title'.tr.toUpperCase(),
+        style: GoogleFonts.spaceGrotesk(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 1.2,
+          color: hasFailed
+              ? AppColors.nothingRed
+              : (isDark ? AppColors.nothingSubtext : const Color(0xFF888888)),
+        ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+      ),
+    );
+  }
 
-  Widget _buildNumpad(bool isDark, {double keySize = 62.0, double verticalPadding = 3.0}) {
+  /// 1. Header Section สไตล์ Nothing OS
+  Widget _buildHeaderSection(bool isDark) {
+    return Column(
+      children: [
+        // Squircle Icon Badge with LED Status Dot & Spring Animation
+        AnimatedBuilder(
+          animation: _unlockAnimationController,
+          builder: (context, child) {
+            final double scale = _isSuccess
+                ? 1.0 + 0.16 * math.sin(_unlockAnimationController.value * math.pi)
+                : 1.0;
+            return Transform.scale(
+              scale: scale,
+              child: child,
+            );
+          },
+          child: Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF141414) : Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: _isSuccess
+                    ? const Color(0xFF10B981)
+                    : (_isError
+                        ? AppColors.nothingRed
+                        : (isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.10))),
+                width: 0.8,
+              ),
+              boxShadow: _isSuccess
+                  ? [
+                      BoxShadow(
+                        color: const Color(0xFF10B981).withValues(alpha: 0.35),
+                        blurRadius: 18,
+                        spreadRadius: 2,
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 250),
+                  transitionBuilder: (child, animation) => ScaleTransition(
+                    scale: animation,
+                    child: FadeTransition(opacity: animation, child: child),
+                  ),
+                  child: Icon(
+                    _isSuccess
+                        ? Icons.lock_open_rounded
+                        : (_isError ? Icons.lock_rounded : Icons.shield_outlined),
+                    key: ValueKey<String>(
+                      _isSuccess ? 'success' : (_isError ? 'error' : 'shield'),
+                    ),
+                    size: 26,
+                    color: _isSuccess
+                        ? const Color(0xFF10B981)
+                        : (_isError
+                            ? AppColors.nothingRed
+                            : (isDark ? Colors.white : Colors.black)),
+                  ),
+                ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: NothingLedIndicator(
+                    size: 5,
+                    color: _isSuccess ? const Color(0xFF10B981) : AppColors.nothingRed,
+                    isPulsing: _isSuccess || _isError,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // All-Caps Tracking Title
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          child: Text(
+            (_isSuccess
+                    ? 'pin_access_granted'.tr
+                    : (_isError ? _errorMessage : 'SECURITY // PIN REQUIRED'))
+                .toUpperCase(),
+            key: ValueKey<String>(
+              _isSuccess
+                  ? 'access_granted'
+                  : (_isError ? 'error_$_errorMessage' : 'required'),
+            ),
+            style: GoogleFonts.spaceGrotesk(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 2.0,
+              color: _isSuccess
+                  ? const Color(0xFF10B981)
+                  : (_isError ? AppColors.nothingRed : (isDark ? Colors.white : Colors.black)),
+            ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+            textAlign: TextAlign.center,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'MONEY TRACKER VAULT',
+          style: GoogleFonts.shareTechMono(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 1.5,
+            color: isDark ? AppColors.nothingSubtext : const Color(0xFF888888),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 2. 4 Nothing OS LED Pip Indicators
+  Widget _buildLedPips(bool isDark) {
+    return AnimatedBuilder(
+      animation: Listenable.merge([_shakeController, _unlockAnimationController]),
+      builder: (context, child) {
+        final dx = _shakeController.value == 0
+            ? 0.0
+            : (1.0 - _shakeController.value) *
+                12.0 *
+                (1.0 - (2.0 * ((_shakeController.value * 6) % 1)));
+
+        return Transform.translate(
+          offset: Offset(dx, 0),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF121212) : const Color(0xFFEFEFEF),
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(
+                color: _isSuccess
+                    ? const Color(0xFF10B981)
+                    : (_isError
+                        ? AppColors.nothingRed
+                        : (isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08))),
+                width: 0.8,
+              ),
+              boxShadow: _isSuccess
+                  ? [
+                      BoxShadow(
+                        color: const Color(0xFF10B981).withValues(alpha: 0.25),
+                        blurRadius: 14,
+                        spreadRadius: 1,
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: List.generate(4, (index) {
+                final isFilled = index < _enteredPin.length;
+                final Color pipColor = _isSuccess
+                    ? const Color(0xFF10B981)
+                    : (_isError
+                        ? AppColors.nothingRed
+                        : (isDark ? Colors.white : Colors.black));
+
+                // Staggered wave scale on success
+                double scale = 1.0;
+                if (_isSuccess && _unlockAnimationController.isAnimating) {
+                  final double progress = (_unlockAnimationController.value * 1.5 - index * 0.18).clamp(0.0, 1.0);
+                  scale = 1.0 + 0.35 * math.sin(progress * math.pi);
+                }
+
+                return Transform.scale(
+                  scale: scale,
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 10),
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isFilled ? pipColor : Colors.transparent,
+                      border: Border.all(
+                        color: isFilled
+                            ? pipColor
+                            : (isDark
+                                ? Colors.white.withValues(alpha: 0.25)
+                                : Colors.black.withValues(alpha: 0.25)),
+                        width: 1.2,
+                      ),
+                      boxShadow: isFilled
+                          ? [
+                              BoxShadow(
+                                color: pipColor.withValues(alpha: _isSuccess ? 0.65 : 0.45),
+                                blurRadius: _isSuccess ? 8 : 6,
+                                spreadRadius: _isSuccess ? 1.5 : 1,
+                              ),
+                            ]
+                          : null,
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// 3. Nothing Industrial 3x4 Numpad
+  Widget _buildNumpadGrid(bool isDark, bool isCompact) {
     final rows = [
       ['1', '2', '3'],
       ['4', '5', '6'],
       ['7', '8', '9'],
-      [
-        controller.isBiometricsEnabled.value ? 'BIO' : '',
-        '0',
-        '⌫',
-      ],
+      ['bio', '0', '⌫'],
     ];
+
+    final double keySize = isCompact ? 64 : 70;
 
     return Column(
       children: rows.map((row) {
         return Padding(
-          padding: EdgeInsets.symmetric(vertical: verticalPadding),
+          padding: EdgeInsets.symmetric(vertical: isCompact ? 5 : 7),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: row.map((key) {
-              if (key.isEmpty) return SizedBox(width: keySize, height: keySize);
-
-              if (key == 'BIO') {
-                return _LiquidGlassPinButton(
-                  icon: Icon(
-                    Icons.fingerprint_rounded,
-                    size: keySize * 0.44,
-                    color: AppColors.primary,
-                  ),
-                  onTap: _authenticateWithBiometrics,
-                  keySize: keySize,
-                  isDark: isDark,
-                  isAccent: true,
-                );
-              }
-
-              if (key == '⌫') {
-                return _LiquidGlassPinButton(
-                  icon: Icon(
-                    Icons.backspace_outlined,
-                    size: keySize * 0.32,
-                    color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                  ),
-                  onTap: () => _onKeyPress(key),
-                  keySize: keySize,
-                  isDark: isDark,
-                );
-              }
-
-              final subtitle = _numpadSubtitles[key] ?? '';
-              return _LiquidGlassPinButton(
-                label: key,
-                subtitle: subtitle,
-                onTap: () => _onKeyPress(key),
-                keySize: keySize,
-                isDark: isDark,
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: _buildNumpadKey(key, keySize, isDark),
               );
             }).toList(),
           ),
@@ -1568,179 +647,360 @@ class _PinLockViewState extends State<PinLockView> with TickerProviderStateMixin
       }).toList(),
     );
   }
-}
 
-/// FinTech Liquid Glass PIN Keypad Button with tactile press animation and glowing refraction
-class _LiquidGlassPinButton extends StatefulWidget {
-  final String? label;
-  final String? subtitle;
-  final Widget? icon;
-  final VoidCallback onTap;
-  final double keySize;
-  final bool isDark;
-  final bool isAccent;
-
-  const _LiquidGlassPinButton({
-    this.label,
-    this.subtitle,
-    this.icon,
-    required this.onTap,
-    required this.keySize,
-    required this.isDark,
-    this.isAccent = false,
-  });
-
-  @override
-  State<_LiquidGlassPinButton> createState() => _LiquidGlassPinButtonState();
-}
-
-class _LiquidGlassPinButtonState extends State<_LiquidGlassPinButton> {
-  bool _isPressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final hasSubtitle = widget.subtitle != null && widget.subtitle!.isNotEmpty;
-    final isAccent = widget.isAccent;
-
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTapDown: (_) => setState(() => _isPressed = true),
-      onTapUp: (_) => setState(() => _isPressed = false),
-      onTapCancel: () => setState(() => _isPressed = false),
-      onTap: widget.onTap,
-      child: AnimatedScale(
-        scale: _isPressed ? 0.90 : 1.0,
-        duration: const Duration(milliseconds: 100),
-        curve: _isPressed ? Curves.easeInOutQuad : Curves.easeOutBack,
-        child: SizedBox(
-          width: widget.keySize,
-          height: widget.keySize,
-          child: LiquidGlassLens(
-            style: LiquidGlassStyle(
-              shape: LiquidGlassShape.squircle(
-                cornerRadius: widget.keySize / 2,
-                borderWidth: _isPressed ? 1.5 : (isAccent ? 1.3 : 1.1),
-                lightIntensity: _isPressed ? 1.45 : (isAccent ? 1.35 : 1.25),
-                lightDirection: 60,
-                borderType: OpticalBorder(
-                  borderSaturation: _isPressed ? 1.5 : 1.3,
-                  ambientIntensity: _isPressed ? 1.3 : 1.15,
-                  borderSolidity: 0.25,
-                ),
-              ),
-              appearance: LiquidGlassAppearance(
-                color: _isPressed
-                    ? (widget.isDark
-                        ? AppColors.primary.withValues(alpha: 0.28)
-                        : AppColors.primary.withValues(alpha: 0.18))
-                    : (isAccent
-                        ? AppColors.primary.withValues(alpha: widget.isDark ? 0.22 : 0.14)
-                        : (widget.isDark
-                            ? const Color(0xFF1B2438).withValues(alpha: 0.50)
-                            : Colors.white.withValues(alpha: 0.65))),
-                blur: const LiquidGlassBlur(sigmaX: 12, sigmaY: 12),
-              ),
-              refraction: LiquidGlassRefraction(
-                distortion: _isPressed ? 0.08 : 0.05,
-                distortionWidth: 16,
-                chromaticAberration: 0.002,
-              ),
-            ),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 120),
-              width: widget.keySize,
-              height: widget.keySize,
+  Widget _buildNumpadKey(String key, double size, bool isDark) {
+    if (key == 'bio') {
+      return Obx(() {
+        if (!controller.isBiometricsEnabled.value) {
+          return SizedBox(width: size, height: size);
+        }
+        return Material(
+          color: Colors.transparent,
+          shape: const CircleBorder(),
+          child: InkWell(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              _authenticateWithBiometrics();
+            },
+            customBorder: const CircleBorder(),
+            child: Container(
+              width: size,
+              height: size,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: _isPressed
-                      ? [
-                          AppColors.primary.withValues(alpha: widget.isDark ? 0.35 : 0.22),
-                          AppColors.accent.withValues(alpha: widget.isDark ? 0.22 : 0.12),
-                        ]
-                      : (isAccent
-                          ? [
-                              AppColors.primary.withValues(alpha: widget.isDark ? 0.26 : 0.18),
-                              AppColors.primaryDark.withValues(alpha: widget.isDark ? 0.14 : 0.08),
-                            ]
-                          : [
-                              widget.isDark
-                                  ? const Color(0xFF243049).withValues(alpha: 0.40)
-                                  : Colors.white.withValues(alpha: 0.65),
-                              widget.isDark
-                                  ? const Color(0xFF131A29).withValues(alpha: 0.60)
-                                  : const Color(0xFFF1F5F9).withValues(alpha: 0.45),
-                            ]),
-                ),
+                color: isDark ? const Color(0xFF141414) : const Color(0xFFEEEEEE),
                 border: Border.all(
-                  color: _isPressed
-                      ? AppColors.primary.withValues(alpha: 0.75)
-                      : (isAccent
-                          ? AppColors.primary.withValues(alpha: widget.isDark ? 0.50 : 0.40)
-                          : (widget.isDark
-                              ? const Color(0xFF334466).withValues(alpha: 0.50)
-                              : Colors.white.withValues(alpha: 0.85))),
-                  width: _isPressed ? 1.5 : (isAccent ? 1.3 : 1.1),
+                  color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                  width: 0.8,
                 ),
-                boxShadow: [
-                  if (_isPressed)
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: widget.isDark ? 0.40 : 0.25),
-                      blurRadius: 14,
-                      spreadRadius: 1.5,
-                    )
-                  else if (isAccent)
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: widget.isDark ? 0.25 : 0.15),
-                      blurRadius: 10,
-                      spreadRadius: 1,
-                    )
-                  else
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: widget.isDark ? 0.22 : 0.04),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                ],
               ),
               alignment: Alignment.center,
-              child: widget.icon ??
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        widget.label ?? '',
-                        style: TextStyle(
-                          fontSize: hasSubtitle ? (widget.keySize * 0.33) : (widget.keySize * 0.38),
-                          fontWeight: FontWeight.w700,
-                          height: 1.0,
-                          color: widget.isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                        ),
-                      ),
-                      if (hasSubtitle) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          widget.subtitle!,
-                          style: TextStyle(
-                            fontSize: widget.keySize * 0.13,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1.2,
-                            height: 1.0,
-                            color: widget.isDark
-                                ? AppColors.darkTextSecondary.withValues(alpha: 0.8)
-                                : AppColors.textSecondary.withValues(alpha: 0.9),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
+              child: Icon(
+                Icons.fingerprint_rounded,
+                size: 26,
+                color: isDark ? Colors.white : Colors.black,
+              ),
             ),
           ),
+        );
+      });
+    }
+
+    return Material(
+      color: Colors.transparent,
+      shape: const CircleBorder(),
+      child: InkWell(
+        onTap: () => _onKeyPress(key),
+        customBorder: const CircleBorder(),
+        child: Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: isDark ? const Color(0xFF141414) : const Color(0xFFEEEEEE),
+            border: Border.all(
+              color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+              width: 0.8,
+            ),
+          ),
+          alignment: Alignment.center,
+          child: key == '⌫'
+              ? Icon(
+                  Icons.backspace_outlined,
+                  size: 20,
+                  color: isDark ? Colors.white : Colors.black,
+                )
+              : Text(
+                  key,
+                  style: GoogleFonts.shareTechMono(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.white : Colors.black,
+                  ),
+                ),
         ),
       ),
     );
   }
-}
 
+  /// 4. Recovery Overlay Modal with Smooth Spring & Fade Animations
+  Widget _buildRecoveryOverlay(bool isDark) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0.0, end: 1.0),
+      duration: const Duration(milliseconds: 240),
+      curve: Curves.easeOutCubic,
+      builder: (context, animValue, child) {
+        return Container(
+          color: Colors.black.withValues(alpha: 0.72 * animValue),
+          padding: const EdgeInsets.all(24),
+          alignment: Alignment.center,
+          child: Transform.scale(
+            scale: 0.92 + (0.08 * animValue),
+            child: Opacity(
+              opacity: animValue.clamp(0.0, 1.0),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 400),
+                child: NothingCard(
+                  padding: const EdgeInsets.all(22),
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 250),
+                    transitionBuilder: (child, animation) => FadeTransition(
+                      opacity: animation,
+                      child: ScaleTransition(
+                        scale: Tween<double>(begin: 0.96, end: 1.0).animate(animation),
+                        child: child,
+                      ),
+                    ),
+                    child: _recoveryMode == _RecoveryMode.options
+                        ? _buildRecoveryOptionsContent(isDark)
+                        : _buildRecoveryConfirmResetContent(isDark),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildRecoveryOptionsContent(bool isDark) {
+    return Column(
+      key: const ValueKey('recovery_options'),
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.shield_outlined,
+                  size: 20,
+                  color: isDark ? Colors.white : Colors.black,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'forgot_pin_title'.tr.toUpperCase(),
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.0,
+                    color: isDark ? Colors.white : Colors.black,
+                  ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+                ),
+              ],
+            ),
+            IconButton(
+              icon: const Icon(Icons.close_rounded, size: 20),
+              onPressed: _closeRecovery,
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Text(
+          'forgot_pin_desc'.tr,
+          style: GoogleFonts.spaceGrotesk(
+            fontSize: 13,
+            height: 1.45,
+            color: isDark ? AppColors.nothingSubtext : const Color(0xFF666666),
+          ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+        ),
+        const SizedBox(height: 22),
+        if (controller.isBiometricsEnabled.value) ...[
+          Container(
+            width: double.infinity,
+            margin: const EdgeInsets.only(bottom: 12),
+            child: OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: isDark ? Colors.white : Colors.black,
+                side: BorderSide(
+                  color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.15),
+                  width: 0.8,
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              icon: const Icon(Icons.fingerprint_rounded, size: 20),
+              label: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'recovery_biometric_title'.tr,
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+                ),
+              ),
+              onPressed: () {
+                _closeRecovery();
+                _authenticateWithBiometrics();
+              },
+            ),
+          ),
+        ],
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.nothingRed,
+              side: BorderSide(
+                color: AppColors.nothingRed.withValues(alpha: 0.35),
+                width: 0.8,
+              ),
+              backgroundColor: AppColors.nothingRed.withValues(alpha: 0.06),
+              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+            icon: const Icon(Icons.restart_alt_rounded, size: 20, color: AppColors.nothingRed),
+            label: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'recovery_reset_title'.tr,
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.nothingRed,
+                ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+              ),
+            ),
+            onPressed: _startConfirmResetPin,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRecoveryConfirmResetContent(bool isDark) {
+    return Column(
+      key: const ValueKey('recovery_confirm_reset'),
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.nothingRed.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.warning_amber_rounded,
+                color: AppColors.nothingRed,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'recovery_confirm_reset'.tr.toUpperCase(),
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.0,
+                      color: AppColors.nothingRed,
+                    ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'recovery_confirm_reset_subtitle'.tr,
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 11,
+                      color: isDark ? AppColors.nothingSubtext : const Color(0xFF777777),
+                    ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF161616) : const Color(0xFFF2F2F2),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+              width: 0.8,
+            ),
+          ),
+          child: Text(
+            'recovery_warning'.tr,
+            style: GoogleFonts.spaceGrotesk(
+              fontSize: 12,
+              height: 1.45,
+              color: isDark ? Colors.white70 : Colors.black87,
+            ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+          ),
+        ),
+        const SizedBox(height: 20),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            TextButton(
+              onPressed: _closeRecovery,
+              child: Text(
+                'cancel'.tr,
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? AppColors.nothingSubtext : const Color(0xFF777777),
+                ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+              ),
+            ),
+            const SizedBox(width: 10),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _resetCountdown > 0
+                    ? (isDark ? const Color(0xFF262626) : const Color(0xFFDDDDDD))
+                    : AppColors.nothingRed,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: _resetCountdown > 0
+                  ? null
+                  : () async {
+                      _countdownTimer?.cancel();
+                      HapticFeedback.heavyImpact();
+                      await controller.disablePin();
+                      controller.unlock();
+                      _closeRecovery();
+                      AppFeedback.showSuccess(
+                        title: 'recovery_reset_success_title'.tr,
+                        message: 'recovery_reset_success'.tr,
+                      );
+                      widget.onUnlocked?.call();
+                    },
+              child: Text(
+                _resetCountdown > 0
+                    ? 'recovery_countdown_wait'.trParams({'seconds': '$_resetCountdown'})
+                    : 'confirm'.tr,
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: _resetCountdown > 0
+                      ? (isDark ? Colors.white38 : Colors.black38)
+                      : Colors.white,
+                ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}

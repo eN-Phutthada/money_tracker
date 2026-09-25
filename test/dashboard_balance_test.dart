@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:money_tracker/app/data/models/transaction_model.dart';
+import 'package:money_tracker/app/modules/budget/controllers/budget_controller.dart';
 import 'package:money_tracker/app/modules/dashboard/controllers/dashboard_controller.dart';
+import 'package:money_tracker/app/translations/app_translations.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -240,5 +242,193 @@ void main() {
       expect(controller.totalCurrentBalance, equals(200.0));
       expect(controller.isSurplus, isFalse); // Turns red/caution to protect user!
     });
+
+    test('Savings withdrawal restores totalCurrentBalance and computes netSavings accurately', () {
+      final now = DateTime.now();
+      controller.transactions.assignAll([
+        TransactionItem(
+          id: '1',
+          title: 'เงินเดือน',
+          amount: 30000.0,
+          type: TransactionType.income,
+          categoryName: 'เงินเดือน',
+          date: now,
+        ),
+        TransactionItem(
+          id: '2',
+          title: 'ออมเงินฉุกเฉิน',
+          amount: 10000.0,
+          type: TransactionType.savingsInvestment,
+          categoryName: 'เงินออม/DCA',
+          date: now,
+        ),
+      ]);
+
+      // Before withdrawal:
+      // Income = 30,000
+      // Savings = 10,000
+      // Balance = 20,000
+      expect(controller.totalCurrentBalance, equals(20000.0));
+      expect(controller.actualSavings, equals(10000.0));
+      expect(controller.actualSavingsWithdrawals, equals(0.0));
+      expect(controller.netSavings, equals(10000.0));
+
+      // Now withdraw 4,000 from savings back to wallet:
+      final withdrawalItem = TransactionItem(
+        id: '3',
+        title: 'ถอนเงินออมฉุกเฉินมาใช้',
+        amount: 4000.0,
+        type: TransactionType.income,
+        categoryName: 'savings_withdrawal',
+        date: now,
+      );
+
+      expect(withdrawalItem.isSavingsWithdrawal, isTrue);
+      controller.transactions.add(withdrawalItem);
+
+      // After withdrawal:
+      // totalCurrentBalance increases from 20,000 back to 24,000:
+      expect(controller.totalCurrentBalance, equals(24000.0));
+      // actualIncome includes all income inflows (salary + withdrawal):
+      expect(controller.actualIncome, equals(34000.0));
+      // actualSavingsWithdrawals captures 4,000:
+      expect(controller.actualSavingsWithdrawals, equals(4000.0));
+      // netSavings is 10,000 - 4,000 = 6,000:
+      expect(controller.netSavings, equals(6000.0));
+      expect(controller.totalNetSavings, equals(6000.0));
+    });
+
+    test('BudgetController auto-saves parameter changes without requiring manual save', () {
+      Get.replace<DashboardController>(controller);
+      final budgetController = BudgetController();
+      budgetController.onInit();
+
+      // Change target daily allowance
+      budgetController.targetDailyAllowance.value = 650.0;
+      expect(controller.budgetPlan.value.targetDailyAllowance, equals(650.0));
+
+      // Change planned income
+      budgetController.plannedIncome.value = 75000.0;
+      expect(controller.budgetPlan.value.plannedIncome, equals(75000.0));
+
+      // Change monthly savings
+      budgetController.targetMonthlySavings.value = 18000.0;
+      expect(controller.budgetPlan.value.targetMonthlySavings, equals(18000.0));
+
+      // Change fixed costs
+      budgetController.plannedFixedCosts.value = 12000.0;
+      expect(controller.budgetPlan.value.plannedFixedCosts, equals(12000.0));
+
+      budgetController.onClose();
+    });
+
+    test('ThemeModeName resolves to light or dark without exposing system string', () {
+      controller.setThemeMode(ThemeMode.light);
+      expect(controller.themeModeName, anyOf(contains('theme_light'), contains('สว่าง'), contains('Light')));
+
+      controller.setThemeMode(ThemeMode.dark);
+      expect(controller.themeModeName, anyOf(contains('theme_dark'), contains('มืด'), contains('Dark')));
+    });
+
+    test('AppTranslations contains critical keys and no missing translations', () {
+      final trans = AppTranslations();
+      final th = trans.keys['th_TH']!;
+      final en = trans.keys['en_US']!;
+
+      expect(th['month_ended'], isNotNull);
+      expect(en['month_ended'], equals('Month ended'));
+
+      expect(th['remaining_rate'], isNotNull);
+      expect(en['remaining_rate'], equals('Remaining Rate'));
+
+      expect(th['bonus'], isNotNull);
+      expect(en['bonus'], equals('Bonus'));
+
+      // Critical categories present in both locales
+      for (final cat in ['อาหาร/ของกิน', 'กาแฟ/เครื่องดื่ม', 'การเดินทาง', 'เงินเดือน', 'เงินออม/DCA']) {
+        expect(th[cat], isNotNull);
+        expect(en[cat], isNotNull);
+      }
+    });
+
+    test('Day-correlated Monthly Plan properties compute accurately', () {
+      final now = DateTime.now();
+      controller.selectedDate.value = now;
+      controller.transactions.clear();
+
+      expect(controller.currentDayInPeriod, equals(now.day));
+      expect(controller.monthElapsedRatio, inInclusiveRange(0.0, 1.0));
+
+      final targetDaily = controller.budgetPlan.value.targetDailyAllowance;
+      expect(controller.plannedVariableBudgetToDate, equals(now.day * targetDaily));
+      expect(controller.variableSpendingVarianceToDate, equals(now.day * targetDaily));
+      expect(controller.isVariableSpendingOnTrack, isTrue);
+
+      // Add a variable expense
+      controller.transactions.add(
+        TransactionItem(
+          id: 'test_var',
+          title: 'อาหาร',
+          amount: 500.0,
+          type: TransactionType.expense,
+          costNature: CostNature.variable,
+          categoryName: 'อาหาร/ของกิน',
+          date: now,
+        ),
+      );
+
+      expect(controller.totalVariableExpenses, equals(500.0));
+      expect(controller.variableSpendingVarianceToDate, equals((now.day * targetDaily) - 500.0));
+    });
+
+    test('AppTranslations contains no emoji characters across both locales', () {
+      final trans = AppTranslations();
+      final emojiRegex = RegExp(r'[\u{1F300}-\u{1FAFF}]|[\u{2600}-\u{27BF}]', unicode: true);
+
+      for (final entry in trans.keys.entries) {
+        final locale = entry.key;
+        final map = entry.value;
+
+        for (final item in map.entries) {
+          final hasEmoji = emojiRegex.hasMatch(item.value);
+          expect(hasEmoji, isFalse,
+              reason: 'Found emoji in $locale key "${item.key}": "${item.value}"');
+        }
+      }
+    });
+
+    test('New keys exist in both th_TH and en_US without missing keys', () {
+      final trans = AppTranslations();
+      final th = trans.keys['th_TH']!;
+      final en = trans.keys['en_US']!;
+
+      final requiredKeys = [
+        'net_balance',
+        'daily_quota',
+        'monthly_plan_cycle',
+        'day_progress_label',
+        'planned_to_date',
+        'actual_spent_to_date',
+        'saved_below_plan',
+        'spent_over_plan',
+        'remaining_cycle_pace',
+        'wallet_health_overview',
+        'health_runway',
+        'health_pace',
+        'pace_normal',
+        'pace_fast',
+        'safe_zone_covered',
+        'tight_zone_warning',
+        'recommended_daily_pace',
+        'recommended_daily_pace_desc',
+      ];
+
+      for (final key in requiredKeys) {
+        expect(th[key], isNotNull, reason: 'Missing th_TH key "$key"');
+        expect(en[key], isNotNull, reason: 'Missing en_US key "$key"');
+      }
+    });
   });
 }
+
+

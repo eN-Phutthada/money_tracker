@@ -146,7 +146,10 @@ class SecurityService {
     }
     try {
       final isSupported = await _localAuth.isDeviceSupported();
-      if (!isSupported) {
+      final canCheck = await _localAuth.canCheckBiometrics;
+      final biometrics = await _localAuth.getAvailableBiometrics();
+
+      if (!isSupported && !canCheck) {
         return BiometricAvailabilityResult(
           isAvailable: false,
           status: BiometricAvailabilityStatus.notSupported,
@@ -154,9 +157,7 @@ class SecurityService {
         );
       }
 
-      final canCheck = await _localAuth.canCheckBiometrics;
-      final biometrics = await _localAuth.getAvailableBiometrics();
-      if (!canCheck || biometrics.isEmpty) {
+      if (biometrics.isEmpty && !canCheck) {
         return BiometricAvailabilityResult(
           isAvailable: false,
           status: BiometricAvailabilityStatus.notEnrolled,
@@ -168,7 +169,8 @@ class SecurityService {
         isAvailable: true,
         status: BiometricAvailabilityStatus.available,
       );
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Biometrics check error: $e');
       return BiometricAvailabilityResult(
         isAvailable: false,
         status: BiometricAvailabilityStatus.notSupported,
@@ -208,20 +210,24 @@ class SecurityService {
     }
 
     try {
-      final availability = await checkBiometricAvailability();
-      if (!availability.isAvailable) {
+      final isSupported = await _localAuth.isDeviceSupported();
+      final canCheck = await _localAuth.canCheckBiometrics;
+      if (!isSupported && !canCheck) {
         return BiometricAuthResult(
           success: false,
-          failureReason: availability.status == BiometricAvailabilityStatus.notEnrolled
-              ? BiometricAuthFailureReason.notEnrolled
-              : BiometricAuthFailureReason.notSupported,
-          errorMessage: availability.message,
+          failureReason: BiometricAuthFailureReason.notSupported,
+          errorMessage: 'biometric_not_supported'.tr,
         );
       }
 
+      final promptReason = (localizedReason != null && localizedReason.isNotEmpty)
+          ? localizedReason
+          : 'biometric_prompt_unlock'.tr;
+
       final didAuthenticate = await _localAuth.authenticate(
-        localizedReason: localizedReason ?? 'biometric_reason'.tr,
+        localizedReason: promptReason,
         biometricOnly: false,
+        sensitiveTransaction: true,
         persistAcrossBackgrounding: true,
       );
 
@@ -232,7 +238,7 @@ class SecurityService {
       } else {
         return BiometricAuthResult(
           success: false,
-          failureReason: BiometricAuthFailureReason.failed,
+          failureReason: BiometricAuthFailureReason.canceled,
           errorMessage: 'biometric_failed'.tr,
         );
       }

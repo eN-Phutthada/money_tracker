@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -10,6 +9,7 @@ import '../../../data/services/bank_slip_parser.dart';
 import '../../../data/services/bank_slip_service.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_popup_decorations.dart';
+import '../../../widgets/nothing_ui_components.dart';
 import '../../dashboard/controllers/dashboard_controller.dart';
 import 'bank_batch_slip_sheet.dart';
 
@@ -30,10 +30,7 @@ class BankSlipScanModal extends StatelessWidget {
       );
     } else {
       Get.bottomSheet(
-        BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-          child: const BankSlipScanModal(),
-        ),
+        const BankSlipScanModal(),
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
       );
@@ -47,16 +44,16 @@ class BankSlipScanModal extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurface : AppColors.surface,
+        color: isDark ? const Color(0xFF101010) : Colors.white,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         border: Border.all(
-          color: isDark ? AppColors.darkBorder : AppColors.border,
-          width: 1,
+          color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.1),
+          width: 0.8,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.40 : 0.12),
-            blurRadius: 20,
+            color: Colors.black.withValues(alpha: isDark ? 0.50 : 0.10),
+            blurRadius: 24,
             offset: const Offset(0, -4),
           ),
         ],
@@ -72,38 +69,37 @@ class BankSlipScanModal extends StatelessWidget {
         children: [
           // Drag handle bar
           Container(
-            width: 40,
-            height: 4,
+            width: 36,
+            height: 3.5,
             decoration: BoxDecoration(
-              color: isDark ? Colors.white.withValues(alpha: 0.20) : Colors.black.withValues(alpha: 0.15),
+              color: isDark ? Colors.white24 : Colors.black26,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
           const SizedBox(height: 16),
 
-          // Header with Krungthai Cyan Accent
+          // Header with Nothing Industrial Squircle
           Row(
             children: [
               Container(
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF00A3E0), Color(0xFF0072CE)],
+                  color: isDark ? const Color(0xFF1C1C1C) : const Color(0xFFF0F0F0),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: isDark
+                        ? AppColors.nothingBorder
+                        : Colors.black.withValues(alpha: 0.08),
+                    width: 0.8,
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF00A3E0).withValues(alpha: 0.35),
-                      blurRadius: 10,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
                 ),
-                child: const Icon(
-                  Icons.receipt_long_rounded,
-                  color: Colors.white,
-                  size: 24,
+                child: Center(
+                  child: Icon(
+                    Icons.document_scanner_outlined,
+                    color: isDark ? Colors.white : Colors.black,
+                    size: 22,
+                  ),
                 ),
               ),
               const SizedBox(width: 14),
@@ -112,29 +108,52 @@ class BankSlipScanModal extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'scan_bank_slip'.tr,
-                      style: TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w800,
-                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                        letterSpacing: -0.2,
+                      'scan_bank_slip'.tr.toUpperCase(),
+                      style: NothingTypography.grotesk(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: NothingTypography.safeSpacing(
+                          'scan_bank_slip'.tr,
+                          1.2,
+                        ),
+                        color: isDark ? Colors.white : Colors.black,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 2),
                     Text(
                       'slip_all_banks_supported'.tr,
-                      style: TextStyle(
-                        fontSize: 12,
+                      style: NothingTypography.grotesk(
+                        fontSize: 11.5,
                         fontWeight: FontWeight.w500,
-                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                        color: isDark
+                            ? const Color(0xFFB0B0B0)
+                            : const Color(0xFF666666),
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.close_rounded),
+                icon: const Icon(Icons.close_rounded, size: 20),
                 onPressed: () => Get.back(),
+                style: IconButton.styleFrom(
+                  backgroundColor: isDark
+                      ? const Color(0xFF1C1C1C)
+                      : const Color(0xFFF0F0F0),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(
+                      color: isDark
+                          ? AppColors.nothingBorder
+                          : Colors.black.withValues(alpha: 0.08),
+                      width: 0.8,
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
@@ -143,10 +162,9 @@ class BankSlipScanModal extends StatelessWidget {
           // Option 1: Gallery (รองรับเลือก 1 รูป หรือหลายรูปพร้อมกัน)
           _buildOptionTile(
             context: context,
-            icon: Icons.photo_library_rounded,
+            icon: Icons.photo_library_outlined,
             title: 'choose_from_gallery'.tr,
             subtitle: 'choose_from_gallery_desc'.tr,
-            color: const Color(0xFF00A3E0),
             isDark: isDark,
             onTap: () async {
               Get.back();
@@ -164,10 +182,9 @@ class BankSlipScanModal extends StatelessWidget {
           // Option 2: Camera
           _buildOptionTile(
             context: context,
-            icon: Icons.camera_alt_rounded,
+            icon: Icons.camera_alt_outlined,
             title: 'take_slip_photo'.tr,
             subtitle: 'take_slip_photo_desc'.tr,
-            color: const Color(0xFF10B981),
             isDark: isDark,
             onTap: () async {
               Get.back();
@@ -177,7 +194,7 @@ class BankSlipScanModal extends StatelessWidget {
               }
             },
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 16),
 
           // Instant Auto-Save Mode Switcher
           Obx(() {
@@ -185,21 +202,23 @@ class BankSlipScanModal extends StatelessWidget {
             return Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: isDark
-                    ? AppColors.darkSurfaceSecondary.withValues(alpha: 0.6)
-                    : AppColors.surfaceSecondary.withValues(alpha: 0.7),
+                color: isDark ? const Color(0xFF161616) : const Color(0xFFF5F5F5),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: isDark ? AppColors.darkBorder : AppColors.border,
-                  width: 1,
+                  color: isDark
+                      ? AppColors.nothingBorder
+                      : Colors.black.withValues(alpha: 0.08),
+                  width: 0.8,
                 ),
               ),
               child: Row(
                 children: [
-                  Icon(
-                    isInstant ? Icons.flash_on_rounded : Icons.visibility_rounded,
-                    size: 20,
-                    color: isInstant ? const Color(0xFFF59E0B) : const Color(0xFF00A3E0),
+                  NothingLedIndicator(
+                    size: 6,
+                    color: isInstant
+                        ? AppColors.nothingRed
+                        : (isDark ? Colors.white38 : Colors.black38),
+                    isPulsing: isInstant,
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -207,18 +226,25 @@ class BankSlipScanModal extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          isInstant ? 'mode_b_instant'.tr : 'mode_a_preview'.tr,
-                          style: TextStyle(
-                            fontSize: 13,
+                          (isInstant ? 'mode_b_instant'.tr : 'mode_a_preview'.tr).toUpperCase(),
+                          style: NothingTypography.grotesk(
+                            fontSize: 12.5,
                             fontWeight: FontWeight.w700,
-                            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                            letterSpacing: NothingTypography.safeSpacing(
+                              isInstant ? 'mode_b_instant'.tr : 'mode_a_preview'.tr,
+                              0.8,
+                            ),
+                            color: isDark ? Colors.white : Colors.black,
                           ),
                         ),
                         Text(
                           isInstant ? 'mode_b_instant_desc'.tr : 'mode_a_preview_desc'.tr,
-                          style: TextStyle(
+                          style: NothingTypography.grotesk(
                             fontSize: 11,
-                            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                            fontWeight: FontWeight.w500,
+                            color: isDark
+                                ? const Color(0xFFB0B0B0)
+                                : const Color(0xFF666666),
                           ),
                         ),
                       ],
@@ -226,7 +252,11 @@ class BankSlipScanModal extends StatelessWidget {
                   ),
                   Switch.adaptive(
                     value: isInstant,
-                    activeTrackColor: const Color(0xFFF59E0B),
+                    activeTrackColor: AppColors.nothingRed,
+                    activeThumbColor: Colors.white,
+                    inactiveTrackColor: isDark
+                        ? const Color(0xFF2C2C2C)
+                        : const Color(0xFFE0E0E0),
                     onChanged: (val) {
                       slipService.toggleAutoSave(val);
                     },
@@ -245,7 +275,6 @@ class BankSlipScanModal extends StatelessWidget {
     required IconData icon,
     required String title,
     required String subtitle,
-    required Color color,
     required bool isDark,
     required VoidCallback onTap,
   }) {
@@ -258,23 +287,37 @@ class BankSlipScanModal extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary,
+          color: isDark ? const Color(0xFF161616) : const Color(0xFFF7F7F7),
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
-            color: isDark ? AppColors.darkBorder.withValues(alpha: 0.6) : AppColors.border.withValues(alpha: 0.6),
-            width: 1,
+            color: isDark
+                ? AppColors.nothingBorder
+                : Colors.black.withValues(alpha: 0.08),
+            width: 0.8,
           ),
         ),
         child: Row(
           children: [
             Container(
-              width: 40,
-              height: 40,
+              width: 42,
+              height: 42,
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.14),
-                borderRadius: BorderRadius.circular(12),
+                color: isDark
+                    ? const Color(0xFF222222)
+                    : const Color(0xFFEAEAEA),
+                borderRadius: BorderRadius.circular(13),
+                border: Border.all(
+                  color: isDark
+                      ? AppColors.nothingBorder
+                      : Colors.black.withValues(alpha: 0.06),
+                  width: 0.8,
+                ),
               ),
-              child: Icon(icon, color: color, size: 22),
+              child: Icon(
+                icon,
+                color: isDark ? Colors.white : Colors.black,
+                size: 20,
+              ),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -283,27 +326,36 @@ class BankSlipScanModal extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: TextStyle(
-                      fontSize: 14,
+                    style: NothingTypography.grotesk(
+                      fontSize: 13.5,
                       fontWeight: FontWeight.w700,
-                      color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                      color: isDark ? Colors.white : Colors.black,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                    style: NothingTypography.grotesk(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: isDark
+                          ? const Color(0xFFB0B0B0)
+                          : const Color(0xFF666666),
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
             ),
             Icon(
-              Icons.chevron_right_rounded,
-              color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-              size: 20,
+              Icons.arrow_forward_rounded,
+              color: isDark
+                  ? const Color(0xFF888888)
+                  : const Color(0xFFAAAAAA),
+              size: 18,
             ),
           ],
         ),
@@ -318,61 +370,96 @@ class BankSlipScanModal extends StatelessWidget {
         ? Theme.of(activeContext).brightness == Brightness.dark
         : Get.isDarkMode;
 
-    // 1. แสดงหน้าต่างประมวลผล Liquid Glass Loading ระหว่างสแกนภาพสลิปจริง
+    // 1. แสดงหน้าต่างประมวลผล Nothing OS Telemetry Scanner ระหว่างสแกนภาพสลิปจริง
     Get.dialog(
       PopScope(
         canPop: false,
-        child: AppGlassDialog(
-          maxWidth: 320,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF00A3E0), Color(0xFF0072CE)],
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF00A3E0).withValues(alpha: 0.35),
-                      blurRadius: 14,
-                      offset: const Offset(0, 4),
+        child: Center(
+          child: Container(
+            width: 300,
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 26),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF141414) : Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.1),
+                width: 0.8,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.6 : 0.12),
+                  blurRadius: 30,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 58,
+                    height: 58,
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF1E1E1E) : const Color(0xFFF2F2F2),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(
+                        color: isDark
+                            ? AppColors.nothingBorder
+                            : Colors.black.withValues(alpha: 0.08),
+                        width: 0.8,
+                      ),
                     ),
-                  ],
-                ),
-                child: const Center(
-                  child: SizedBox(
-                    width: 26,
-                    height: 26,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.8,
-                      color: Colors.white,
+                    child: Center(
+                      child: SizedBox(
+                        width: 26,
+                        height: 26,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.2,
+                          color: isDark ? Colors.white : Colors.black,
+                        ),
+                      ),
                     ),
                   ),
-                ),
+                  const SizedBox(height: 18),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      NothingLedIndicator(
+                        size: 5,
+                        color: AppColors.nothingRed,
+                        isPulsing: true,
+                      ),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          'reading_slip_data'.tr.toUpperCase(),
+                          style: NothingTypography.grotesk(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: NothingTypography.safeSpacing('reading_slip_data'.tr, 1.2),
+                            color: isDark ? Colors.white : Colors.black,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'reading_slip_data_desc'.tr,
+                    textAlign: TextAlign.center,
+                    style: NothingTypography.grotesk(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: isDark ? const Color(0xFFB0B0B0) : const Color(0xFF666666),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 18),
-              Text(
-                'reading_slip_data'.tr,
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'reading_slip_data_desc'.tr,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -409,74 +496,96 @@ class BankSlipScanModal extends StatelessWidget {
     final progressRx = 0.obs;
     final totalCount = files.length;
 
-    // แสดงหน้าต่างประมวลผล Liquid Glass Loading แบบกลุ่ม
+    // แสดงหน้าต่างประมวลผล Nothing OS Batch Telemetry
     Get.dialog(
       PopScope(
         canPop: false,
-        child: AppGlassDialog(
-          maxWidth: 340,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 26),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 58,
-                height: 58,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF00A3E0), Color(0xFF6366F1)],
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF00A3E0).withValues(alpha: 0.35),
-                      blurRadius: 14,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: const Center(
-                  child: SizedBox(
-                    width: 28,
-                    height: 28,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 3,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
+        child: Center(
+          child: Container(
+            width: 320,
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 26),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF141414) : Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.1),
+                width: 0.8,
               ),
-              const SizedBox(height: 18),
-              Obx(() => Text(
-                    'processing_batch_count'.trParams({
-                      'current': '${progressRx.value}',
-                      'total': '$totalCount',
-                    }),
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                    ),
-                  )),
-              const SizedBox(height: 6),
-              Text(
-                'reading_slip_data_desc'.tr,
-                style: TextStyle(
-                  fontSize: 11.5,
-                  color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.6 : 0.12),
+                  blurRadius: 30,
+                  offset: const Offset(0, 8),
                 ),
-              ),
-              const SizedBox(height: 16),
-              Obx(() => ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
-                    child: LinearProgressIndicator(
-                      value: totalCount > 0 ? progressRx.value / totalCount : 0.0,
-                      minHeight: 6,
-                      backgroundColor: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.08),
-                      valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF00A3E0)),
+              ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 58,
+                    height: 58,
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF1E1E1E) : const Color(0xFFF2F2F2),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(
+                        color: isDark
+                            ? AppColors.nothingBorder
+                            : Colors.black.withValues(alpha: 0.08),
+                        width: 0.8,
+                      ),
                     ),
-                  )),
-            ],
+                    child: Center(
+                      child: SizedBox(
+                        width: 26,
+                        height: 26,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.2,
+                          color: isDark ? Colors.white : Colors.black,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Obx(() => Text(
+                        'processing_batch_count'.trParams({
+                          'current': '${progressRx.value}',
+                          'total': '$totalCount',
+                        }).toUpperCase(),
+                        style: NothingTypography.grotesk(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
+                          color: isDark ? Colors.white : Colors.black,
+                        ),
+                      )),
+                  const SizedBox(height: 6),
+                  Text(
+                    'reading_slip_data_desc'.tr,
+                    textAlign: TextAlign.center,
+                    style: NothingTypography.grotesk(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: isDark ? const Color(0xFFB0B0B0) : const Color(0xFF666666),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Obx(() => ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: LinearProgressIndicator(
+                          value: totalCount > 0 ? progressRx.value / totalCount : 0.0,
+                          minHeight: 4,
+                          backgroundColor: isDark ? Colors.white12 : Colors.black12,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            isDark ? Colors.white : Colors.black,
+                          ),
+                        ),
+                      )),
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -548,60 +657,101 @@ class BankSlipScanModal extends StatelessWidget {
     } catch (_) {}
 
     Get.dialog(
-      AppGlassDialog(
-        maxWidth: 400,
-        padding: const EdgeInsets.all(22),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
-              ),
-              child: const Icon(
-                Icons.search_off_rounded,
-                color: Color(0xFFF59E0B),
-                size: 28,
-              ),
+      Center(
+        child: Container(
+          width: 340,
+          margin: const EdgeInsets.symmetric(horizontal: 24),
+          padding: const EdgeInsets.all(22),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF141414) : Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.1),
+              width: 0.8,
             ),
-            const SizedBox(height: 14),
-            Text(
-              'slip_not_found_title'.tr,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.6 : 0.15),
+                blurRadius: 30,
+                offset: const Offset(0, 8),
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'slip_not_found_desc'.tr,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12.5,
-                height: 1.45,
-                color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF00A3E0),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF2A0C0E) : const Color(0xFFFDE8E8),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isDark
+                          ? AppColors.nothingRed.withValues(alpha: 0.6)
+                          : AppColors.nothingRed.withValues(alpha: 0.3),
+                      width: 0.8,
+                    ),
+                  ),
+                  child: Center(
+                    child: Icon(
+                      Icons.qr_code_scanner_rounded,
+                      color: isDark ? AppColors.nothingRedLight : AppColors.nothingRed,
+                      size: 24,
+                    ),
                   ),
                 ),
-                onPressed: () => Get.back(),
-                child: Text('close'.tr),
-              ),
+                const SizedBox(height: 16),
+                Text(
+                  'slip_not_found_title'.tr.toUpperCase(),
+                  textAlign: TextAlign.center,
+                  style: NothingTypography.grotesk(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: NothingTypography.safeSpacing('slip_not_found_title'.tr, 0.8),
+                    color: isDark ? Colors.white : Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'slip_not_found_desc'.tr,
+                  textAlign: TextAlign.center,
+                  style: NothingTypography.grotesk(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: isDark ? const Color(0xFFB0B0B0) : const Color(0xFF666666),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  height: 44,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isDark ? Colors.white : Colors.black,
+                      foregroundColor: isDark ? Colors.black : Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      elevation: 0,
+                    ),
+                    onPressed: () => Get.back(),
+                    child: Text(
+                      'close'.tr.toUpperCase(),
+                      style: NothingTypography.grotesk(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.0,
+                        color: isDark ? Colors.black : Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -668,10 +818,7 @@ class BankSlipSheet extends StatefulWidget {
       );
     } else {
       Get.bottomSheet(
-        BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-          child: BankSlipSheet(slip: slip),
-        ),
+        BankSlipSheet(slip: slip),
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
       );
@@ -795,25 +942,28 @@ class _BankSlipSheetState extends State<BankSlipSheet> {
     required bool isDark,
   }) {
     final isSelected = _selectedType == type;
+    final selectedBg = isDark ? Colors.white : Colors.black;
+    final selectedFg = isDark ? Colors.black : Colors.white;
+
     return InkWell(
       onTap: () {
         HapticFeedback.selectionClick();
         _onTypeChanged(type);
       },
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(14),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 6),
         decoration: BoxDecoration(
           color: isSelected
-              ? activeColor.withValues(alpha: 0.16)
-              : (isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary),
-          borderRadius: BorderRadius.circular(12),
+              ? selectedBg
+              : (isDark ? const Color(0xFF181818) : const Color(0xFFF0F0F0)),
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: isSelected
-                ? activeColor
-                : (isDark ? AppColors.darkBorder : AppColors.border),
-            width: isSelected ? 1.6 : 1.0,
+                ? (isDark ? Colors.white : Colors.black)
+                : (isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08)),
+            width: isSelected ? 1.2 : 0.8,
           ),
         ),
         child: Row(
@@ -821,22 +971,24 @@ class _BankSlipSheetState extends State<BankSlipSheet> {
           children: [
             Icon(
               icon,
-              size: 15,
+              size: 14,
               color: isSelected
-                  ? activeColor
-                  : (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
+                  ? selectedFg
+                  : (isDark ? const Color(0xFF999999) : const Color(0xFF666666)),
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: 5),
             Flexible(
               child: Text(
-                label,
-                style: TextStyle(
-                  fontSize: 11.5,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                label.toUpperCase(),
+                style: NothingTypography.grotesk(
+                  fontSize: 11,
+                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                  letterSpacing: NothingTypography.safeSpacing(label, 0.4),
                   color: isSelected
-                      ? activeColor
-                      : (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
+                      ? selectedFg
+                      : (isDark ? const Color(0xFF999999) : const Color(0xFF666666)),
                 ),
+                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -851,37 +1003,37 @@ class _BankSlipSheetState extends State<BankSlipSheet> {
     Color badgeColor;
     String label;
     if (conf >= 0.70) {
-      badgeColor = const Color(0xFF00C853);
+      badgeColor = isDark ? AppColors.nothingGreen : const Color(0xFF008736);
       label = 'confidence_high'.trParams({'percent': '${(conf * 100).round()}'});
     } else if (conf >= 0.40) {
-      badgeColor = const Color(0xFFFF9800);
+      badgeColor = const Color(0xFFF59E0B);
       label = 'confidence_medium'.trParams({'percent': '${(conf * 100).round()}'});
     } else {
-      badgeColor = const Color(0xFF00A3E0);
+      badgeColor = isDark ? Colors.white : Colors.black;
       label = 'confidence_default'.tr;
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
       decoration: BoxDecoration(
-        color: badgeColor.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(8),
+        color: isDark ? const Color(0xFF1E1E1E) : const Color(0xFFEFEFEF),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: badgeColor.withValues(alpha: 0.35),
+          color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
           width: 0.8,
         ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.auto_awesome_rounded, size: 12, color: badgeColor),
-          const SizedBox(width: 4),
+          NothingLedIndicator(size: 4.5, color: badgeColor),
+          const SizedBox(width: 5),
           Text(
-            label,
-            style: TextStyle(
-              fontSize: 10.5,
+            label.toUpperCase(),
+            style: NothingTypography.mono(
+              fontSize: 10,
               fontWeight: FontWeight.w700,
-              color: badgeColor,
+              color: isDark ? Colors.white : Colors.black,
             ),
           ),
         ],
@@ -896,132 +1048,202 @@ class _BankSlipSheetState extends State<BankSlipSheet> {
     );
 
     Get.dialog(
-      AppGlassDialog(
-        maxWidth: 360,
-        padding: const EdgeInsets.all(22),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF00A3E0).withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.attach_money_rounded, color: Color(0xFF00A3E0), size: 22),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  'enter_amount'.tr,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                  ),
-                ),
-              ],
+      Center(
+        child: Container(
+          width: 350,
+          margin: const EdgeInsets.symmetric(horizontal: 24),
+          padding: const EdgeInsets.all(22),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF141414) : Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.1),
+              width: 0.8,
             ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: textEditController,
-              autofocus: true,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w900,
-                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.6 : 0.12),
+                blurRadius: 30,
+                offset: const Offset(0, 8),
               ),
-              decoration: InputDecoration(
-                prefixText: '฿ ',
-                prefixStyle: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF00A3E0),
-                ),
-                hintText: '0.00',
-                filled: true,
-                fillColor: isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(
-                    color: isDark ? AppColors.darkBorder : AppColors.border,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 14),
-            // Quick preset chips
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: [100, 300, 500, 1000].map((preset) {
-                return InkWell(
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    textEditController.text = preset.toDouble().toStringAsFixed(2);
-                  },
-                  borderRadius: BorderRadius.circular(8),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF00A3E0).withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      '฿$preset',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF00A3E0),
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 20),
-            Row(
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: TextButton(
-                    onPressed: () => Get.back(),
-                    child: Text('cancel'.tr),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF00A3E0),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
+                Row(
+                  children: [
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF222222) : const Color(0xFFEAEAEA),
                         borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                          width: 0.8,
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          '฿',
+                          style: NothingTypography.mono(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? Colors.white : Colors.black,
+                          ),
+                        ),
                       ),
                     ),
-                    onPressed: () {
-                      final val = double.tryParse(textEditController.text.trim().replaceAll(',', ''));
-                      if (val != null && val > 0) {
-                        setState(() {
-                          _currentAmount = val;
-                        });
-                        Get.back();
-                      } else {
-                        AppFeedback.showError(
-                          title: 'invalid_amount'.tr,
-                          message: 'invalid_amount_desc'.tr,
-                        );
-                      }
-                    },
-                    child: Text('confirm'.tr),
+                    const SizedBox(width: 12),
+                    Text(
+                      'enter_amount'.tr.toUpperCase(),
+                      style: NothingTypography.grotesk(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: NothingTypography.safeSpacing('enter_amount'.tr, 1.0),
+                        color: isDark ? Colors.white : Colors.black,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: textEditController,
+                  autofocus: true,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  style: NothingTypography.mono(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.white : Colors.black,
                   ),
+                  decoration: InputDecoration(
+                    prefixText: '฿ ',
+                    prefixStyle: NothingTypography.mono(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? const Color(0xFF888888) : const Color(0xFF555555),
+                    ),
+                    hintText: '0.00',
+                    hintStyle: NothingTypography.mono(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? Colors.white24 : Colors.black26,
+                    ),
+                    filled: true,
+                    fillColor: isDark ? const Color(0xFF1E1E1E) : const Color(0xFFF2F2F2),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(
+                        color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                        width: 0.8,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(
+                        color: isDark ? Colors.white : Colors.black,
+                        width: 1.2,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                // Quick preset chips
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [100, 300, 500, 1000].map((preset) {
+                    return InkWell(
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        textEditController.text = preset.toDouble().toStringAsFixed(2);
+                      },
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF222222) : const Color(0xFFEAEAEA),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                            width: 0.8,
+                          ),
+                        ),
+                        child: Text(
+                          '฿$preset',
+                          style: NothingTypography.mono(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? Colors.white : Colors.black,
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Get.back(),
+                        style: TextButton.styleFrom(
+                          foregroundColor: isDark ? const Color(0xFFB0B0B0) : const Color(0xFF666666),
+                        ),
+                        child: Text(
+                          'cancel'.tr.toUpperCase(),
+                          style: NothingTypography.grotesk(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: isDark ? Colors.white : Colors.black,
+                          foregroundColor: isDark ? Colors.black : Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          elevation: 0,
+                        ),
+                        onPressed: () {
+                          final val = double.tryParse(textEditController.text.trim().replaceAll(',', ''));
+                          if (val != null && val > 0) {
+                            setState(() {
+                              _currentAmount = val;
+                            });
+                            Get.back();
+                          } else {
+                            AppFeedback.showError(
+                              title: 'invalid_amount'.tr,
+                              message: 'invalid_amount_desc'.tr,
+                            );
+                          }
+                        },
+                        child: Text(
+                          'confirm'.tr.toUpperCase(),
+                          style: NothingTypography.grotesk(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.8,
+                            color: isDark ? Colors.black : Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -1099,11 +1321,11 @@ class _BankSlipSheetState extends State<BankSlipSheet> {
         maxHeight: MediaQuery.of(context).size.height * 0.88,
       ),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurface : AppColors.surface,
+        color: isDark ? const Color(0xFF101010) : Colors.white,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         border: Border.all(
-          color: isDark ? AppColors.darkBorder : AppColors.border,
-          width: 1,
+          color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.1),
+          width: 0.8,
         ),
       ),
       child: Column(
@@ -1113,10 +1335,10 @@ class _BankSlipSheetState extends State<BankSlipSheet> {
           Padding(
             padding: const EdgeInsets.only(top: 12),
             child: Container(
-              width: 40,
-              height: 4,
+              width: 36,
+              height: 3.5,
               decoration: BoxDecoration(
-                color: isDark ? Colors.white.withValues(alpha: 0.20) : Colors.black.withValues(alpha: 0.15),
+                color: isDark ? Colors.white24 : Colors.black26,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -1136,40 +1358,61 @@ class _BankSlipSheetState extends State<BankSlipSheet> {
                   // Bank Branding Header
                   Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: _getBankColor(widget.slip.bankName).withValues(alpha: 0.14),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: _getBankColor(widget.slip.bankName).withValues(alpha: 0.35),
-                            width: 1,
+                      Flexible(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF1A1A1A) : const Color(0xFFF0F0F0),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                              width: 0.8,
+                            ),
                           ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.verified_rounded, size: 14, color: _getBankColor(widget.slip.bankName)),
-                            const SizedBox(width: 5),
-                            Text(
-                              widget.slip.isKrungthai
-                                  ? (widget.slip.bankName.contains('เป๋าตัง') ? 'เป๋าตัง Verified' : 'Krungthai NEXT Verified')
-                                  : '${widget.slip.bankName} Verified',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              NothingLedIndicator(
+                                size: 5,
                                 color: _getBankColor(widget.slip.bankName),
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: Text(
+                                  widget.slip.isKrungthai
+                                      ? (widget.slip.bankName.contains('เป๋าตัง') ? 'เป๋าตัง VERIFIED' : 'KRUNGTHAI NEXT VERIFIED')
+                                      : '${widget.slip.bankName.toUpperCase()} VERIFIED',
+                                  style: NothingTypography.grotesk(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.4,
+                                    color: isDark ? Colors.white : Colors.black,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
+                      const SizedBox(width: 8),
                       const Spacer(),
                       IconButton(
-                        icon: const Icon(Icons.close_rounded),
+                        icon: const Icon(Icons.close_rounded, size: 20),
                         onPressed: () => Get.back(),
+                        style: IconButton.styleFrom(
+                          backgroundColor: isDark ? const Color(0xFF1C1C1C) : const Color(0xFFF0F0F0),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(
+                              color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                              width: 0.8,
+                            ),
+                          ),
+                        ),
                         padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
+                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                       ),
                     ],
                   ),
@@ -1188,25 +1431,13 @@ class _BankSlipSheetState extends State<BankSlipSheet> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(18),
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: isDark
-                                ? [
-                                    const Color(0xFF00A3E0).withValues(alpha: 0.20),
-                                    const Color(0xFF0072CE).withValues(alpha: 0.10),
-                                  ]
-                                : [
-                                    const Color(0xFF00A3E0).withValues(alpha: 0.12),
-                                    const Color(0xFF0072CE).withValues(alpha: 0.05),
-                                  ],
-                          ),
+                          color: isDark ? const Color(0xFF151515) : const Color(0xFFF5F5F5),
                           borderRadius: BorderRadius.circular(22),
                           border: Border.all(
                             color: _currentAmount <= 0
-                                ? const Color(0xFFEF4444)
-                                : const Color(0xFF00A3E0).withValues(alpha: 0.35),
-                            width: _currentAmount <= 0 ? 1.8 : 1.2,
+                                ? (isDark ? AppColors.nothingRedLight : AppColors.nothingRed)
+                                : (isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08)),
+                            width: _currentAmount <= 0 ? 1.4 : 0.8,
                           ),
                         ),
                         child: Column(
@@ -1217,33 +1448,42 @@ class _BankSlipSheetState extends State<BankSlipSheet> {
                               children: [
                                 Flexible(
                                   child: Text(
-                                    'transfer_success_amount'.tr,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: isDark ? const Color(0xFF7DD3FC) : const Color(0xFF0284C7),
+                                    'transfer_success_amount'.tr.toUpperCase(),
+                                    style: NothingTypography.grotesk(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: NothingTypography.safeSpacing('transfer_success_amount'.tr, 0.8),
+                                      color: isDark ? const Color(0xFFB0B0B0) : const Color(0xFF666666),
                                     ),
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                                 const SizedBox(width: 8),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF00A3E0).withValues(alpha: 0.15),
+                                    color: isDark ? const Color(0xFF222222) : const Color(0xFFEAEAEA),
                                     borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                                      width: 0.8,
+                                    ),
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Icon(Icons.edit_rounded, size: 11, color: Color(0xFF00A3E0)),
+                                      Icon(
+                                        Icons.edit_outlined,
+                                        size: 11,
+                                        color: isDark ? Colors.white : Colors.black,
+                                      ),
                                       const SizedBox(width: 3),
                                       Text(
-                                        'tap_to_edit'.tr,
-                                        style: const TextStyle(
-                                          fontSize: 10,
+                                        'tap_to_edit'.tr.toUpperCase(),
+                                        style: NothingTypography.grotesk(
+                                          fontSize: 9.5,
                                           fontWeight: FontWeight.w700,
-                                          color: Color(0xFF00A3E0),
+                                          color: isDark ? Colors.white : Colors.black,
                                         ),
                                       ),
                                     ],
@@ -1251,14 +1491,19 @@ class _BankSlipSheetState extends State<BankSlipSheet> {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 6),
-                            Text(
-                              _currentAmount > 0 ? '฿${currencyFormat.format(_currentAmount)}' : '฿0.00',
-                              style: TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: -0.6,
-                                color: _currentAmount > 0 ? const Color(0xFF00A3E0) : const Color(0xFFEF4444),
+                            const SizedBox(height: 8),
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                _currentAmount > 0 ? '฿${currencyFormat.format(_currentAmount)}' : '฿0.00',
+                                style: NothingTypography.mono(
+                                  fontSize: 34,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: -0.5,
+                                  color: _currentAmount > 0
+                                      ? (isDark ? Colors.white : Colors.black)
+                                      : (isDark ? AppColors.nothingRedLight : AppColors.nothingRed),
+                                ),
                               ),
                             ),
                             if (_currentAmount <= 0) ...[
@@ -1266,71 +1511,80 @@ class _BankSlipSheetState extends State<BankSlipSheet> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFEF4444).withValues(alpha: 0.12),
+                                  color: isDark ? const Color(0xFF2A0C0E) : const Color(0xFFFDE8E8),
                                   borderRadius: BorderRadius.circular(10),
                                   border: Border.all(
-                                    color: const Color(0xFFEF4444).withValues(alpha: 0.35),
-                                    width: 1,
+                                    color: isDark
+                                        ? AppColors.nothingRed.withValues(alpha: 0.6)
+                                        : AppColors.nothingRed.withValues(alpha: 0.3),
+                                    width: 0.8,
                                   ),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    const Icon(Icons.warning_amber_rounded, size: 14, color: Color(0xFFEF4444)),
+                                    Icon(
+                                      Icons.warning_amber_rounded,
+                                      size: 13,
+                                      color: isDark ? AppColors.nothingRedLight : AppColors.nothingRed,
+                                    ),
                                     const SizedBox(width: 4),
                                     Text(
                                       'amount_not_detected_hint'.tr,
-                                      style: const TextStyle(
-                                        fontSize: 11,
+                                      style: NothingTypography.grotesk(
+                                        fontSize: 10.5,
                                         fontWeight: FontWeight.w700,
-                                        color: Color(0xFFEF4444),
+                                        color: isDark ? AppColors.nothingRedLight : AppColors.nothingRed,
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
                             ],
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 10),
                             Material(
                               color: Colors.transparent,
                               child: InkWell(
                                 onTap: _pickDateTime,
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(10),
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                   decoration: BoxDecoration(
-                                    color: (isDark ? const Color(0xFF00A3E0) : const Color(0xFF0284C7)).withValues(alpha: 0.08),
-                                    borderRadius: BorderRadius.circular(8),
+                                    color: isDark ? const Color(0xFF202020) : const Color(0xFFE8E8E8),
+                                    borderRadius: BorderRadius.circular(10),
                                     border: Border.all(
-                                      color: (isDark ? const Color(0xFF00A3E0) : const Color(0xFF0284C7)).withValues(alpha: 0.20),
+                                      color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
                                       width: 0.8,
                                     ),
                                   ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.access_time_rounded,
-                                        size: 13,
-                                        color: isDark ? const Color(0xFF7DD3FC) : const Color(0xFF0284C7),
-                                      ),
-                                      const SizedBox(width: 5),
-                                      Text(
-                                        DateFormat('dd MMM yyyy, HH:mm น.').format(_selectedDate),
-                                        style: TextStyle(
-                                          fontSize: 11.5,
-                                          fontWeight: FontWeight.w600,
-                                          color: isDark ? const Color(0xFF7DD3FC) : const Color(0xFF0284C7),
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.access_time_rounded,
+                                          size: 13,
+                                          color: isDark ? const Color(0xFFB0B0B0) : const Color(0xFF555555),
                                         ),
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Icon(
-                                        Icons.edit_calendar_rounded,
-                                        size: 11,
-                                        color: isDark ? const Color(0xFF7DD3FC) : const Color(0xFF0284C7),
-                                      ),
-                                    ],
+                                        const SizedBox(width: 5),
+                                        Text(
+                                          DateFormat('dd MMM yyyy, HH:mm น.').format(_selectedDate),
+                                          style: NothingTypography.mono(
+                                            fontSize: 11.5,
+                                            fontWeight: FontWeight.w600,
+                                            color: isDark ? const Color(0xFFD4D4D8) : const Color(0xFF444444),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 5),
+                                        Icon(
+                                          Icons.edit_calendar_rounded,
+                                          size: 12,
+                                          color: isDark ? const Color(0xFFB0B0B0) : const Color(0xFF555555),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
@@ -1347,11 +1601,13 @@ class _BankSlipSheetState extends State<BankSlipSheet> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: AppColors.deficitText.withValues(alpha: 0.10),
+                        color: isDark ? const Color(0xFF2A0C0E) : const Color(0xFFFDE8E8),
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
-                          color: AppColors.deficitText.withValues(alpha: 0.40),
-                          width: 1,
+                          color: isDark
+                              ? AppColors.nothingRed.withValues(alpha: 0.6)
+                              : AppColors.nothingRed.withValues(alpha: 0.35),
+                          width: 0.8,
                         ),
                       ),
                       child: Column(
@@ -1359,30 +1615,35 @@ class _BankSlipSheetState extends State<BankSlipSheet> {
                         children: [
                           Row(
                             children: [
-                              const Icon(Icons.warning_amber_rounded, size: 18, color: AppColors.deficitText),
+                              NothingLedIndicator(
+                                size: 6,
+                                color: AppColors.nothingRed,
+                                isPulsing: true,
+                              ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  'duplicate_slip_warning'.tr,
-                                  style: const TextStyle(
-                                    fontSize: 12.5,
+                                  'duplicate_slip_warning'.tr.toUpperCase(),
+                                  style: NothingTypography.grotesk(
+                                    fontSize: 12,
                                     fontWeight: FontWeight.w700,
-                                    color: AppColors.deficitText,
+                                    letterSpacing: 0.3,
+                                    color: isDark ? AppColors.nothingRedLight : AppColors.nothingRed,
                                   ),
                                 ),
                               ),
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: AppColors.deficitText.withValues(alpha: 0.18),
+                                  color: (isDark ? AppColors.nothingRedLight : AppColors.nothingRed).withValues(alpha: 0.15),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
-                                  'duplicate_badge'.tr,
-                                  style: const TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.deficitText,
+                                  'duplicate_badge'.tr.toUpperCase(),
+                                  style: NothingTypography.grotesk(
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: isDark ? AppColors.nothingRedLight : AppColors.nothingRed,
                                   ),
                                 ),
                               ),
@@ -1390,17 +1651,17 @@ class _BankSlipSheetState extends State<BankSlipSheet> {
                           ),
                           const SizedBox(height: 6),
                           Padding(
-                            padding: const EdgeInsets.only(left: 26),
+                            padding: const EdgeInsets.only(left: 14),
                             child: Text(
                               'duplicate_detail_hint'.trParams({
                                 'title': duplicateItem.title,
                                 'date': DateFormat('d MMM, HH:mm น.').format(duplicateItem.date),
                                 'amount': currencyFormat.format(duplicateItem.amount),
                               }),
-                              style: TextStyle(
+                              style: NothingTypography.grotesk(
                                 fontSize: 11,
                                 height: 1.35,
-                                color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                                color: isDark ? const Color(0xFFD4D4D8) : const Color(0xFF555555),
                               ),
                             ),
                           ),
@@ -1415,11 +1676,11 @@ class _BankSlipSheetState extends State<BankSlipSheet> {
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary,
+                      color: isDark ? const Color(0xFF141414) : const Color(0xFFF5F5F5),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: isDark ? AppColors.darkBorder : AppColors.border,
-                        width: 1,
+                        color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                        width: 0.8,
                       ),
                     ),
                     child: Column(
@@ -1432,7 +1693,7 @@ class _BankSlipSheetState extends State<BankSlipSheet> {
                         if (widget.slip.memo != null)
                           _buildDetailRow('memo'.tr, widget.slip.memo!, isDark),
                         if (widget.slip.referenceNo != null)
-                          _buildDetailRow('reference_no'.tr, widget.slip.referenceNo!, isDark),
+                          _buildDetailRow('reference_no'.tr, widget.slip.referenceNo!, isDark, isMonospace: true),
                       ],
                     ),
                   ),
@@ -1441,11 +1702,12 @@ class _BankSlipSheetState extends State<BankSlipSheet> {
 
                   // Transaction Type Selector
                   Text(
-                    'transaction_type'.tr,
-                    style: TextStyle(
-                      fontSize: 13,
+                    'transaction_type'.tr.toUpperCase(),
+                    style: NothingTypography.grotesk(
+                      fontSize: 12,
                       fontWeight: FontWeight.w700,
-                      color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                      letterSpacing: NothingTypography.safeSpacing('transaction_type'.tr, 1.0),
+                      color: isDark ? const Color(0xFFB0B0B0) : const Color(0xFF666666),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -1456,7 +1718,7 @@ class _BankSlipSheetState extends State<BankSlipSheet> {
                           label: 'expense'.tr,
                           icon: Icons.arrow_upward_rounded,
                           type: TransactionType.expense,
-                          activeColor: const Color(0xFFFF5252),
+                          activeColor: AppColors.nothingRed,
                           isDark: isDark,
                         ),
                       ),
@@ -1466,7 +1728,7 @@ class _BankSlipSheetState extends State<BankSlipSheet> {
                           label: 'income'.tr,
                           icon: Icons.arrow_downward_rounded,
                           type: TransactionType.income,
-                          activeColor: const Color(0xFF00C853),
+                          activeColor: isDark ? AppColors.nothingGreen : const Color(0xFF008736),
                           isDark: isDark,
                         ),
                       ),
@@ -1474,9 +1736,9 @@ class _BankSlipSheetState extends State<BankSlipSheet> {
                       Expanded(
                         child: _buildTypeOption(
                           label: 'savings_dca'.tr,
-                          icon: Icons.savings_rounded,
+                          icon: Icons.savings_outlined,
                           type: TransactionType.savingsInvestment,
-                          activeColor: const Color(0xFF00A3E0),
+                          activeColor: isDark ? Colors.white : Colors.black,
                           isDark: isDark,
                         ),
                       ),
@@ -1487,29 +1749,38 @@ class _BankSlipSheetState extends State<BankSlipSheet> {
 
                   // Editable Title Field
                   Text(
-                    'transaction_title_label'.tr,
-                    style: TextStyle(
-                      fontSize: 13,
+                    'transaction_title_label'.tr.toUpperCase(),
+                    style: NothingTypography.grotesk(
+                      fontSize: 12,
                       fontWeight: FontWeight.w700,
-                      color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                      letterSpacing: NothingTypography.safeSpacing('transaction_title_label'.tr, 1.0),
+                      color: isDark ? const Color(0xFFB0B0B0) : const Color(0xFF666666),
                     ),
                   ),
                   const SizedBox(height: 6),
                   TextField(
                     controller: _titleController,
-                    style: TextStyle(
-                      fontSize: 14,
+                    style: NothingTypography.grotesk(
+                      fontSize: 13.5,
                       fontWeight: FontWeight.w600,
-                      color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                      color: isDark ? Colors.white : Colors.black,
                     ),
                     decoration: InputDecoration(
                       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                       filled: true,
-                      fillColor: isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary,
+                      fillColor: isDark ? const Color(0xFF161616) : const Color(0xFFF5F5F5),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14),
                         borderSide: BorderSide(
-                          color: isDark ? AppColors.darkBorder : AppColors.border,
+                          color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                          width: 0.8,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(
+                          color: isDark ? Colors.white : Colors.black,
+                          width: 1.2,
                         ),
                       ),
                     ),
@@ -1522,16 +1793,17 @@ class _BankSlipSheetState extends State<BankSlipSheet> {
                     children: [
                       Icon(
                         Icons.notes_rounded,
-                        size: 15,
-                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                        size: 14,
+                        color: isDark ? const Color(0xFFB0B0B0) : const Color(0xFF666666),
                       ),
                       const SizedBox(width: 5),
                       Text(
-                        'note'.tr,
-                        style: TextStyle(
-                          fontSize: 13,
+                        'note'.tr.toUpperCase(),
+                        style: NothingTypography.grotesk(
+                          fontSize: 12,
                           fontWeight: FontWeight.w700,
-                          color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                          letterSpacing: NothingTypography.safeSpacing('note'.tr, 1.0),
+                          color: isDark ? const Color(0xFFB0B0B0) : const Color(0xFF666666),
                         ),
                       ),
                     ],
@@ -1541,24 +1813,32 @@ class _BankSlipSheetState extends State<BankSlipSheet> {
                     controller: _noteController,
                     maxLines: 2,
                     minLines: 1,
-                    style: TextStyle(
-                      fontSize: 13.5,
+                    style: NothingTypography.grotesk(
+                      fontSize: 13,
                       fontWeight: FontWeight.w500,
-                      color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                      color: isDark ? Colors.white : Colors.black,
                     ),
                     decoration: InputDecoration(
                       hintText: 'note_hint'.tr,
-                      hintStyle: TextStyle(
-                        fontSize: 12.5,
+                      hintStyle: NothingTypography.grotesk(
+                        fontSize: 12,
                         color: isDark ? Colors.white38 : Colors.black38,
                       ),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                       filled: true,
-                      fillColor: isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary,
+                      fillColor: isDark ? const Color(0xFF161616) : const Color(0xFFF5F5F5),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14),
                         borderSide: BorderSide(
-                          color: isDark ? AppColors.darkBorder : AppColors.border,
+                          color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                          width: 0.8,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(
+                          color: isDark ? Colors.white : Colors.black,
+                          width: 1.2,
                         ),
                       ),
                     ),
@@ -1571,15 +1851,17 @@ class _BankSlipSheetState extends State<BankSlipSheet> {
                     children: [
                       Expanded(
                         child: Text(
-                          _selectedType == TransactionType.income
-                              ? 'category_income'.tr
-                              : _selectedType == TransactionType.savingsInvestment
-                                  ? 'category_savings'.tr
-                                  : 'category_expense'.tr,
-                          style: TextStyle(
-                            fontSize: 13,
+                          (_selectedType == TransactionType.income
+                                  ? 'category_income'.tr
+                                  : _selectedType == TransactionType.savingsInvestment
+                                      ? 'category_savings'.tr
+                                      : 'category_expense'.tr)
+                              .toUpperCase(),
+                          style: NothingTypography.grotesk(
+                            fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                            letterSpacing: 0.8,
+                            color: isDark ? const Color(0xFFB0B0B0) : const Color(0xFF666666),
                           ),
                         ),
                       ),
@@ -1591,18 +1873,17 @@ class _BankSlipSheetState extends State<BankSlipSheet> {
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        Icon(
-                          Icons.auto_awesome_rounded,
-                          size: 13,
-                          color: const Color(0xFF00A3E0).withValues(alpha: 0.8),
+                        NothingLedIndicator(
+                          size: 4,
+                          color: isDark ? Colors.white54 : Colors.black45,
                         ),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: 5),
                         Expanded(
                           child: Text(
                             'recommended_from'.trParams({'reason': widget.slip.predictionReason}),
-                            style: TextStyle(
+                            style: NothingTypography.grotesk(
                               fontSize: 11,
-                              color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                              color: isDark ? const Color(0xFFB0B0B0) : const Color(0xFF666666),
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -1620,20 +1901,25 @@ class _BankSlipSheetState extends State<BankSlipSheet> {
                       return ChoiceChip(
                         label: Text(cat.tr),
                         selected: isSelected,
-                        selectedColor: const Color(0xFF00A3E0).withValues(alpha: 0.18),
-                        side: BorderSide(
-                          color: isSelected
-                              ? const Color(0xFF00A3E0)
-                              : (isDark ? AppColors.darkBorder : AppColors.border),
-                          width: isSelected ? 1.4 : 0.8,
+                        selectedColor: isDark ? Colors.white : Colors.black,
+                        backgroundColor: isDark ? const Color(0xFF161616) : const Color(0xFFEEEEEE),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          side: BorderSide(
+                            color: isSelected
+                                ? (isDark ? Colors.white : Colors.black)
+                                : (isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08)),
+                            width: isSelected ? 1.2 : 0.8,
+                          ),
                         ),
-                        labelStyle: TextStyle(
+                        labelStyle: NothingTypography.grotesk(
                           fontSize: 11.5,
-                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                          fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
                           color: isSelected
-                              ? const Color(0xFF00A3E0)
-                              : (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
+                              ? (isDark ? Colors.black : Colors.white)
+                              : (isDark ? const Color(0xFFD4D4D8) : const Color(0xFF444444)),
                         ),
+                        showCheckmark: false,
                         onSelected: (val) {
                           if (val) setState(() => _selectedCategory = cat);
                         },
@@ -1651,15 +1937,36 @@ class _BankSlipSheetState extends State<BankSlipSheet> {
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         Text(
-                          '${'cost_nature'.tr}: ',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                          '${'cost_nature'.tr.toUpperCase()}: ',
+                          style: NothingTypography.grotesk(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.5,
+                            color: isDark ? const Color(0xFFB0B0B0) : const Color(0xFF666666),
                           ),
                         ),
                         ChoiceChip(
                           label: Text('variable_cost'.tr),
                           selected: _selectedCostNature == CostNature.variable,
+                          selectedColor: isDark ? Colors.white : Colors.black,
+                          backgroundColor: isDark ? const Color(0xFF161616) : const Color(0xFFEEEEEE),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            side: BorderSide(
+                              color: _selectedCostNature == CostNature.variable
+                                  ? (isDark ? Colors.white : Colors.black)
+                                  : (isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08)),
+                              width: 0.8,
+                            ),
+                          ),
+                          labelStyle: NothingTypography.grotesk(
+                            fontSize: 11,
+                            fontWeight: _selectedCostNature == CostNature.variable ? FontWeight.w800 : FontWeight.w500,
+                            color: _selectedCostNature == CostNature.variable
+                                ? (isDark ? Colors.black : Colors.white)
+                                : (isDark ? const Color(0xFFD4D4D8) : const Color(0xFF444444)),
+                          ),
+                          showCheckmark: false,
                           onSelected: (val) {
                             if (val) setState(() => _selectedCostNature = CostNature.variable);
                           },
@@ -1667,6 +1974,25 @@ class _BankSlipSheetState extends State<BankSlipSheet> {
                         ChoiceChip(
                           label: Text('fixed_cost'.tr),
                           selected: _selectedCostNature == CostNature.fixed,
+                          selectedColor: isDark ? Colors.white : Colors.black,
+                          backgroundColor: isDark ? const Color(0xFF161616) : const Color(0xFFEEEEEE),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            side: BorderSide(
+                              color: _selectedCostNature == CostNature.fixed
+                                  ? (isDark ? Colors.white : Colors.black)
+                                  : (isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08)),
+                              width: 0.8,
+                            ),
+                          ),
+                          labelStyle: NothingTypography.grotesk(
+                            fontSize: 11,
+                            fontWeight: _selectedCostNature == CostNature.fixed ? FontWeight.w800 : FontWeight.w500,
+                            color: _selectedCostNature == CostNature.fixed
+                                ? (isDark ? Colors.black : Colors.white)
+                                : (isDark ? const Color(0xFFD4D4D8) : const Color(0xFF444444)),
+                          ),
+                          showCheckmark: false,
                           onSelected: (val) {
                             if (val) setState(() => _selectedCostNature = CostNature.fixed);
                           },
@@ -1680,12 +2006,12 @@ class _BankSlipSheetState extends State<BankSlipSheet> {
                   // Save Button
                   SizedBox(
                     width: double.infinity,
-                    height: 48,
+                    height: 50,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF00A3E0),
+                        backgroundColor: AppColors.nothingRed,
                         foregroundColor: Colors.white,
-                        elevation: 4,
+                        elevation: 0,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       ),
                       onPressed: _isSaving ? null : _submit,
@@ -1696,8 +2022,13 @@ class _BankSlipSheetState extends State<BankSlipSheet> {
                               child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                             )
                           : Text(
-                              'save_slip_transaction'.tr,
-                              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+                              'save_slip_transaction'.tr.toUpperCase(),
+                              style: NothingTypography.grotesk(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: NothingTypography.safeSpacing('save_slip_transaction'.tr, 1.2),
+                                color: Colors.white,
+                              ),
                             ),
                     ),
                   ),
@@ -1710,30 +2041,38 @@ class _BankSlipSheetState extends State<BankSlipSheet> {
     );
   }
 
-  Widget _buildDetailRow(String label, String value, bool isDark) {
+  Widget _buildDetailRow(String label, String value, bool isDark, {bool isMonospace = false}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
+      padding: const EdgeInsets.symmetric(vertical: 3.5),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
             width: 85,
             child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+              label.toUpperCase(),
+              style: NothingTypography.grotesk(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.3,
+                color: isDark ? const Color(0xFF888888) : const Color(0xFF666666),
               ),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-              ),
+              style: isMonospace
+                  ? NothingTypography.mono(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white : Colors.black,
+                    )
+                  : NothingTypography.grotesk(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
             ),
           ),
         ],

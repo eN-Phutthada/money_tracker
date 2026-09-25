@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -8,6 +7,7 @@ import '../../../data/models/transaction_model.dart';
 import '../../../data/services/bank_slip_service.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_popup_decorations.dart';
+import '../../../widgets/nothing_ui_components.dart';
 
 /// หน้าต่างพรีวิวและตรวจสอบสลิปแบบกลุ่ม (Krungthai Batch Slip Confirmation Sheet)
 /// รองรับการแก้ไขข้อมูลทุกรายการ (ชื่อ, ยอดเงิน, หมวดหมู่, วันเวลา, บันทึกช่วยจำ) ก่อนบันทึก
@@ -43,12 +43,9 @@ class BankBatchSlipSheet extends StatefulWidget {
       );
     } else {
       Get.bottomSheet(
-        BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-          child: BankBatchSlipSheet(
-            initialSlips: slips,
-            duplicateSlips: duplicates,
-          ),
+        BankBatchSlipSheet(
+          initialSlips: slips,
+          duplicateSlips: duplicates,
         ),
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
@@ -219,24 +216,28 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
       );
     } else {
       Get.bottomSheet(
-        BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-          child: Container(
-            constraints: BoxConstraints(
+        Container(
+          constraints: BoxConstraints(
               maxHeight: MediaQuery.of(context).size.height * 0.85,
             ),
             decoration: BoxDecoration(
-              color: isDark ? AppColors.darkSurface : AppColors.surface,
+              color: isDark ? const Color(0xFF101010) : Colors.white,
               borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
               border: Border.all(
-                color: isDark ? AppColors.darkBorder : AppColors.border,
-                width: 1,
+                color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.1),
+                width: 0.8,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.50 : 0.10),
+                  blurRadius: 24,
+                  offset: const Offset(0, -4),
+                ),
+              ],
             ),
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
             child: editorWidget,
           ),
-        ),
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
       );
@@ -297,12 +298,19 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
         maxHeight: MediaQuery.of(context).size.height * 0.88,
       ),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurface : AppColors.surface,
+        color: isDark ? const Color(0xFF101010) : Colors.white,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         border: Border.all(
-          color: isDark ? AppColors.darkBorder : AppColors.border,
-          width: 1,
+          color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.1),
+          width: 0.8,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.50 : 0.10),
+            blurRadius: 24,
+            offset: const Offset(0, -4),
+          ),
+        ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -311,10 +319,10 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
           Padding(
             padding: const EdgeInsets.only(top: 12),
             child: Container(
-              width: 40,
-              height: 4,
+              width: 36,
+              height: 3.5,
               decoration: BoxDecoration(
-                color: isDark ? Colors.white.withValues(alpha: 0.20) : Colors.black.withValues(alpha: 0.15),
+                color: isDark ? Colors.white24 : Colors.black26,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -329,12 +337,20 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
                   width: 42,
                   height: 42,
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF00A3E0), Color(0xFF0072CE)],
+                    color: isDark ? const Color(0xFF1C1C1C) : const Color(0xFFF0F0F0),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                      width: 0.8,
                     ),
-                    borderRadius: BorderRadius.circular(13),
                   ),
-                  child: const Icon(Icons.receipt_long_rounded, color: Colors.white, size: 22),
+                  child: Center(
+                    child: Icon(
+                      Icons.receipt_long_rounded,
+                      color: isDark ? Colors.white : Colors.black,
+                      size: 22,
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -345,29 +361,47 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
                         children: [
                           Flexible(
                             child: Text(
-                              'batch_review_title'.tr,
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w800,
-                                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                              'batch_review_title'.tr.toUpperCase(),
+                              style: NothingTypography.grotesk(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: NothingTypography.safeSpacing(
+                                  'batch_review_title'.tr,
+                                  1.0,
+                                ),
+                                color: isDark ? Colors.white : Colors.black,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           const SizedBox(width: 8),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF00A3E0).withValues(alpha: 0.15),
+                              color: isDark ? const Color(0xFF1C1C1C) : const Color(0xFFF0F0F0),
                               borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              'item_count_label'.trParams({'count': '${_items.length}'}),
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF00A3E0),
+                              border: Border.all(
+                                color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                                width: 0.8,
                               ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const NothingLedIndicator(
+                                  size: 5,
+                                  color: AppColors.nothingRed,
+                                ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  'item_count_label'.trParams({'count': '${_items.length}'}),
+                                  style: NothingTypography.mono(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: isDark ? Colors.white : Colors.black,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
@@ -375,23 +409,42 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
                       const SizedBox(height: 2),
                       Text(
                         'batch_review_desc'.tr,
-                        style: TextStyle(
+                        style: NothingTypography.grotesk(
                           fontSize: 11.5,
-                          color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                          fontWeight: FontWeight.w500,
+                          color: isDark ? const Color(0xFFB0B0B0) : const Color(0xFF666666),
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close_rounded),
+                  icon: const Icon(Icons.close_rounded, size: 20),
                   onPressed: () => Get.back(),
+                  style: IconButton.styleFrom(
+                    backgroundColor: isDark ? const Color(0xFF1C1C1C) : const Color(0xFFF0F0F0),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(
+                        color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                        width: 0.8,
+                      ),
+                    ),
+                  ),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                 ),
               ],
             ),
           ),
 
-          const Divider(height: 1, thickness: 0.6),
+          Divider(
+            height: 1,
+            thickness: 0.8,
+            color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+          ),
 
           // Slip List
           Flexible(
@@ -410,10 +463,11 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
           Container(
             padding: EdgeInsets.fromLTRB(16, 12, 16, MediaQuery.of(context).viewInsets.bottom + 16),
             decoration: BoxDecoration(
-              color: isDark ? AppColors.darkSurfaceSecondary.withValues(alpha: 0.5) : AppColors.surfaceSecondary.withValues(alpha: 0.5),
+              color: isDark ? const Color(0xFF101010) : Colors.white,
               border: Border(
                 top: BorderSide(
-                  color: isDark ? AppColors.darkBorder.withValues(alpha: 0.5) : AppColors.border.withValues(alpha: 0.5),
+                  color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                  width: 0.8,
                 ),
               ),
             ),
@@ -428,19 +482,26 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
                         'batch_selected_summary'.trParams({
                           'selected': '$_selectedCount',
                           'total': '${_items.length}',
-                        }),
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                        }).toUpperCase(),
+                        style: NothingTypography.grotesk(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.5,
+                          color: isDark ? const Color(0xFF888888) : const Color(0xFF777777),
                         ),
                       ),
                       const SizedBox(height: 2),
-                      Text(
-                        '฿${currencyFormat.format(_selectedTotalAmount)}',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                          color: AppColors.deficitText,
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          '฿${currencyFormat.format(_selectedTotalAmount)}',
+                          style: NothingTypography.mono(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.5,
+                            color: isDark ? Colors.white : Colors.black,
+                          ),
                         ),
                       ),
                     ],
@@ -448,11 +509,11 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF00A3E0),
+                    backgroundColor: AppColors.nothingRed,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    elevation: 3,
+                    elevation: 0,
                   ),
                   onPressed: _selectedCount > 0 && !_isSaving ? _saveSelectedSlips : null,
                   child: _isSaving
@@ -462,8 +523,13 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                         )
                       : Text(
-                          'save_selected_count'.trParams({'count': '$_selectedCount'}),
-                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5),
+                          'save_selected_count'.trParams({'count': '$_selectedCount'}).toUpperCase(),
+                          style: NothingTypography.grotesk(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                            letterSpacing: 0.6,
+                            color: Colors.white,
+                          ),
                         ),
                 ),
               ],
@@ -480,17 +546,15 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary,
-        borderRadius: BorderRadius.circular(16),
+        color: isDark ? const Color(0xFF151515) : const Color(0xFFF7F7F7),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: item.isDuplicate
-              ? AppColors.deficitText.withValues(alpha: 0.45)
+              ? AppColors.nothingRed.withValues(alpha: 0.6)
               : item.isSelected
-                  ? const Color(0xFF00A3E0).withValues(alpha: 0.5)
-                  : isDark
-                      ? AppColors.darkBorder
-                      : AppColors.border,
-          width: item.isSelected || item.isDuplicate ? 1.2 : 0.8,
+                  ? (isDark ? Colors.white.withValues(alpha: 0.35) : Colors.black.withValues(alpha: 0.25))
+                  : (isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08)),
+          width: item.isDuplicate ? 1.0 : 0.8,
         ),
       ),
       child: Column(
@@ -498,16 +562,24 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
         children: [
           Row(
             children: [
-              // Checkbox
-              Checkbox(
-                value: item.isSelected,
-                activeColor: const Color(0xFF00A3E0),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                onChanged: (val) {
-                  setState(() {
-                    item.isSelected = val ?? false;
-                  });
-                },
+              // Checkbox (Nothing OS squircle styling)
+              Transform.scale(
+                scale: 0.95,
+                child: Checkbox(
+                  value: item.isSelected,
+                  activeColor: isDark ? Colors.white : Colors.black,
+                  checkColor: isDark ? Colors.black : Colors.white,
+                  side: BorderSide(
+                    color: isDark ? Colors.white38 : Colors.black38,
+                    width: 1.2,
+                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+                  onChanged: (val) {
+                    setState(() {
+                      item.isSelected = val ?? false;
+                    });
+                  },
+                ),
               ),
               const SizedBox(width: 4),
 
@@ -515,7 +587,7 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
               Expanded(
                 child: InkWell(
                   onTap: () => _openItemEditor(item),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(8),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 2),
                     child: Column(
@@ -528,10 +600,10 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
                                 item.title,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
+                                style: NothingTypography.grotesk(
                                   fontSize: 13.5,
                                   fontWeight: FontWeight.w700,
-                                  color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                                  color: isDark ? Colors.white : Colors.black,
                                 ),
                               ),
                             ),
@@ -539,7 +611,7 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
                             Icon(
                               Icons.edit_outlined,
                               size: 13,
-                              color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                              color: isDark ? const Color(0xFF888888) : const Color(0xFF777777),
                             ),
                           ],
                         ),
@@ -553,18 +625,18 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
                               Flexible(
                                 child: Text(
                                   '${item.slip.bankName} • ${DateFormat('d MMM yyyy, HH:mm น.').format(item.date)}',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                                  style: NothingTypography.mono(
+                                    fontSize: 10.5,
+                                    color: isDark ? const Color(0xFF888888) : const Color(0xFF777777),
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                               const SizedBox(width: 4),
-                              const Icon(
+                              Icon(
                                 Icons.access_time_rounded,
                                 size: 11,
-                                color: Color(0xFF00A3E0),
+                                color: isDark ? const Color(0xFF888888) : const Color(0xFF777777),
                               ),
                             ],
                           ),
@@ -576,7 +648,7 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
                               Icon(
                                 Icons.notes_rounded,
                                 size: 11,
-                                color: isDark ? AppColors.darkTextSecondary.withValues(alpha: 0.75) : AppColors.textSecondary,
+                                color: isDark ? const Color(0xFF888888) : const Color(0xFF777777),
                               ),
                               const SizedBox(width: 3),
                               Expanded(
@@ -584,10 +656,10 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
                                   item.memo!,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
+                                  style: NothingTypography.grotesk(
                                     fontSize: 10.5,
                                     fontStyle: FontStyle.italic,
-                                    color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                                    color: isDark ? const Color(0xFF888888) : const Color(0xFF777777),
                                   ),
                                 ),
                               ),
@@ -608,10 +680,11 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
                   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                   child: Text(
                     '${isIncome ? '+' : '-'}฿${currencyFormat.format(item.amount)}',
-                    style: TextStyle(
+                    style: NothingTypography.mono(
                       fontSize: 14.5,
-                      fontWeight: FontWeight.w800,
-                      color: isIncome ? AppColors.surplusText : AppColors.deficitText,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.3,
+                      color: isIncome ? AppColors.surplusText : (isDark ? Colors.white : Colors.black),
                     ),
                   ),
                 ),
@@ -621,91 +694,120 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
 
           // Action row: Category, Type, Edit button, Delete button
           Padding(
-            padding: const EdgeInsets.only(left: 44, top: 6),
+            padding: const EdgeInsets.only(left: 36, top: 6),
             child: Row(
               children: [
                 if (item.isDuplicate) ...[
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
                     decoration: BoxDecoration(
-                      color: AppColors.deficitText.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      'duplicate_badge'.tr,
-                      style: const TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.deficitText,
+                      color: isDark ? const Color(0xFF280E10) : const Color(0xFFFDE8E8),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: isDark
+                            ? AppColors.nothingRed.withValues(alpha: 0.6)
+                            : AppColors.nothingRed.withValues(alpha: 0.3),
+                        width: 0.8,
                       ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const NothingLedIndicator(
+                          size: 4.5,
+                          color: AppColors.nothingRed,
+                          isPulsing: true,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'duplicate_badge'.tr.toUpperCase(),
+                          style: NothingTypography.grotesk(
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.3,
+                            color: isDark ? AppColors.nothingRedLight : AppColors.nothingRed,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(width: 6),
                 ],
 
                 // Category selector chip
-                InkWell(
-                  onTap: () => _showCategoryPicker(context, item),
-                  borderRadius: BorderRadius.circular(8),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: isDark ? AppColors.darkBorder : AppColors.border,
-                        width: 0.8,
+                Flexible(
+                  child: InkWell(
+                    onTap: () => _showCategoryPicker(context, item),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF202020) : const Color(0xFFEFEFEF),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                          width: 0.8,
+                        ),
                       ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          item.category.tr,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              item.category.tr,
+                              style: NothingTypography.grotesk(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: isDark ? Colors.white : Colors.black,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 3),
-                        Icon(
-                          Icons.arrow_drop_down_rounded,
-                          size: 15,
-                          color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                        ),
-                      ],
+                          const SizedBox(width: 3),
+                          Icon(
+                            Icons.arrow_drop_down_rounded,
+                            size: 15,
+                            color: isDark ? const Color(0xFF888888) : const Color(0xFF777777),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
 
-                const Spacer(),
+                const SizedBox(width: 6),
 
-                // Edit Button (ปุ่มแก้ไขรายการโดยตรง)
+                // Edit Button
                 InkWell(
                   onTap: () => _openItemEditor(item),
                   borderRadius: BorderRadius.circular(8),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF00A3E0).withValues(alpha: 0.12),
+                      color: isDark ? const Color(0xFF202020) : const Color(0xFFEFEFEF),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: const Color(0xFF00A3E0).withValues(alpha: 0.3),
+                        color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
                         width: 0.8,
                       ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.edit_rounded, size: 12, color: Color(0xFF00A3E0)),
+                        Icon(
+                          Icons.edit_outlined,
+                          size: 12,
+                          color: isDark ? Colors.white : Colors.black,
+                        ),
                         const SizedBox(width: 4),
                         Text(
-                          'edit'.tr,
-                          style: const TextStyle(
-                            fontSize: 11,
+                          'edit'.tr.toUpperCase(),
+                          style: NothingTypography.grotesk(
+                            fontSize: 10.5,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF00A3E0),
+                            letterSpacing: 0.3,
+                            color: isDark ? Colors.white : Colors.black,
                           ),
                         ),
                       ],
@@ -714,16 +816,16 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
                 ),
                 const SizedBox(width: 4),
 
-                // Delete Button (ลบสลิปนี้ออกจากชุด)
+                // Delete Button
                 IconButton(
                   icon: Icon(
                     Icons.delete_outline_rounded,
-                    size: 18,
-                    color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                    size: 17,
+                    color: isDark ? const Color(0xFF888888) : const Color(0xFF777777),
                   ),
                   visualDensity: VisualDensity.compact,
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+                  constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
                   onPressed: () {
                     HapticFeedback.selectionClick();
                     setState(() {
@@ -754,32 +856,78 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'select_category'.tr,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w800,
-                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'select_category'.tr.toUpperCase(),
+                    style: NothingTypography.grotesk(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded, size: 18),
+                  onPressed: () => Get.back(),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                  style: IconButton.styleFrom(
+                    backgroundColor: isDark ? const Color(0xFF1C1C1C) : const Color(0xFFF0F0F0),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      side: BorderSide(
+                        color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                        width: 0.8,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             Wrap(
               spacing: 8,
               runSpacing: 8,
               children: _availableCategories.map((cat) {
                 final isSelected = item.category == cat;
-                return ChoiceChip(
-                  label: Text(cat.tr),
-                  selected: isSelected,
-                  selectedColor: const Color(0xFF00A3E0).withValues(alpha: 0.22),
-                  onSelected: (selected) {
-                    if (selected) {
-                      setState(() {
-                        item.category = cat;
-                      });
-                      Get.back();
-                    }
+                return InkWell(
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    setState(() {
+                      item.category = cat;
+                    });
+                    Get.back();
                   },
+                  borderRadius: BorderRadius.circular(12),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? (isDark ? Colors.white : Colors.black)
+                          : (isDark ? const Color(0xFF1E1E1E) : const Color(0xFFEEEEEE)),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isSelected
+                            ? (isDark ? Colors.white : Colors.black)
+                            : (isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08)),
+                        width: 0.8,
+                      ),
+                    ),
+                    child: Text(
+                      cat.tr,
+                      style: NothingTypography.grotesk(
+                        fontSize: 12,
+                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                        color: isSelected
+                            ? (isDark ? Colors.black : Colors.white)
+                            : (isDark ? const Color(0xFFD0D0D0) : const Color(0xFF444444)),
+                      ),
+                    ),
+                  ),
                 );
               }).toList(),
             ),
@@ -907,77 +1055,190 @@ class _BatchItemEditDialogState extends State<_BatchItemEditDialog> {
           Row(
             children: [
               Container(
-                width: 36,
-                height: 36,
+                width: 38,
+                height: 38,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF00A3E0).withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(10),
+                  color: isDark ? const Color(0xFF1C1C1C) : const Color(0xFFF0F0F0),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                    width: 0.8,
+                  ),
                 ),
-                child: const Icon(Icons.edit_note_rounded, color: Color(0xFF00A3E0), size: 20),
+                child: Center(
+                  child: Icon(
+                    Icons.edit_note_rounded,
+                    color: isDark ? Colors.white : Colors.black,
+                    size: 20,
+                  ),
+                ),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  '${'edit'.tr} (${widget.item.slip.bankName})',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                  '${'edit'.tr} (${widget.item.slip.bankName})'.toUpperCase(),
+                  style: NothingTypography.grotesk(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.white : Colors.black,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.close_rounded),
+                icon: const Icon(Icons.close_rounded, size: 18),
                 onPressed: () => Get.back(),
                 visualDensity: VisualDensity.compact,
+                style: IconButton.styleFrom(
+                  backgroundColor: isDark ? const Color(0xFF1C1C1C) : const Color(0xFFF0F0F0),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    side: BorderSide(
+                      color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                      width: 0.8,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Transaction Type (Expense / Income) - Nothing OS Segmented Pills
+          Row(
+            children: [
+              Expanded(
+                child: InkWell(
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    setState(() => _selectedType = TransactionType.expense);
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    decoration: BoxDecoration(
+                      color: _selectedType == TransactionType.expense
+                          ? (isDark ? const Color(0xFF280E10) : const Color(0xFFFDE8E8))
+                          : (isDark ? const Color(0xFF181818) : const Color(0xFFF2F2F2)),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: _selectedType == TransactionType.expense
+                            ? AppColors.nothingRed
+                            : (isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08)),
+                        width: 0.8,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (_selectedType == TransactionType.expense) ...[
+                          const NothingLedIndicator(color: AppColors.nothingRed, size: 5),
+                          const SizedBox(width: 6),
+                        ],
+                        Text(
+                          'expense'.tr.toUpperCase(),
+                          style: NothingTypography.grotesk(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.4,
+                            color: _selectedType == TransactionType.expense
+                                ? (isDark ? AppColors.nothingRedLight : AppColors.nothingRed)
+                                : (isDark ? const Color(0xFF888888) : const Color(0xFF666666)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: InkWell(
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    setState(() => _selectedType = TransactionType.income);
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    decoration: BoxDecoration(
+                      color: _selectedType == TransactionType.income
+                          ? (isDark ? const Color(0xFF0E2818) : const Color(0xFFE8FDF0))
+                          : (isDark ? const Color(0xFF181818) : const Color(0xFFF2F2F2)),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: _selectedType == TransactionType.income
+                            ? AppColors.surplusText
+                            : (isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08)),
+                        width: 0.8,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (_selectedType == TransactionType.income) ...[
+                          const NothingLedIndicator(color: AppColors.surplusText, size: 5),
+                          const SizedBox(width: 6),
+                        ],
+                        Text(
+                          'income'.tr.toUpperCase(),
+                          style: NothingTypography.grotesk(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.4,
+                            color: _selectedType == TransactionType.income
+                                ? AppColors.surplusText
+                                : (isDark ? const Color(0xFF888888) : const Color(0xFF666666)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
           const SizedBox(height: 14),
 
-          // Transaction Type (Expense / Income)
-          Row(
-            children: [
-              Expanded(
-                child: ChoiceChip(
-                  label: Center(
-                    child: Text('expense'.tr, style: const TextStyle(fontWeight: FontWeight.w700)),
-                  ),
-                  selected: _selectedType == TransactionType.expense,
-                  selectedColor: AppColors.deficitText.withValues(alpha: 0.2),
-                  onSelected: (val) {
-                    if (val) setState(() => _selectedType = TransactionType.expense);
-                  },
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: ChoiceChip(
-                  label: Center(
-                    child: Text('income'.tr, style: const TextStyle(fontWeight: FontWeight.w700)),
-                  ),
-                  selected: _selectedType == TransactionType.income,
-                  selectedColor: AppColors.surplusText.withValues(alpha: 0.2),
-                  onSelected: (val) {
-                    if (val) setState(() => _selectedType = TransactionType.income);
-                  },
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
           // Title Input
           TextField(
             controller: _titleController,
+            style: NothingTypography.grotesk(
+              fontSize: 13.5,
+              fontWeight: FontWeight.w600,
+              color: isDark ? Colors.white : Colors.black,
+            ),
             decoration: InputDecoration(
-              labelText: 'transaction_title'.tr,
+              labelText: 'transaction_title'.tr.toUpperCase(),
+              labelStyle: NothingTypography.grotesk(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: isDark ? const Color(0xFF888888) : const Color(0xFF777777),
+              ),
               filled: true,
-              fillColor: isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary,
+              fillColor: isDark ? const Color(0xFF181818) : const Color(0xFFF5F5F5),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: isDark ? AppColors.darkBorder : AppColors.border),
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(
+                  color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                  width: 0.8,
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(
+                  color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                  width: 0.8,
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(
+                  color: isDark ? Colors.white54 : Colors.black54,
+                  width: 1.0,
+                ),
               ),
               contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             ),
@@ -988,14 +1249,46 @@ class _BatchItemEditDialogState extends State<_BatchItemEditDialog> {
           TextField(
             controller: _amountController,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            style: NothingTypography.mono(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: isDark ? Colors.white : Colors.black,
+            ),
             decoration: InputDecoration(
-              labelText: 'amount'.tr,
+              labelText: 'amount'.tr.toUpperCase(),
+              labelStyle: NothingTypography.grotesk(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: isDark ? const Color(0xFF888888) : const Color(0xFF777777),
+              ),
               prefixText: '฿ ',
+              prefixStyle: NothingTypography.mono(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: isDark ? Colors.white70 : Colors.black87,
+              ),
               filled: true,
-              fillColor: isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary,
+              fillColor: isDark ? const Color(0xFF181818) : const Color(0xFFF5F5F5),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: isDark ? AppColors.darkBorder : AppColors.border),
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(
+                  color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                  width: 0.8,
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(
+                  color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                  width: 0.8,
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(
+                  color: isDark ? Colors.white54 : Colors.black54,
+                  width: 1.0,
+                ),
               ),
               contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             ),
@@ -1005,72 +1298,136 @@ class _BatchItemEditDialogState extends State<_BatchItemEditDialog> {
           // Date & Time Picker Tile
           InkWell(
             onTap: _pickDateTime,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(14),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
-                color: isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.border),
+                color: isDark ? const Color(0xFF181818) : const Color(0xFFF5F5F5),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                  width: 0.8,
+                ),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.calendar_today_rounded, size: 16, color: Color(0xFF00A3E0)),
+                  Icon(
+                    Icons.calendar_today_outlined,
+                    size: 16,
+                    color: isDark ? Colors.white70 : Colors.black87,
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     DateFormat('d MMMM yyyy, HH:mm น.').format(_selectedDate),
-                    style: TextStyle(
-                      fontSize: 13,
+                    style: NothingTypography.mono(
+                      fontSize: 12.5,
                       fontWeight: FontWeight.w600,
-                      color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                      color: isDark ? Colors.white : Colors.black,
                     ),
                   ),
                   const Spacer(),
-                  Icon(Icons.edit_calendar_rounded, size: 16, color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
+                  Icon(
+                    Icons.edit_calendar_outlined,
+                    size: 16,
+                    color: isDark ? const Color(0xFF888888) : const Color(0xFF777777),
+                  ),
                 ],
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
 
           // Category Chips
           Text(
-            'select_category'.tr,
-            style: TextStyle(
-              fontSize: 12.5,
+            'select_category'.tr.toUpperCase(),
+            style: NothingTypography.grotesk(
+              fontSize: 11,
               fontWeight: FontWeight.w700,
-              color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+              letterSpacing: 0.6,
+              color: isDark ? const Color(0xFF888888) : const Color(0xFF777777),
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           Wrap(
             spacing: 6,
             runSpacing: 6,
             children: widget.categories.map((cat) {
               final isSelected = _selectedCategory == cat;
-              return ChoiceChip(
-                label: Text(cat.tr, style: const TextStyle(fontSize: 11.5)),
-                selected: isSelected,
-                selectedColor: const Color(0xFF00A3E0).withValues(alpha: 0.22),
-                onSelected: (val) {
-                  if (val) setState(() => _selectedCategory = cat);
+              return InkWell(
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  setState(() => _selectedCategory = cat);
                 },
+                borderRadius: BorderRadius.circular(12),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? (isDark ? Colors.white : Colors.black)
+                        : (isDark ? const Color(0xFF1C1C1C) : const Color(0xFFEEEEEE)),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isSelected
+                          ? (isDark ? Colors.white : Colors.black)
+                          : (isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08)),
+                      width: 0.8,
+                    ),
+                  ),
+                  child: Text(
+                    cat.tr,
+                    style: NothingTypography.grotesk(
+                      fontSize: 11.5,
+                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                      color: isSelected
+                          ? (isDark ? Colors.black : Colors.white)
+                          : (isDark ? const Color(0xFFD0D0D0) : const Color(0xFF444444)),
+                    ),
+                  ),
+                ),
               );
             }).toList(),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
 
           // Memo / Note Input
           TextField(
             controller: _memoController,
             maxLines: 2,
+            style: NothingTypography.grotesk(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: isDark ? Colors.white : Colors.black,
+            ),
             decoration: InputDecoration(
-              labelText: 'note'.tr,
+              labelText: 'note'.tr.toUpperCase(),
+              labelStyle: NothingTypography.grotesk(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: isDark ? const Color(0xFF888888) : const Color(0xFF777777),
+              ),
               filled: true,
-              fillColor: isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary,
+              fillColor: isDark ? const Color(0xFF181818) : const Color(0xFFF5F5F5),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: isDark ? AppColors.darkBorder : AppColors.border),
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(
+                  color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                  width: 0.8,
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(
+                  color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                  width: 0.8,
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(
+                  color: isDark ? Colors.white54 : Colors.black54,
+                  width: 1.0,
+                ),
               ),
               contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             ),
@@ -1078,40 +1435,61 @@ class _BatchItemEditDialogState extends State<_BatchItemEditDialog> {
 
           // Receipt Items Preview (ถ้ามี)
           if (widget.item.slip.receiptItems.isNotEmpty) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             Container(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.03),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.border, width: 0.8),
+                color: isDark ? const Color(0xFF141414) : const Color(0xFFF7F7F7),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                  width: 0.8,
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.shopping_bag_outlined, size: 14, color: Color(0xFF00A3E0)),
+                      Icon(
+                        Icons.receipt_outlined,
+                        size: 14,
+                        color: isDark ? Colors.white70 : Colors.black87,
+                      ),
                       const SizedBox(width: 6),
                       Text(
-                        'รายการสินค้าในใบเสร็จ (${widget.item.slip.receiptItems.length} รายการ)',
-                        style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700),
+                        'รายการสินค้าในใบเสร็จ (${widget.item.slip.receiptItems.length} รายการ)'
+                            .toUpperCase(),
+                        style: NothingTypography.grotesk(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: isDark ? Colors.white : Colors.black,
+                        ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 8),
                   ...widget.item.slip.receiptItems.map(
                     (it) => Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 1.5),
+                      padding: const EdgeInsets.symmetric(vertical: 2),
                       child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('• ', style: TextStyle(color: Color(0xFF00A3E0), fontSize: 11)),
+                          Text(
+                            '• ',
+                            style: NothingTypography.mono(
+                              color: AppColors.nothingRed,
+                              fontSize: 12,
+                            ),
+                          ),
                           Expanded(
                             child: Text(
                               it,
-                              style: TextStyle(
+                              style: NothingTypography.grotesk(
                                 fontSize: 11,
-                                color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                                color: isDark
+                                    ? const Color(0xFFB0B0B0)
+                                    : const Color(0xFF555555),
                               ),
                             ),
                           ),
@@ -1123,26 +1501,53 @@ class _BatchItemEditDialogState extends State<_BatchItemEditDialog> {
               ),
             ),
           ],
-          const SizedBox(height: 18),
+          const SizedBox(height: 20),
 
-          // Actions
+          // Actions (Cancel / Save)
           Row(
             children: [
               Expanded(
                 child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    side: BorderSide(
+                      color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.15),
+                      width: 0.8,
+                    ),
+                  ),
                   onPressed: () => Get.back(),
-                  child: Text('cancel'.tr),
+                  child: Text(
+                    'cancel'.tr.toUpperCase(),
+                    style: NothingTypography.grotesk(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
+                      color: isDark ? Colors.white70 : Colors.black87,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF00A3E0),
+                    backgroundColor: AppColors.nothingRed,
                     foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    elevation: 0,
                   ),
                   onPressed: _submit,
-                  child: Text('save'.tr, style: const TextStyle(fontWeight: FontWeight.w700)),
+                  child: Text(
+                    'save'.tr.toUpperCase(),
+                    style: NothingTypography.grotesk(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
               ),
             ],

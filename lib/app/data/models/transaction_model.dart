@@ -47,6 +47,24 @@ class TransactionItem {
   bool get isFixedCost => isExpense && costNature == CostNature.fixed;
   bool get isVariableCost => isExpense && costNature == CostNature.variable;
 
+  static const Set<String> savingsWithdrawalCategories = {
+    'savings_withdrawal',
+    'ถอนเงินออม',
+    'ถอนสำรองฉุกเฉิน',
+    'ถอนใช้จ่ายทั่วไป',
+    'ถอนปิดหนี้',
+    'ถอนการลงทุน/กำไร',
+    'ถอนเงินออมอื่นๆ',
+    'Savings Withdrawal',
+  };
+
+  /// ตรวจสอบว่าเป็นรายการถอนเงินออมกลับเข้ากระเป๋าหรือไม่
+  bool get isSavingsWithdrawal =>
+      isIncome &&
+      (savingsWithdrawalCategories.contains(categoryName) ||
+          categoryName.startsWith('savings_withdrawal') ||
+          categoryName.startsWith('ถอนเงินออม'));
+
   TransactionItem copyWith({
     String? id,
     String? title,

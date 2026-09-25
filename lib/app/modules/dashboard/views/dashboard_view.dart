@@ -6,9 +6,11 @@ import '../../../routes/app_routes.dart';
 import '../../../theme/app_colors.dart';
 import '../../../widgets/liquid_glass_nav_dock.dart';
 import '../../../widgets/modern_app_bar.dart';
+import '../../../widgets/nothing_ui_components.dart';
 import '../../security/controllers/security_controller.dart';
 import '../../transactions/views/quick_add_bottom_sheet.dart';
 import '../controllers/dashboard_controller.dart';
+import '../widgets/wallet_health_diagnostic_sheet.dart';
 import '../../../theme/app_popup_decorations.dart';
 import 'desktop_dashboard_view.dart';
 import 'mobile_dashboard_view.dart';
@@ -22,6 +24,8 @@ class DashboardView extends GetView<DashboardController> {
       final key = event.logicalKey;
       if (key == LogicalKeyboardKey.keyN) {
         QuickAddBottomSheet.show(Get.context!);
+      } else if (key == LogicalKeyboardKey.keyH) {
+        WalletHealthDiagnosticSheet.show(Get.context!);
       } else if (key == LogicalKeyboardKey.keyT) {
         Get.toNamed(Routes.TRANSACTIONS_LIST);
       } else if (key == LogicalKeyboardKey.keyS) {
@@ -93,6 +97,7 @@ class DashboardView extends GetView<DashboardController> {
                 ),
 
               SafeArea(
+                bottom: false,
                 child: isDesktop
                     ? const DesktopDashboardView()
                     : const MobileDashboardView(),
@@ -110,51 +115,29 @@ class DashboardView extends GetView<DashboardController> {
     return ModernAppBar(
       showBackButton: false,
       toolbarHeight: 66.0,
-      leading: Padding(
-        padding: const EdgeInsets.only(left: 16, top: 11, bottom: 11, right: 0),
-        child: Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                AppColors.primary,
-                const Color(0xFF6366F1),
-                const Color(0xFF8B5CF6),
-              ],
-            ),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: isDark ? 0.28 : 0.45),
-              width: 1.2,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withValues(alpha: isDark ? 0.40 : 0.28),
-                blurRadius: 12,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: const Icon(
-            Icons.account_balance_wallet_rounded,
-            color: Colors.white,
-            size: 20,
+      leading: const Padding(
+        padding: EdgeInsets.only(left: 16, top: 12, bottom: 12, right: 0),
+        child: Center(
+          child: NothingAppLogo(
+            size: 42,
+            borderRadius: 14,
           ),
         ),
       ),
       titleWidget: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            'Money Tracker',
-            style: TextStyle(
-              fontSize: 17.5,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.4,
-              color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+          Flexible(
+            child: Text(
+              'Money Tracker',
+              style: NothingTypography.grotesk(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.3,
+                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
           const SizedBox(width: 8),
@@ -171,10 +154,10 @@ class DashboardView extends GetView<DashboardController> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: isDark ? 0.16 : 0.10),
+                    color: (isDark ? Colors.white : Colors.black).withValues(alpha: isDark ? 0.16 : 0.08),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: AppColors.primary.withValues(alpha: isDark ? 0.35 : 0.25),
+                      color: (isDark ? Colors.white : Colors.black).withValues(alpha: isDark ? 0.35 : 0.20),
                       width: 0.8,
                     ),
                   ),
@@ -184,9 +167,9 @@ class DashboardView extends GetView<DashboardController> {
                       Container(
                         width: 4.5,
                         height: 4.5,
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: AppColors.primary,
+                          color: isDark ? Colors.white : Colors.black,
                         ),
                       ),
                       const SizedBox(width: 4.5),
@@ -194,10 +177,10 @@ class DashboardView extends GetView<DashboardController> {
                         constraints: const BoxConstraints(maxWidth: 85),
                         child: Text(
                           name,
-                          style: const TextStyle(
+                          style: NothingTypography.grotesk(
                             fontSize: 10,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.primary,
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? Colors.white : Colors.black,
                             letterSpacing: 0.2,
                           ),
                           maxLines: 1,
@@ -232,41 +215,45 @@ class DashboardView extends GetView<DashboardController> {
             'time': timeStr,
           });
 
-          return Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'app_subtitle'.tr,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: isDark
-                      ? AppColors.darkTextSecondary
-                      : AppColors.textSecondary,
-                  fontWeight: FontWeight.w500,
-                  letterSpacing: -0.1,
+          return FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'app_subtitle'.tr,
+                  style: NothingTypography.grotesk(
+                    fontSize: 11,
+                    color: isDark
+                        ? AppColors.darkTextSecondary
+                        : AppColors.textSecondary,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.1,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 6),
-              Container(
-                width: 3,
-                height: 3,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: isDark
-                      ? AppColors.darkTextSecondary.withValues(alpha: 0.5)
-                      : AppColors.textSecondary.withValues(alpha: 0.5),
+                const SizedBox(width: 6),
+                Container(
+                  width: 3,
+                  height: 3,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isDark
+                        ? AppColors.darkTextSecondary.withValues(alpha: 0.5)
+                        : AppColors.textSecondary.withValues(alpha: 0.5),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                dateStr,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: isDark ? const Color(0xFF6EE7B7) : AppColors.primary,
-                  fontWeight: FontWeight.w600,
+                const SizedBox(width: 6),
+                Text(
+                  dateStr,
+                  style: NothingTypography.mono(
+                    fontSize: 10.5,
+                    color: isDark ? const Color(0xFFB0B0B0) : const Color(0xFF555555),
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           );
         },
       ),
@@ -323,8 +310,8 @@ class DashboardView extends GetView<DashboardController> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
-                      borderSide: const BorderSide(
-                        color: AppColors.primary,
+                      borderSide: BorderSide(
+                        color: isDark ? Colors.white : Colors.black,
                         width: 1.5,
                       ),
                     ),
@@ -351,8 +338,8 @@ class DashboardView extends GetView<DashboardController> {
                     const SizedBox(width: 8),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
+                        backgroundColor: isDark ? Colors.white : Colors.black,
+                        foregroundColor: isDark ? Colors.black : Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),

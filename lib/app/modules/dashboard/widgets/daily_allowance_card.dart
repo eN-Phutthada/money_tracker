@@ -1,9 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../routes/app_routes.dart';
 import '../../../theme/app_colors.dart';
@@ -19,7 +17,11 @@ class DailyAllowanceCard extends GetView<DashboardController> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final currencyFmt = NumberFormat.currency(locale: 'th_TH', symbol: '฿', decimalDigits: 0);
+    final currencyFmt = NumberFormat.currency(
+      locale: 'th_TH',
+      symbol: '฿',
+      decimalDigits: 0,
+    );
 
     return Obx(() {
       final targetDaily = controller.budgetPlan.value.targetDailyAllowance;
@@ -28,17 +30,25 @@ class DailyAllowanceCard extends GetView<DashboardController> {
       final isOverToday = todayRemaining < 0;
 
       // Progress calculation for today's quota
-      final usedProgress = targetDaily > 0 ? (todaySpent / targetDaily).clamp(0.0, 1.0) : 0.0;
-      final usedPct = targetDaily > 0 ? (todaySpent / targetDaily * 100).toInt() : 0;
+      final usedProgress = targetDaily > 0
+          ? (todaySpent / targetDaily).clamp(0.0, 1.0)
+          : 0.0;
+      final usedPct = targetDaily > 0
+          ? (todaySpent / targetDaily * 100).toInt()
+          : 0;
 
       final bool isWarning = usedProgress >= 0.7 && !isOverToday;
       final Color statusAccent = isOverToday
-          ? AppColors.nothingRed
-          : (isWarning ? AppColors.warning : (isDark ? Colors.white : Colors.black));
+          ? (isDark ? AppColors.nothingRedLight : AppColors.nothingRed)
+          : (isWarning
+                ? AppColors.warning
+                : (isDark ? Colors.white : Colors.black));
 
       final String statusLabel = isOverToday
-          ? 'over_quota_caution'.tr
-          : (isWarning ? 'moderate_pacing'.tr : 'on_track_safe'.tr);
+          ? 'over_short'.tr.toUpperCase()
+          : (isWarning
+                ? 'moderate_short'.tr.toUpperCase()
+                : 'on_track_short'.tr.toUpperCase());
 
       // Monthly Run-rate metrics
       final remainingDailyRunRate = controller.remainingDailyAllowance;
@@ -50,22 +60,26 @@ class DailyAllowanceCard extends GetView<DashboardController> {
           : 0.0;
 
       return NothingCard(
-        borderRadius: 28,
-        padding: const EdgeInsets.all(20),
-        child: Column(
+          borderRadius: 28,
+          padding: const EdgeInsets.all(20),
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- HEADER ROW: Glyph Icon, Title, Status Pill ---
+            // --- HEADER ROW: Glyph Icon, Title, Status Pill & Tune Button ---
             Row(
               children: [
                 Container(
                   width: 38,
                   height: 38,
                   decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary,
+                    color: isDark
+                        ? const Color(0xFF181818)
+                        : const Color(0xFFF0F0F0),
                     borderRadius: BorderRadius.circular(13),
                     border: Border.all(
-                      color: isDark ? AppColors.darkBorder : AppColors.border,
+                      color: isDark
+                          ? AppColors.nothingBorder
+                          : Colors.black.withValues(alpha: 0.08),
                       width: 1.0,
                     ),
                   ),
@@ -81,50 +95,34 @@ class DailyAllowanceCard extends GetView<DashboardController> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              'daily_allowance_today'.tr.toUpperCase(),
-                              style: GoogleFonts.spaceGrotesk(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 1.5,
-                                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                              ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                      Text(
+                        'daily_allowance_today'.tr.toUpperCase(),
+                        style: NothingTypography.grotesk(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: NothingTypography.safeSpacing(
+                            'daily_allowance_today'.tr,
+                            0.8,
                           ),
-                          const SizedBox(width: 6),
-                          InkWell(
-                            onTap: () {
-                              try {
-                                HapticFeedback.lightImpact();
-                              } catch (_) {}
-                              Get.toNamed(Routes.BUDGET_SETTINGS);
-                            },
-                            borderRadius: BorderRadius.circular(12),
-                            child: Padding(
-                              padding: const EdgeInsets.all(3),
-                              child: Icon(
-                                Icons.tune_rounded,
-                                size: 15,
-                                color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                              ),
-                            ),
-                          ),
-                        ],
+                          color: isDark ? Colors.white : Colors.black,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 1),
                       Text(
                         controller.formattedPeriodTitle.toUpperCase(),
-                        style: GoogleFonts.spaceGrotesk(
+                        style: NothingTypography.grotesk(
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
-                          letterSpacing: 1.2,
-                          color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                        ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+                          letterSpacing: NothingTypography.safeSpacing(
+                            controller.formattedPeriodTitle,
+                            0.8,
+                          ),
+                          color: isDark
+                              ? const Color(0xFFB0B0B0)
+                              : const Color(0xFF666666),
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -133,37 +131,94 @@ class DailyAllowanceCard extends GetView<DashboardController> {
                 ),
                 const SizedBox(width: 8),
 
-                // Nothing OS Status Pill
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
+                // Nothing OS Micro Status Pill
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3.5,
+                    ),
+                    decoration: BoxDecoration(
                       color: isOverToday
-                          ? AppColors.nothingRed.withValues(alpha: 0.6)
-                          : (isDark ? AppColors.darkBorder : AppColors.border),
-                      width: 1.0,
+                          ? (isDark
+                                ? const Color(0xFF2E0C0E)
+                                : const Color(0xFFFDE8E8))
+                          : (isDark
+                                ? const Color(0xFF181818)
+                                : const Color(0xFFF0F0F0)),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isOverToday
+                            ? (isDark
+                                  ? AppColors.nothingRed.withValues(alpha: 0.6)
+                                  : AppColors.nothingRed.withValues(alpha: 0.3))
+                            : (isDark
+                                  ? AppColors.nothingBorder
+                                  : Colors.black.withValues(alpha: 0.08)),
+                        width: 1.0,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        NothingLedIndicator(
+                          size: 5,
+                          color: statusAccent,
+                          isPulsing: isOverToday,
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          statusLabel,
+                          style: NothingTypography.grotesk(
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.2,
+                            color: statusAccent,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      NothingLedIndicator(
-                        size: 6,
-                        color: statusAccent,
-                        isPulsing: isOverToday,
+                ),
+                const SizedBox(width: 6),
+
+                // Tune Button (Clean Squircle)
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () {
+                      try {
+                        HapticFeedback.lightImpact();
+                      } catch (_) {}
+                      Get.toNamed(Routes.BUDGET_SETTINGS);
+                    },
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? const Color(0xFF181818)
+                            : const Color(0xFFF0F0F0),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: isDark
+                              ? AppColors.nothingBorder
+                              : Colors.black.withValues(alpha: 0.08),
+                          width: 0.8,
+                        ),
                       ),
-                      const SizedBox(width: 6),
-                      Text(
-                        statusLabel,
-                        style: GoogleFonts.spaceGrotesk(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w700,
-                          color: statusAccent,
-                        ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+                      alignment: Alignment.center,
+                      child: Icon(
+                        Icons.tune_rounded,
+                        size: 14,
+                        color: isDark
+                            ? const Color(0xFFB0B0B0)
+                            : const Color(0xFF666666),
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ],
@@ -193,7 +248,7 @@ class DailyAllowanceCard extends GetView<DashboardController> {
                         children: [
                           Text(
                             isOverToday ? 'OVER' : '$usedPct%',
-                            style: GoogleFonts.shareTechMono(
+                            style: NothingTypography.mono(
                               fontSize: isOverToday ? 12 : 14,
                               fontWeight: FontWeight.w700,
                               color: statusAccent,
@@ -201,11 +256,13 @@ class DailyAllowanceCard extends GetView<DashboardController> {
                           ),
                           Text(
                             'USED',
-                            style: GoogleFonts.spaceGrotesk(
+                            style: NothingTypography.grotesk(
                               fontSize: 8.5,
                               fontWeight: FontWeight.w700,
                               letterSpacing: 0.8,
-                              color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                              color: isDark
+                                  ? const Color(0xFFB0B0B0)
+                                  : const Color(0xFF666666),
                             ),
                           ),
                         ],
@@ -222,14 +279,18 @@ class DailyAllowanceCard extends GetView<DashboardController> {
                     children: [
                       Text(
                         isOverToday
-                            ? '${'over_for_today'.tr.toUpperCase()} ${'today_over'.tr}'
-                            : '${'remaining_for_today'.tr.toUpperCase()} ${'today_used'.tr}',
-                        style: GoogleFonts.spaceGrotesk(
+                            ? 'over_for_today'.tr.toUpperCase()
+                            : 'remaining_for_today'.tr.toUpperCase(),
+                        style: NothingTypography.grotesk(
                           fontSize: 10.5,
                           fontWeight: FontWeight.w700,
-                          letterSpacing: 1.2,
-                          color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                        ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+                          letterSpacing: 0.2,
+                          color: isDark
+                              ? const Color(0xFFB0B0B0)
+                              : const Color(0xFF555555),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 2),
 
@@ -243,7 +304,7 @@ class DailyAllowanceCard extends GetView<DashboardController> {
                           children: [
                             Text(
                               isOverToday ? '-฿' : '฿',
-                              style: GoogleFonts.spaceGrotesk(
+                              style: NothingTypography.grotesk(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w600,
                                 color: statusAccent,
@@ -251,8 +312,10 @@ class DailyAllowanceCard extends GetView<DashboardController> {
                             ),
                             const SizedBox(width: 3),
                             Text(
-                              currencyFmt.format(todayRemaining.abs()).replaceAll('฿', ''),
-                              style: GoogleFonts.shareTechMono(
+                              currencyFmt
+                                  .format(todayRemaining.abs())
+                                  .replaceAll('฿', ''),
+                              style: NothingTypography.mono(
                                 fontSize: 32,
                                 fontWeight: FontWeight.w700,
                                 letterSpacing: -0.5,
@@ -264,15 +327,54 @@ class DailyAllowanceCard extends GetView<DashboardController> {
                       ),
                       const SizedBox(height: 4),
 
-                      Text(
-                        '${'today_spent'.tr} ${currencyFmt.format(todaySpent)} • ${'target'.tr} ${currencyFmt.format(targetDaily)}/${'day'.tr}',
-                        style: GoogleFonts.spaceGrotesk(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w500,
-                          color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                        ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              '${'today_spent'.tr} ',
+                              style: NothingTypography.grotesk(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w500,
+                                color: isDark
+                                    ? const Color(0xFFB0B0B0)
+                                    : const Color(0xFF555555),
+                              ),
+                            ),
+                            Text(
+                              currencyFmt.format(todaySpent),
+                              style: NothingTypography.mono(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: isDark
+                                    ? const Color(0xFFD4D4D8)
+                                    : const Color(0xFF333333),
+                              ),
+                            ),
+                            Text(
+                              ' • ${'daily_quota'.tr} ',
+                              style: NothingTypography.grotesk(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w500,
+                                color: isDark
+                                    ? const Color(0xFFB0B0B0)
+                                    : const Color(0xFF555555),
+                              ),
+                            ),
+                            Text(
+                              '${currencyFmt.format(targetDaily)}/${'day'.tr}',
+                              style: NothingTypography.mono(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: isDark
+                                    ? const Color(0xFFD4D4D8)
+                                    : const Color(0xFF333333),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -285,10 +387,14 @@ class DailyAllowanceCard extends GetView<DashboardController> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
               decoration: BoxDecoration(
-                color: isDark ? AppColors.darkSurfaceSecondary.withValues(alpha: 0.7) : AppColors.surfaceSecondary,
+                color: isDark
+                    ? const Color(0xFF161616)
+                    : const Color(0xFFF5F5F5),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: isDark ? AppColors.darkBorder : AppColors.border,
+                  color: isDark
+                      ? AppColors.nothingBorder
+                      : Colors.black.withValues(alpha: 0.08),
                   width: 0.8,
                 ),
               ),
@@ -297,26 +403,47 @@ class DailyAllowanceCard extends GetView<DashboardController> {
                 children: [
                   Row(
                     children: [
-                      const NothingLedIndicator(size: 5, color: AppColors.nothingRed),
+                      NothingLedIndicator(
+                        size: 5,
+                        color: isDark ? Colors.white : Colors.black,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           'monthly_runrate_label'.tr.toUpperCase(),
-                          style: GoogleFonts.spaceGrotesk(
+                          style: NothingTypography.grotesk(
                             fontSize: 10.5,
                             fontWeight: FontWeight.w700,
-                            letterSpacing: 1.2,
-                            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                          ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+                            letterSpacing: NothingTypography.safeSpacing(
+                              'monthly_runrate_label'.tr,
+                              1.2,
+                            ),
+                            color: isDark ? Colors.white : Colors.black,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      Text(
-                        remainingDays > 0 ? '$remainingDays ${'days_left'.tr}' : 'month_ended'.tr,
-                        style: GoogleFonts.spaceGrotesk(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                        ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            remainingDays > 0
+                                ? 'days_left'.trParams({
+                                    'days': '$remainingDays',
+                                  })
+                                : 'month_ended'.tr,
+                            style: NothingTypography.grotesk(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: isDark
+                                  ? const Color(0xFFB0B0B0)
+                                  : const Color(0xFF666666),
+                            ),
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -324,23 +451,71 @@ class DailyAllowanceCard extends GetView<DashboardController> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        '${'remaining_rate'.tr}: ${currencyFmt.format(remainingDailyRunRate)}/${'day'.tr}',
-                        style: GoogleFonts.shareTechMono(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                        ),
-                      ),
-                      if (dailyBonus > 0)
-                        Text(
-                          '+${currencyFmt.format(dailyBonus)}/${'day'.tr} bonus',
-                          style: GoogleFonts.shareTechMono(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: isDark ? Colors.white : Colors.black,
+                      Expanded(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                '${'remaining_rate'.tr}: ',
+                                style: NothingTypography.grotesk(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 0.2,
+                                  color: isDark
+                                      ? const Color(0xFFD4D4D8)
+                                      : const Color(0xFF444444),
+                                ),
+                              ),
+                              Text(
+                                '${currencyFmt.format(remainingDailyRunRate)}/${'day'.tr}',
+                                style: NothingTypography.mono(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: isDark ? Colors.white : Colors.black,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
+                      ),
+                      if (dailyBonus > 0) ...[
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerRight,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? const Color(0xFF222222)
+                                    : const Color(0xFFEAEAEA),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: isDark
+                                      ? AppColors.nothingBorder
+                                      : Colors.black.withValues(alpha: 0.08),
+                                  width: 0.8,
+                                ),
+                              ),
+                              child: Text(
+                                '+${currencyFmt.format(dailyBonus)}/${'day'.tr} ${'bonus'.tr}',
+                                style: NothingTypography.mono(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: isDark ? Colors.white : Colors.black,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ],
@@ -348,7 +523,7 @@ class DailyAllowanceCard extends GetView<DashboardController> {
             ),
           ],
         ),
-      ).animate().fadeIn(duration: const Duration(milliseconds: 250));
+      );
     });
   }
 }
@@ -390,7 +565,9 @@ class _NothingDialPainter extends CustomPainter {
       final paint = Paint()
         ..color = isFilled
             ? activeColor
-            : (isDark ? Colors.white.withValues(alpha: 0.12) : Colors.black.withValues(alpha: 0.10))
+            : (isDark
+                  ? Colors.white.withValues(alpha: 0.12)
+                  : Colors.black.withValues(alpha: 0.10))
         ..strokeWidth = isFilled ? 2.2 : 1.5
         ..strokeCap = StrokeCap.round;
 

@@ -206,10 +206,7 @@ class DashboardHeader extends GetView<DashboardController> {
                     final isSelected = selected.year == year && selected.month == monthIndex;
                     final isCurrentMonth = now.year == year && now.month == monthIndex;
 
-                    final monthNames = [
-                      'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
-                      'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.',
-                    ];
+                    final monthName = 'month_short_$monthIndex'.tr;
 
                     return Material(
                       color: isSelected
@@ -244,7 +241,7 @@ class DashboardHeader extends GetView<DashboardController> {
                                 const SizedBox(width: 5),
                               ],
                               Text(
-                                monthNames[index],
+                                monthName,
                                 style: GoogleFonts.spaceGrotesk(
                                   fontSize: 12,
                                   fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,

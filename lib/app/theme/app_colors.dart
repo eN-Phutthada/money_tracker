@@ -62,7 +62,25 @@ class AppColors {
 
   // Additional Nothing OS Aliases
   static const Color nothingBorder = Color(0x2EFFFFFF);    // 18% White Precision Hairline
-  static const Color nothingSubtext = Color(0xFF8E8E93);   // Soft Technical Gray
+  static const Color nothingSubtext = Color(0xFFA1A1AA);   // High-contrast Technical Gray
+  static const Color nothingMuted = Color(0xFF8E8E93);     // Technical Muted Gray
+  static const Color nothingGreen = Color(0xFF34C759);     // Vibrant Telemetry Green (Dark Mode)
+  static const Color nothingGreenDark = Color(0xFF008736); // Deep Telemetry Green (Light Mode)
+  static const Color nothingBlue = Color(0xFF3B82F6);      // Hi-tech Electric Blue (Savings)
+  static const Color nothingBlueLight = Color(0xFF60A5FA); // Light Electric Blue (Dark Mode Savings)
+  static const Color nothingAmber = Color(0xFFF59E0B);     // Industrial Amber (Withdrawal)
+  static const Color nothingAmberLight = Color(0xFFFBBF24);// Light Amber (Dark Mode Withdrawal)
   static const Color nothingBlack = Color(0xFF000000);     // Pitch Black
   static const Color nothingCardDark = Color(0xFF121212);  // Matte Graphite
+
+  // Adaptive Color Helpers for High Contrast in Light/Dark Modes
+  static Color statusRed(bool isDark) => isDark ? nothingRedLight : nothingRed;
+  static Color fixedCost(bool isDark) => isDark ? const Color(0xFFE5E5EA) : const Color(0xFF3A3A3C);
+  static Color primaryAdaptive(bool isDark) => isDark ? Colors.white : Colors.black;
+
+  // Unified 4-Pillar Financial Colors (Income, Expense, Savings, Withdrawal)
+  static Color incomeColor(bool isDark) => isDark ? nothingGreen : nothingGreenDark;
+  static Color expenseColor(bool isDark) => isDark ? nothingRedLight : nothingRed;
+  static Color savingsColor(bool isDark) => isDark ? nothingBlueLight : nothingBlue;
+  static Color withdrawalColor(bool isDark) => isDark ? nothingAmberLight : nothingAmber;
 }

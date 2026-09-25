@@ -1,9 +1,8 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:liquid_glass_easy/liquid_glass_easy.dart';
 import '../modules/dashboard/controllers/dashboard_controller.dart';
 import '../widgets/nothing_ui_components.dart';
 import 'app_colors.dart';
@@ -32,36 +31,85 @@ class AppGlassDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return BackdropFilter(
-      filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-      child: Dialog(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: maxWidth,
-            maxHeight: maxHeight ?? double.infinity,
-          ),
-          child: Container(
-            padding: padding ?? const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF101010) : Colors.white,
-              borderRadius: BorderRadius.circular(26),
-              border: Border.all(
-                color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.1),
-                width: 0.8,
+    final style = LiquidGlassStyle(
+      shape: LiquidGlassShape.squircle(
+        cornerRadius: 26,
+        borderWidth: 1.0,
+        lightIntensity: isDark ? 0.35 : 1.25,
+        lightDirection: 65,
+        borderType: OpticalBorder(
+          borderSaturation: isDark ? 0.8 : 1.25,
+          ambientIntensity: isDark ? 0.6 : 1.15,
+          borderSolidity: isDark ? 0.25 : 0.18,
+        ),
+      ),
+      appearance: LiquidGlassAppearance(
+        color: isDark
+            ? const Color(0xFF141416).withValues(alpha: 0.94)
+            : Colors.white.withValues(alpha: 0.88),
+        blur: const LiquidGlassBlur(sigmaX: 1, sigmaY: 1),
+      ),
+      refraction: const LiquidGlassRefraction(
+        distortion: 0.08,
+        distortionWidth: 22,
+        chromaticAberration: 0.002,
+      ),
+    );
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: maxWidth,
+          maxHeight: maxHeight ?? double.infinity,
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(26),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.75 : 0.12),
+                blurRadius: 36,
+                spreadRadius: -4,
+                offset: const Offset(0, 14),
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.6 : 0.12),
-                  blurRadius: 36,
-                  spreadRadius: -4,
-                  offset: const Offset(0, 14),
+            ],
+          ),
+          child: LiquidGlassLens(
+            style: style,
+            child: Container(
+              padding: padding ?? const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(26),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: isDark
+                      ? [
+                          const Color(0xFF1A1A1E).withValues(alpha: 0.96),
+                          const Color(0xFF121214).withValues(alpha: 0.92),
+                        ]
+                      : [
+                          Colors.white.withValues(alpha: 0.95),
+                          Colors.white.withValues(alpha: 0.88),
+                        ],
                 ),
-              ],
+                border: Border.all(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.12)
+                      : Colors.black.withValues(alpha: 0.10),
+                  width: 0.8,
+                ),
+              ),
+              child: DefaultTextStyle.merge(
+                style: TextStyle(
+                  color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                ),
+                child: child,
+              ),
             ),
-            child: child,
           ),
         ),
       ),
@@ -110,10 +158,14 @@ class AppPopupHeader extends StatelessWidget {
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF181818) : const Color(0xFFF2F2F2),
+                  color: isDark
+                      ? const Color(0xFF1E1E1E)
+                      : const Color(0xFFF2F2F2),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.10)
+                        : Colors.black.withValues(alpha: 0.08),
                     width: 0.8,
                   ),
                 ),
@@ -131,28 +183,36 @@ class AppPopupHeader extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title.toUpperCase(),
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.8,
-                      color: isDark ? Colors.white : Colors.black,
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      title.toUpperCase(),
+                      style: NothingTypography.grotesk(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.6,
+                        color: isDark ? Colors.white : Colors.black,
+                      ),
+                      maxLines: 1,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
                   if (subtitle != null) ...[
                     const SizedBox(height: 2),
-                    Text(
-                      subtitle!,
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 11.5,
-                        color: isDark ? AppColors.nothingSubtext : const Color(0xFF777777),
-                        fontWeight: FontWeight.w500,
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        subtitle!,
+                        style: NothingTypography.grotesk(
+                          fontSize: 11,
+                          color: isDark
+                              ? const Color(0xFFAAAAAA)
+                              : const Color(0xFF666666),
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ],
@@ -165,11 +225,15 @@ class AppPopupHeader extends StatelessWidget {
             if (onClose != null) ...[
               const SizedBox(width: 8),
               Material(
-                color: isDark ? const Color(0xFF181818) : const Color(0xFFF2F2F2),
+                color: isDark
+                    ? const Color(0xFF1E1E1E)
+                    : const Color(0xFFF2F2F2),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                   side: BorderSide(
-                    color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.10)
+                        : Colors.black.withValues(alpha: 0.08),
                     width: 0.8,
                   ),
                 ),
@@ -179,8 +243,9 @@ class AppPopupHeader extends StatelessWidget {
                     onClose!();
                   },
                   borderRadius: BorderRadius.circular(10),
-                  child: Padding(
-                    padding: const EdgeInsets.all(7),
+                  child: SizedBox(
+                    width: 32,
+                    height: 32,
                     child: Icon(
                       Icons.close_rounded,
                       size: 16,
@@ -303,7 +368,7 @@ class AppConfirmDialog extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             message,
-            style: GoogleFonts.spaceGrotesk(
+            style: NothingTypography.grotesk(
               fontSize: 13.5,
               color: isDark ? const Color(0xFFD1D5DB) : const Color(0xFF374151),
               fontWeight: FontWeight.w500,
@@ -322,7 +387,7 @@ class AppConfirmDialog extends StatelessWidget {
                 ),
                 child: Text(
                   cancelText ?? 'cancel'.tr.toUpperCase(),
-                  style: GoogleFonts.spaceGrotesk(
+                  style: NothingTypography.grotesk(
                     color: isDark ? AppColors.nothingSubtext : const Color(0xFF6B7280),
                     fontWeight: FontWeight.w600,
                     letterSpacing: 0.6,
@@ -341,7 +406,7 @@ class AppConfirmDialog extends StatelessWidget {
                 ),
                 child: Text(
                   confirmText ?? 'confirm'.tr.toUpperCase(),
-                  style: GoogleFonts.spaceGrotesk(
+                  style: NothingTypography.grotesk(
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.8,
                   ),
@@ -424,29 +489,19 @@ void showThemePickerDialog(BuildContext context) {
             ),
             const SizedBox(height: 16),
 
-            // Options List
+            // Options List (Light & Dark - System theme handled in background)
             Obx(() {
               final currentMode = dashboardController.themeMode.value;
+              final isActuallyDark = currentMode == ThemeMode.dark ||
+                  (currentMode == ThemeMode.system && (Get.isDarkMode || dashboardController.isDarkMode.value));
 
               return Column(
                 children: [
                   _buildNothingOptionTile(
-                    title: 'theme_system'.tr,
-                    subtitle: 'theme_system_desc'.tr,
-                    icon: Icons.brightness_auto_outlined,
-                    isSelected: currentMode == ThemeMode.system,
-                    onTap: () {
-                      dashboardController.setThemeMode(ThemeMode.system);
-                      Navigator.of(ctx).pop();
-                    },
-                    isDark: isDark,
-                  ),
-                  const SizedBox(height: 8),
-                  _buildNothingOptionTile(
                     title: 'theme_light'.tr,
                     subtitle: 'theme_light_desc'.tr,
                     icon: Icons.light_mode_outlined,
-                    isSelected: currentMode == ThemeMode.light,
+                    isSelected: !isActuallyDark,
                     onTap: () {
                       dashboardController.setThemeMode(ThemeMode.light);
                       Navigator.of(ctx).pop();
@@ -458,7 +513,7 @@ void showThemePickerDialog(BuildContext context) {
                     title: 'theme_dark'.tr,
                     subtitle: 'theme_dark_desc'.tr,
                     icon: Icons.dark_mode_outlined,
-                    isSelected: currentMode == ThemeMode.dark,
+                    isSelected: isActuallyDark,
                     onTap: () {
                       dashboardController.setThemeMode(ThemeMode.dark);
                       Navigator.of(ctx).pop();
@@ -642,7 +697,7 @@ Widget _buildNothingOptionTile({
                       Flexible(
                         child: Text(
                           title,
-                          style: GoogleFonts.spaceGrotesk(
+                          style: NothingTypography.grotesk(
                             fontSize: 13.5,
                             fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                             color: isDark ? Colors.white : Colors.black,
@@ -667,7 +722,7 @@ Widget _buildNothingOptionTile({
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: GoogleFonts.spaceGrotesk(
+                    style: NothingTypography.grotesk(
                       fontSize: 11,
                       color: isDark ? AppColors.nothingSubtext : const Color(0xFF777777),
                     ),

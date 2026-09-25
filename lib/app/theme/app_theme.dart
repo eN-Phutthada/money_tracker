@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 
@@ -12,51 +13,76 @@ class AppTheme {
         ? ThemeData(brightness: Brightness.dark).textTheme
         : ThemeData(brightness: Brightness.light).textTheme;
 
-    // Use SpaceGrotesk as primary tech font with Prompt for Thai glyphs
+    // Use SpaceGrotesk as primary tech font with Prompt (sans-serif Thai font) for Thai glyphs
     final spaceTheme = GoogleFonts.spaceGroteskTextTheme(baseTextTheme);
     final promptFallback = GoogleFonts.prompt();
+    final fallbackList = [promptFallback.fontFamily ?? 'Prompt', 'sans-serif'];
 
+    // Ensure all styles in the typography hierarchy have Prompt fallback
     return spaceTheme.copyWith(
       displayLarge: spaceTheme.displayLarge?.copyWith(
-        fontFamilyFallback: [promptFallback.fontFamily ?? 'Prompt'],
+        fontFamilyFallback: fallbackList,
         letterSpacing: -1.0,
         fontWeight: FontWeight.w800,
       ),
       displayMedium: spaceTheme.displayMedium?.copyWith(
-        fontFamilyFallback: [promptFallback.fontFamily ?? 'Prompt'],
+        fontFamilyFallback: fallbackList,
         letterSpacing: -0.5,
         fontWeight: FontWeight.w700,
       ),
+      displaySmall: spaceTheme.displaySmall?.copyWith(
+        fontFamilyFallback: fallbackList,
+        fontWeight: FontWeight.w700,
+      ),
       headlineLarge: spaceTheme.headlineLarge?.copyWith(
-        fontFamilyFallback: [promptFallback.fontFamily ?? 'Prompt'],
+        fontFamilyFallback: fallbackList,
         letterSpacing: 0.5,
         fontWeight: FontWeight.w700,
       ),
       headlineMedium: spaceTheme.headlineMedium?.copyWith(
-        fontFamilyFallback: [promptFallback.fontFamily ?? 'Prompt'],
+        fontFamilyFallback: fallbackList,
         letterSpacing: 0.2,
         fontWeight: FontWeight.w600,
       ),
+      headlineSmall: spaceTheme.headlineSmall?.copyWith(
+        fontFamilyFallback: fallbackList,
+        fontWeight: FontWeight.w600,
+      ),
       titleLarge: spaceTheme.titleLarge?.copyWith(
-        fontFamilyFallback: [promptFallback.fontFamily ?? 'Prompt'],
+        fontFamilyFallback: fallbackList,
         letterSpacing: 0.2,
         fontWeight: FontWeight.w700,
       ),
       titleMedium: spaceTheme.titleMedium?.copyWith(
-        fontFamilyFallback: [promptFallback.fontFamily ?? 'Prompt'],
+        fontFamilyFallback: fallbackList,
         letterSpacing: 0.1,
         fontWeight: FontWeight.w600,
       ),
+      titleSmall: spaceTheme.titleSmall?.copyWith(
+        fontFamilyFallback: fallbackList,
+        fontWeight: FontWeight.w600,
+      ),
       labelLarge: spaceTheme.labelLarge?.copyWith(
-        fontFamilyFallback: [promptFallback.fontFamily ?? 'Prompt'],
+        fontFamilyFallback: fallbackList,
         letterSpacing: 1.5,
         fontWeight: FontWeight.w700,
       ),
+      labelMedium: spaceTheme.labelMedium?.copyWith(
+        fontFamilyFallback: fallbackList,
+        fontWeight: FontWeight.w600,
+      ),
+      labelSmall: spaceTheme.labelSmall?.copyWith(
+        fontFamilyFallback: fallbackList,
+        fontWeight: FontWeight.w500,
+      ),
       bodyLarge: spaceTheme.bodyLarge?.copyWith(
-        fontFamilyFallback: [promptFallback.fontFamily ?? 'Prompt'],
+        fontFamilyFallback: fallbackList,
       ),
       bodyMedium: spaceTheme.bodyMedium?.copyWith(
-        fontFamilyFallback: [promptFallback.fontFamily ?? 'Prompt'],
+        fontFamilyFallback: fallbackList,
+      ),
+      bodySmall: spaceTheme.bodySmall?.copyWith(
+        fontFamilyFallback: fallbackList,
       ),
     );
   }
@@ -90,6 +116,11 @@ class AppTheme {
         scrolledUnderElevation: 0,
         centerTitle: false,
         iconTheme: IconThemeData(color: AppColors.textPrimary),
+        systemOverlayStyle: SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.dark,   // dark icons on light bg
+          statusBarBrightness: Brightness.light,       // iOS
+        ),
       ),
       cardTheme: CardThemeData(
         color: AppColors.surface,
@@ -179,6 +210,11 @@ class AppTheme {
         scrolledUnderElevation: 0,
         centerTitle: false,
         iconTheme: IconThemeData(color: AppColors.darkTextPrimary),
+        systemOverlayStyle: SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.light,  // light icons on dark bg
+          statusBarBrightness: Brightness.dark,        // iOS
+        ),
       ),
       cardTheme: CardThemeData(
         color: AppColors.darkSurface,

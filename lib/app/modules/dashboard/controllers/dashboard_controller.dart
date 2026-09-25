@@ -3,7 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../../../data/models/budget_plan_model.dart';
 import '../../../data/models/transaction_model.dart';
+import '../../../data/models/wallet_health_model.dart';
 import '../../../data/services/storage_service.dart';
+import '../../../routes/app_routes.dart';
 import '../../../widgets/app_feedback.dart';
 
 /// GetX Reactive Controller สำหรับจัดการ State การเงินทั้งระบบ
@@ -160,6 +162,33 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
       .where((t) => t.isSavings)
       .fold(0.0, (sum, t) => sum + t.amount);
 
+  /// ยอดถอนเงินออมในรอบเวลาปัจจุบัน
+  double get actualSavingsWithdrawals => filteredTransactions
+      .where((t) => t.isSavingsWithdrawal)
+      .fold(0.0, (sum, t) => sum + t.amount);
+
+  /// ยอดถอนเงินออมสะสมทั้งหมด (All-time)
+  double get allTimeSavingsWithdrawals => transactions
+      .where((t) => t.isSavingsWithdrawal)
+      .fold(0.0, (sum, t) => sum + t.amount);
+
+  /// ยอดเงินออมสุทธิในรอบเวลาปัจจุบัน (ออมเข้า - ถอนออก)
+  double get netSavings => actualSavings - actualSavingsWithdrawals;
+
+  /// ยอดเงินออมสะสมสุทธิทั้งหมด (ออมเข้าสะสมทั้งหมด - ถอนออกสะสมทั้งหมด)
+  double get totalNetSavings {
+    double saved = 0;
+    double withdrawn = 0;
+    for (final t in transactions) {
+      if (t.isSavings) {
+        saved += t.amount;
+      } else if (t.isSavingsWithdrawal) {
+        withdrawn += t.amount;
+      }
+    }
+    return saved - withdrawn;
+  }
+
   double get totalFixedExpenses => filteredTransactions
       .where((t) => t.isFixedCost)
       .fold(0.0, (sum, t) => sum + t.amount);
@@ -229,6 +258,37 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
         plan.targetMonthlySavings;
   }
 
+  /// วันปัจจุบันในรอบเวลาที่เลือก (ถ้าเป็นเดือนปัจจุบันคือ today.day, ถ้าเป็นเดือนอดีตคือวันสิ้นเดือน, ถ้าเดือนอนาคตคือ 1)
+  int get currentDayInPeriod {
+    final now = DateTime.now();
+    final date = selectedDate.value;
+    final isCurrent = (date.year == now.year && date.month == now.month);
+    if (isCurrent) return now.day;
+    if (date.isBefore(DateTime(now.year, now.month, 1))) {
+      return daysInCurrentMonth;
+    }
+    return 1;
+  }
+
+  /// สัดส่วนเวลาที่ผ่านไปในเดือนนี้ (0.0 ถึง 1.0)
+  double get monthElapsedRatio {
+    final totalDays = daysInCurrentMonth;
+    if (totalDays <= 0) return 0.0;
+    return (currentDayInPeriod / totalDays).clamp(0.0, 1.0);
+  }
+
+  /// งบค่ากิน/ผันแปรตามแผนสะสมถึงวันปัจจุบัน (วันปัจจุบัน * โควตารายวัน)
+  double get plannedVariableBudgetToDate =>
+      currentDayInPeriod * budgetPlan.value.targetDailyAllowance;
+
+  /// ผลต่างการใช้จ่ายผันแปรเทียบกับแผนสะสมถึงวันนี้ (งบตามแผนถึงวันนี้ - ที่ใช้ไปจริง)
+  /// ค่าเป็นบวก = ประหยัดกว่าแผน (Under budget), ค่าติดลบ = ใช้เกินแผน (Over budget)
+  double get variableSpendingVarianceToDate =>
+      plannedVariableBudgetToDate - totalVariableExpenses;
+
+  /// สถานะการใช้จ่ายผันแปรอยู่ในเกณฑ์แผนสะสมหรือไม่
+  bool get isVariableSpendingOnTrack => variableSpendingVarianceToDate >= 0;
+
   /// รวมค่าใช้จ่ายคงที่ + ค่ากินทั้งเดือนตามโควตารายวัน (+ เป้าหมายเงินออม)
   double get monthlyTotalPlannedExpenses =>
       budgetPlan.value.plannedFixedCosts +
@@ -261,21 +321,16 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
     return actualBalance;
   }
 
-  /// ตัวเลขเป้าหมาย/ยอดที่ควรเหลือตามช่วงเวลาที่เลือก
-  /// - รายเดือน: ยอดที่ควรเหลือจาก ค่าใช้จ่ายคงที่ + ค่ากินต่อเดือนจากโควตารายวัน (monthlyPlanEndingBalance)
-  /// - รายปี / ทั้งหมด: expectedBalance ตามสูตรสะสม
+  /// ตัวเลขยอดที่ควรเหลือตามช่วงเวลาที่เลือกคำนวณสัมพันธ์กับวันปัจจุบัน (expectedBalance)
   double get periodExpectedBalance {
-    if (currentPeriod.value == TimeFilterPeriod.monthly) {
-      return monthlyPlanEndingBalance;
-    }
     return expectedBalance;
   }
 
-  /// ส่วนต่าง (Surplus หรือ Deficit)
+  /// ส่วนต่าง (Surplus หรือ Deficit) คำนวณสัมพันธ์กับวันปัจจุบัน
   double get surplusOrDeficit {
     if (currentPeriod.value == TimeFilterPeriod.monthly) {
       if (actualIncome > 0) {
-        return actualBalance - monthlyPlanEndingBalance;
+        return actualBalance - expectedBalance;
       }
       return totalCurrentBalance - monthlyRemainingCommitments;
     }
@@ -283,15 +338,13 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
   }
 
   /// สถานะกระเป๋าเงินปลอดภัย (เขียว) หรือเกินงบ/ระวัง (แดง)
-  /// แก้ไขปัญหา: หากรายรับอยู่สิ้นเดือน สถานะจะไม่แดง ถ้าเงินในกระเป๋าปัจจุบันเพียงพอครอบคลุมภาระที่เหลือของเดือน
   bool get isSurplus {
     if (currentPeriod.value == TimeFilterPeriod.monthly) {
-      // 1. ถ้ากระแสเงินสดเดือนนี้บวกอยู่แล้ว หรือบรรลุตามแผน
-      if (actualBalance >= monthlyPlanEndingBalance && actualBalance >= 0) {
+      // 1. ถ้ากระแสเงินสดเดือนนี้บวกอยู่แล้ว หรือบรรลุตามแผนสัมพันธ์กับวันปัจจุบัน
+      if (actualBalance >= expectedBalance && actualBalance >= 0) {
         return true;
       }
       // 2. แม้เงินเดือนยังไม่ออก แต่ถ้าเงินในกระเป๋าปัจจุบัน >= ค่าคงที่ที่ค้าง + ค่ากินวันที่เหลือตามโควตา
-      // แปลว่าเงินพอใช้จนถึงสิ้นเดือน -> ปลอดภัย (Safe Zone) ไม่แดง
       return totalCurrentBalance >= monthlyRemainingCommitments;
     }
     return surplusOrDeficit >= 0;
@@ -397,6 +450,356 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
   }
 
   // ==========================================
+  // WALLET HEALTH 0-100 ENGINE & DIAGNOSTICS
+  // ==========================================
+
+  /// ผลการประเมินสุขภาพกระเป๋าเงิน (Wallet Health Diagnostics 0-100)
+  WalletHealthResult get walletHealth {
+    final now = DateTime.now();
+    final date = selectedDate.value;
+    final plan = budgetPlan.value;
+    final totalDays = daysInCurrentMonth;
+    final isCurrentMonth = (date.year == now.year && date.month == now.month);
+    final currentDay = isCurrentMonth
+        ? now.day
+        : (date.isBefore(DateTime(now.year, now.month, 1)) ? totalDays : 1);
+    final remainingDays = remainingDaysInMonth;
+
+    // -------------------------------------------------------------
+    // 1. Burn Rate & Pace (30 คะแนน)
+    // -------------------------------------------------------------
+    final plannedVar = plan.plannedVariableBudget(totalDays);
+    final effectivePlannedVar = plannedVar > 0 ? plannedVar : 1.0;
+    final daysPassedRatio = (currentDay / (totalDays > 0 ? totalDays : 30)).clamp(0.01, 1.0);
+    final spendingRatio = (totalVariableExpenses / effectivePlannedVar).clamp(0.0, 3.0);
+
+    double burnMultiplier;
+    double paceScore;
+    String paceStatus;
+    String paceDetail;
+    bool isPaceHealthy;
+
+    if (totalVariableExpenses <= 0) {
+      burnMultiplier = 0.0;
+      paceScore = 30.0;
+      paceStatus = 'pace_excellent'.tr;
+      paceDetail = 'pace_no_expense_yet'.tr;
+      isPaceHealthy = true;
+    } else {
+      burnMultiplier = spendingRatio / daysPassedRatio;
+      if (burnMultiplier <= 1.0) {
+        paceScore = 30.0;
+        paceStatus = 'pace_on_track'.tr;
+        paceDetail = 'pace_on_track_desc'.trParams({
+          'spent': '${(spendingRatio * 100).toInt()}%',
+          'days': '${(daysPassedRatio * 100).toInt()}%',
+        });
+        isPaceHealthy = true;
+      } else if (burnMultiplier <= 1.25) {
+        paceScore = (30.0 - ((burnMultiplier - 1.0) / 0.25) * 8.0).clamp(0.0, 30.0);
+        paceStatus = 'pace_slightly_fast'.tr;
+        paceDetail = 'pace_slightly_fast_desc'.trParams({
+          'speed': burnMultiplier.toStringAsFixed(1),
+        });
+        isPaceHealthy = false;
+      } else if (burnMultiplier <= 1.75) {
+        paceScore = (22.0 - ((burnMultiplier - 1.25) / 0.5) * 12.0).clamp(0.0, 30.0);
+        paceStatus = 'pace_fast_warning'.tr;
+        paceDetail = 'pace_fast_desc'.trParams({
+          'speed': burnMultiplier.toStringAsFixed(1),
+        });
+        isPaceHealthy = false;
+      } else {
+        paceScore = (10.0 - ((burnMultiplier - 1.75) / 1.0) * 10.0).clamp(0.0, 10.0);
+        paceStatus = 'pace_critical_fast'.tr;
+        paceDetail = 'pace_critical_desc'.trParams({
+          'speed': burnMultiplier.toStringAsFixed(1),
+        });
+        isPaceHealthy = false;
+      }
+    }
+
+    final paceDimension = WalletHealthDimension(
+      title: 'dim_burn_rate_pace'.tr,
+      score: paceScore,
+      maxScore: 30.0,
+      statusText: paceStatus,
+      detail: paceDetail,
+      isHealthy: isPaceHealthy,
+      icon: Icons.speed_rounded,
+    );
+
+    // -------------------------------------------------------------
+    // 2. Fixed Commitment Coverage (30 คะแนน)
+    // -------------------------------------------------------------
+    final remainingFixed = remainingMonthlyFixedCosts;
+    double commitmentScore;
+    String commitmentStatus;
+    String commitmentDetail;
+    bool isCommitmentHealthy;
+
+    if (remainingFixed <= 0) {
+      commitmentScore = 30.0;
+      commitmentStatus = 'commitment_cleared'.tr;
+      commitmentDetail = 'commitment_cleared_desc'.tr;
+      isCommitmentHealthy = true;
+    } else {
+      final coverage = totalCurrentBalance > 0
+          ? (totalCurrentBalance / remainingFixed).clamp(0.0, 1.0)
+          : 0.0;
+      commitmentScore = coverage * 30.0;
+      if (coverage >= 1.0) {
+        commitmentStatus = 'commitment_secured'.tr;
+        commitmentDetail = 'commitment_secured_desc'.tr;
+        isCommitmentHealthy = true;
+      } else {
+        commitmentStatus = 'commitment_risk'.tr;
+        commitmentDetail = 'commitment_risk_desc'.trParams({
+          'pct': '${(coverage * 100).toInt()}%',
+        });
+        isCommitmentHealthy = false;
+      }
+    }
+
+    final commitmentDimension = WalletHealthDimension(
+      title: 'dim_fixed_coverage'.tr,
+      score: commitmentScore,
+      maxScore: 30.0,
+      statusText: commitmentStatus,
+      detail: commitmentDetail,
+      isHealthy: isCommitmentHealthy,
+      icon: Icons.receipt_long_rounded,
+    );
+
+    // -------------------------------------------------------------
+    // 3. Savings Discipline & Leakage (25 คะแนน)
+    // -------------------------------------------------------------
+    final targetSavings = plan.targetMonthlySavings;
+    double savingsScore;
+    String savingsStatus;
+    String savingsDetail;
+    bool isSavingsHealthy;
+
+    if (targetSavings <= 0) {
+      savingsScore = 20.0;
+      savingsStatus = 'savings_no_target'.tr;
+      savingsDetail = 'savings_no_target_desc'.tr;
+      isSavingsHealthy = true;
+    } else {
+      final savingsAchieved = (actualSavings / targetSavings).clamp(0.0, 1.0);
+      savingsScore = savingsAchieved * 20.0;
+
+      if (actualSavingsWithdrawals > 0) {
+        savingsScore = (savingsScore - 8.0).clamp(0.0, 25.0);
+        savingsStatus = 'savings_leakage_warning'.tr;
+        savingsDetail = 'savings_leakage_desc'.tr;
+        isSavingsHealthy = false;
+      } else {
+        savingsScore = (savingsScore + 5.0).clamp(0.0, 25.0);
+        if (actualSavings >= targetSavings) {
+          savingsStatus = 'savings_target_hit'.tr;
+          savingsDetail = 'savings_target_hit_desc'.tr;
+          isSavingsHealthy = true;
+        } else {
+          savingsStatus = 'savings_accumulating'.tr;
+          savingsDetail = 'savings_accumulating_desc'.trParams({
+            'pct': '${(savingsAchieved * 100).toInt()}%',
+          });
+          isSavingsHealthy = savingsAchieved >= 0.5;
+        }
+      }
+    }
+
+    final savingsDimension = WalletHealthDimension(
+      title: 'dim_savings_discipline'.tr,
+      score: savingsScore,
+      maxScore: 25.0,
+      statusText: savingsStatus,
+      detail: savingsDetail,
+      isHealthy: isSavingsHealthy,
+      icon: Icons.savings_outlined,
+    );
+
+    // -------------------------------------------------------------
+    // 4. Cash Runway Buffer (15 คะแนน)
+    // -------------------------------------------------------------
+    final double averageDailySpend = currentDay > 0
+        ? (actualExpenses / currentDay)
+        : plan.targetDailyAllowance;
+    final double safeDailySpend = averageDailySpend > 1.0
+        ? averageDailySpend
+        : (plan.targetDailyAllowance > 0 ? plan.targetDailyAllowance : 100.0);
+    final double runwayDays = totalCurrentBalance > 0
+        ? (totalCurrentBalance / safeDailySpend)
+        : 0.0;
+    final double requiredDays = remainingDays > 0 ? remainingDays.toDouble() : 1.0;
+
+    double runwayScore;
+    String runwayStatus;
+    String runwayDetail;
+    bool isRunwayHealthy;
+
+    if (runwayDays >= requiredDays) {
+      runwayScore = 15.0;
+      runwayStatus = 'runway_sufficient'.tr;
+      runwayDetail = 'runway_sufficient_desc'.trParams({
+        'days': '${runwayDays.toInt()}',
+      });
+      isRunwayHealthy = true;
+    } else {
+      runwayScore = ((runwayDays / requiredDays) * 15.0).clamp(0.0, 15.0);
+      runwayStatus = 'runway_short'.tr;
+      runwayDetail = 'runway_short_desc'.trParams({
+        'days': '${runwayDays.toInt()}',
+        'short': '${(requiredDays - runwayDays).toInt()}',
+      });
+      isRunwayHealthy = false;
+    }
+
+    final runwayDimension = WalletHealthDimension(
+      title: 'dim_runway_buffer'.tr,
+      score: runwayScore,
+      maxScore: 15.0,
+      statusText: runwayStatus,
+      detail: runwayDetail,
+      isHealthy: isRunwayHealthy,
+      icon: Icons.timer_outlined,
+    );
+
+    // -------------------------------------------------------------
+    // Total Score & Tier
+    // -------------------------------------------------------------
+    final int totalScore = (paceScore + commitmentScore + savingsScore + runwayScore).round().clamp(0, 100);
+    final WalletHealthTier tier;
+    if (totalScore >= 90) {
+      tier = WalletHealthTier.optimal;
+    } else if (totalScore >= 75) {
+      tier = WalletHealthTier.healthy;
+    } else if (totalScore >= 50) {
+      tier = WalletHealthTier.fair;
+    } else {
+      tier = WalletHealthTier.critical;
+    }
+
+    // Suggested Daily Pace
+    double suggestedPace = dynamicCalculatedDailyQuota;
+    if (suggestedPace <= 0) {
+      suggestedPace = remainingDailyAllowance > 0 ? remainingDailyAllowance : plan.targetDailyAllowance;
+    }
+
+    // Headline Advice
+    final String headline;
+    switch (tier) {
+      case WalletHealthTier.optimal:
+        headline = 'health_headline_optimal'.tr;
+        break;
+      case WalletHealthTier.healthy:
+        headline = 'health_headline_healthy'.tr;
+        break;
+      case WalletHealthTier.fair:
+        headline = 'health_headline_fair'.trParams({
+          'amount': suggestedPace.toStringAsFixed(0),
+        });
+        break;
+      case WalletHealthTier.critical:
+        headline = 'health_headline_critical'.tr;
+        break;
+    }
+
+    // Actionable Insights list
+    final insights = <WalletHealthInsight>[];
+
+    // Insight 1: Fixed Bills
+    if (remainingFixed <= 0) {
+      insights.add(WalletHealthInsight(
+        icon: Icons.check_circle_outline_rounded,
+        iconColor: const Color(0xFF10B981),
+        title: 'insight_fixed_cleared_title'.tr,
+        description: 'insight_fixed_cleared_desc'.tr,
+      ));
+    } else if (isCommitmentHealthy) {
+      insights.add(WalletHealthInsight(
+        icon: Icons.verified_user_outlined,
+        iconColor: const Color(0xFF3B82F6),
+        title: 'insight_fixed_covered_title'.tr,
+        description: 'insight_fixed_covered_desc'.trParams({
+          'amount': remainingFixed.toStringAsFixed(0),
+        }),
+      ));
+    } else {
+      insights.add(WalletHealthInsight(
+        icon: Icons.warning_amber_rounded,
+        iconColor: const Color(0xFFEF4444),
+        title: 'insight_fixed_deficit_title'.tr,
+        description: 'insight_fixed_deficit_desc'.trParams({
+          'amount': remainingFixed.toStringAsFixed(0),
+        }),
+        actionLabel: 'action_view_budget'.tr,
+        onAction: () => Get.toNamed(Routes.BUDGET_SETTINGS),
+      ));
+    }
+
+    // Insight 2: Daily Allowance / Pace
+    if (!isPaceHealthy) {
+      insights.add(WalletHealthInsight(
+        icon: Icons.tune_rounded,
+        iconColor: const Color(0xFFF59E0B),
+        title: 'insight_pace_warning_title'.tr,
+        description: 'insight_pace_warning_desc'.trParams({
+          'pace': suggestedPace.toStringAsFixed(0),
+          'days': '$remainingDays',
+        }),
+        actionLabel: 'action_apply_dynamic_quota'.tr,
+        onAction: applyDynamicCalculatedQuota,
+      ));
+    } else {
+      insights.add(WalletHealthInsight(
+        icon: Icons.trending_up_rounded,
+        iconColor: const Color(0xFF10B981),
+        title: 'insight_pace_good_title'.tr,
+        description: 'insight_pace_good_desc'.trParams({
+          'quota': plan.targetDailyAllowance.toStringAsFixed(0),
+        }),
+      ));
+    }
+
+    // Insight 3: Savings Leakage or Target
+    if (actualSavingsWithdrawals > 0) {
+      insights.add(WalletHealthInsight(
+        icon: Icons.outbox_rounded,
+        iconColor: const Color(0xFFEF4444),
+        title: 'insight_savings_withdrawn_title'.tr,
+        description: 'insight_savings_withdrawn_desc'.trParams({
+          'amount': actualSavingsWithdrawals.toStringAsFixed(0),
+        }),
+      ));
+    } else if (actualSavings >= targetSavings && targetSavings > 0) {
+      insights.add(WalletHealthInsight(
+        icon: Icons.celebration_outlined,
+        iconColor: const Color(0xFF10B981),
+        title: 'insight_savings_target_hit_title'.tr,
+        description: 'insight_savings_target_hit_desc'.tr,
+      ));
+    }
+
+    return WalletHealthResult(
+      totalScore: totalScore,
+      tier: tier,
+      runwayDays: runwayDays,
+      burnRateMultiplier: burnMultiplier,
+      suggestedDailyPace: suggestedPace,
+      headlineAdvice: headline,
+      dimensions: [
+        paceDimension,
+        commitmentDimension,
+        savingsDimension,
+        runwayDimension,
+      ],
+      insights: insights,
+    );
+  }
+
+  // ==========================================
   // DATA FOR FL_CHART
   // ==========================================
 
@@ -412,7 +815,9 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
 
       final income = monthTransactions.where((t) => t.isIncome).fold(0.0, (sum, t) => sum + t.amount);
       final expense = monthTransactions.where((t) => t.isExpense).fold(0.0, (sum, t) => sum + t.amount);
-      final savings = monthTransactions.where((t) => t.isSavings).fold(0.0, (sum, t) => sum + t.amount);
+      final savingsDeposits = monthTransactions.where((t) => t.isSavings).fold(0.0, (sum, t) => sum + t.amount);
+      final savingsWithdrawals = monthTransactions.where((t) => t.isSavingsWithdrawal).fold(0.0, (sum, t) => sum + t.amount);
+      final savings = savingsDeposits - savingsWithdrawals;
       final net = income - expense - savings;
 
       result.add({
@@ -572,14 +977,9 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
   }
 
   String get themeModeName {
-    switch (themeMode.value) {
-      case ThemeMode.system:
-        return 'theme_system'.tr;
-      case ThemeMode.light:
-        return 'theme_light'.tr;
-      case ThemeMode.dark:
-        return 'theme_dark'.tr;
-    }
+    final currentlyDark = (themeMode.value == ThemeMode.dark) ||
+        (themeMode.value == ThemeMode.system && (Get.isDarkMode || isDarkMode.value));
+    return currentlyDark ? 'theme_dark'.tr : 'theme_light'.tr;
   }
 
   static const List<String> thaiMonthNames = [

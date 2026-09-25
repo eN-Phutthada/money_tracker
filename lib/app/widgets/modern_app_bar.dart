@@ -2,7 +2,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../routes/app_routes.dart';
 import '../modules/dashboard/controllers/dashboard_controller.dart';
 import '../modules/security/controllers/security_controller.dart';
@@ -68,11 +67,11 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
       leadingWidget = Padding(
         padding: const EdgeInsets.only(left: 14, top: 12, bottom: 12, right: 2),
         child: Material(
-          color: isDark ? const Color(0xFF141414) : const Color(0xFFF4F4F4),
+          color: isDark ? const Color(0xFF1A1A1A) : const Color(0xFFF4F4F4),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
             side: BorderSide(
-              color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+              color: isDark ? Colors.white.withValues(alpha: 0.10) : Colors.black.withValues(alpha: 0.08),
               width: 0.8,
             ),
           ),
@@ -112,16 +111,19 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
               Flexible(child: titleWidget!)
             else if (title != null)
               Flexible(
-                child: Text(
-                  title!.toUpperCase(),
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.2,
-                    color: isDark ? Colors.white : Colors.black,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    title!.toUpperCase(),
+                    style: NothingTypography.grotesk(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: NothingTypography.safeSpacing(title, 0.8),
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
+                    maxLines: 1,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             if (badgeWidget != null) ...[
@@ -145,24 +147,26 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
           subtitleWidget!,
         ] else if (subtitle != null) ...[
           const SizedBox(height: 2),
-          Text(
-            subtitle!,
-            style: GoogleFonts.spaceGrotesk(
-              fontSize: 11,
-              color: isDark ? AppColors.nothingSubtext : const Color(0xFF777777),
-              fontWeight: FontWeight.w500,
-              letterSpacing: 0.2,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              subtitle!,
+              style: NothingTypography.grotesk(
+                fontSize: 10.5,
+                color: isDark ? const Color(0xFFAAAAAA) : const Color(0xFF666666),
+                fontWeight: FontWeight.w500,
+                letterSpacing: 0.1,
+              ),
+              maxLines: 1,
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
         ],
       ],
     );
 
     return AppBar(
-      backgroundColor: (isDark ? const Color(0xFF000000) : Colors.white)
-          .withValues(alpha: isDark ? 0.88 : 0.92),
+      backgroundColor: Colors.transparent,
       elevation: 0,
       scrolledUnderElevation: 0,
       centerTitle: false,
@@ -172,10 +176,34 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
       title: contentTitle,
       titleSpacing: leadingWidget != null ? 6 : 18,
       actions: actions,
+      systemOverlayStyle: SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+      ),
       flexibleSpace: ClipRect(
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: Container(color: Colors.transparent),
+          filter: ImageFilter.blur(sigmaX: 1, sigmaY: 1),
+          child: Container(
+            decoration: BoxDecoration(
+              color: isDark
+                  ? const Color(0xFF0F0F0F).withValues(alpha: 0.22)
+                  : Colors.white.withValues(alpha: 0.28),
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: isDark
+                    ? [
+                        Colors.white.withValues(alpha: 0.06),
+                        Colors.white.withValues(alpha: 0.00),
+                      ]
+                    : [
+                        Colors.white.withValues(alpha: 0.30),
+                        Colors.white.withValues(alpha: 0.06),
+                      ],
+              ),
+            ),
+          ),
         ),
       ),
       bottom: PreferredSize(
@@ -203,48 +231,61 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
     required VoidCallback onTap,
     required String label,
     required IconData icon,
+    String? compactLabel,
     List<Color>? gradientColors,
     Color shadowColor = AppColors.nothingRed,
   }) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 14),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            HapticFeedback.lightImpact();
-            onTap();
-          },
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-            decoration: BoxDecoration(
-              color: AppColors.nothingRed,
+    return Builder(
+      builder: (context) {
+        final isMobile = MediaQuery.sizeOf(context).width < 500;
+        final resolvedLabel = isMobile
+            ? (compactLabel ?? (label.contains(' ') ? label.split(' ').first : label))
+            : label;
+
+        return Padding(
+          padding: const EdgeInsets.only(right: 14),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () {
+                HapticFeedback.lightImpact();
+                onTap();
+              },
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.3),
-                width: 0.8,
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, size: 15, color: Colors.white),
-                const SizedBox(width: 5),
-                Text(
-                  label.toUpperCase(),
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                    letterSpacing: 0.8,
+              child: Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: isMobile ? 10 : 12,
+                  vertical: 7,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.nothingRed,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.3),
+                    width: 0.8,
                   ),
                 ),
-              ],
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(icon, size: 15, color: Colors.white),
+                    const SizedBox(width: 5),
+                    Text(
+                      resolvedLabel.toUpperCase(),
+                      style: NothingTypography.grotesk(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        letterSpacing: NothingTypography.safeSpacing(resolvedLabel, 0.6),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -305,7 +346,9 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
     return Obx(() {
       final hasSec = Get.isRegistered<SecurityController>();
       final isPinOn = hasSec && Get.find<SecurityController>().isPinEnabled.value;
-      final statusColor = isPinOn ? const Color(0xFF10B981) : AppColors.nothingRed;
+      final statusColor = isPinOn
+          ? const Color(0xFF10B981)
+          : (isDark ? AppColors.nothingRedLight : AppColors.nothingRed);
 
       return Padding(
         padding: const EdgeInsets.only(right: 6),
@@ -355,7 +398,7 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
                     Icon(
                       isPinOn ? Icons.shield_rounded : Icons.shield_outlined,
                       size: 13,
-                      color: isDark ? Colors.white : Colors.black,
+                      color: isDark ? Colors.white70 : Colors.black,
                     ),
                   ],
                 ),
@@ -377,19 +420,15 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
       if (!hasController) return const SizedBox.shrink();
       final controller = Get.find<DashboardController>();
       final mode = controller.themeMode.value;
+      final currentlyDark = (mode == ThemeMode.dark) ||
+          (mode == ThemeMode.system && isDark);
 
-      final IconData themeIcon;
-      final Color iconColor;
-      if (mode == ThemeMode.dark) {
-        themeIcon = Icons.light_mode_rounded;
-        iconColor = const Color(0xFFFBBF24);
-      } else if (mode == ThemeMode.light) {
-        themeIcon = Icons.dark_mode_rounded;
-        iconColor = const Color(0xFF6366F1);
-      } else {
-        themeIcon = Icons.brightness_auto_rounded;
-        iconColor = isDark ? Colors.white : Colors.black;
-      }
+      final IconData themeIcon = currentlyDark
+          ? Icons.light_mode_rounded
+          : Icons.dark_mode_rounded;
+      final Color iconColor = currentlyDark
+          ? const Color(0xFFFBBF24)
+          : (isDark ? Colors.white : Colors.black);
 
       return Padding(
         padding: const EdgeInsets.only(right: 6),

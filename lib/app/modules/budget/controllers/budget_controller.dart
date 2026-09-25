@@ -30,6 +30,28 @@ class BudgetController extends GetxController {
     targetDailyAllowance = plan.targetDailyAllowance.obs;
     targetMonthlySavings = plan.targetMonthlySavings.obs;
     plannedFixedCosts = plan.plannedFixedCosts.obs;
+
+    // Auto-save changes immediately upon any parameter edit
+    ever(plannedIncome, (_) => _autoSave());
+    ever(targetDailyAllowance, (_) => _autoSave());
+    ever(targetMonthlySavings, (_) => _autoSave());
+    ever(plannedFixedCosts, (_) => _autoSave());
+  }
+
+  void _autoSave() {
+    final newPlan = BudgetPlan(
+      plannedIncome: plannedIncome.value,
+      targetDailyAllowance: targetDailyAllowance.value,
+      targetMonthlySavings: targetMonthlySavings.value,
+      plannedFixedCosts: plannedFixedCosts.value,
+    );
+    dashboardController.updateBudgetPlan(newPlan);
+  }
+
+  @override
+  void onClose() {
+    _autoSave();
+    super.onClose();
   }
 
   int get daysInMonth => dashboardController.daysInCurrentMonth;

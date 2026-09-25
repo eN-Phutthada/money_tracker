@@ -24,16 +24,42 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
   int _touchedPieIndex = -1;
 
   IconData _getCategoryIcon(String category) {
-    if (category.contains('อาหาร') || category.contains('ของกิน') || category.contains('Food')) return Icons.fastfood_outlined;
-    if (category.contains('กาแฟ') || category.contains('เครื่องดื่ม') || category.contains('Coffee')) return Icons.local_cafe_outlined;
-    if (category.contains('เดินทาง') || category.contains('รถ') || category.contains('Transport')) return Icons.directions_subway_outlined;
-    if (category.contains('ช้อปปิ้ง') || category.contains('Shopping')) return Icons.shopping_bag_outlined;
-    if (category.contains('ของใช้') || category.contains('Personal')) return Icons.inventory_2_outlined;
-    if (category.contains('ที่อยู่อาศัย') || category.contains('Housing')) return Icons.home_outlined;
-    if (category.contains('สาธารณูปโภค') || category.contains('Utilities')) return Icons.bolt_outlined;
-    if (category.contains('บันเทิง') || category.contains('Entertainment')) return Icons.movie_outlined;
-    if (category.contains('สุขภาพ') || category.contains('Health')) return Icons.health_and_safety_outlined;
-    if (category.contains('การศึกษา') || category.contains('Education')) return Icons.school_outlined;
+    if (category.contains('อาหาร') ||
+        category.contains('ของกิน') ||
+        category.contains('Food')) {
+      return Icons.fastfood_outlined;
+    }
+    if (category.contains('กาแฟ') ||
+        category.contains('เครื่องดื่ม') ||
+        category.contains('Coffee')) {
+      return Icons.local_cafe_outlined;
+    }
+    if (category.contains('เดินทาง') ||
+        category.contains('รถ') ||
+        category.contains('Transport')) {
+      return Icons.directions_subway_outlined;
+    }
+    if (category.contains('ช้อปปิ้ง') || category.contains('Shopping')) {
+      return Icons.shopping_bag_outlined;
+    }
+    if (category.contains('ของใช้') || category.contains('Personal')) {
+      return Icons.inventory_2_outlined;
+    }
+    if (category.contains('ที่อยู่อาศัย') || category.contains('Housing')) {
+      return Icons.home_outlined;
+    }
+    if (category.contains('สาธารณูปโภค') || category.contains('Utilities')) {
+      return Icons.bolt_outlined;
+    }
+    if (category.contains('บันเทิง') || category.contains('Entertainment')) {
+      return Icons.movie_outlined;
+    }
+    if (category.contains('สุขภาพ') || category.contains('Health')) {
+      return Icons.health_and_safety_outlined;
+    }
+    if (category.contains('การศึกษา') || category.contains('Education')) {
+      return Icons.school_outlined;
+    }
     return Icons.category_outlined;
   }
 
@@ -45,137 +71,165 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
       final isSpline = controller.selectedChartIndex.value == 0;
 
       return NothingCard(
-        showDotGrid: true,
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // --- HEADER WITH NOTHING OS GLYPH & SEGMENTED SWITCH ---
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final isNarrow = constraints.maxWidth < 360;
+            showDotGrid: true,
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // --- HEADER WITH NOTHING OS GLYPH & SEGMENTED SWITCH ---
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isNarrow = constraints.maxWidth < 360;
 
-                final toggleWidget = Container(
-                  padding: const EdgeInsets.all(3),
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF000000) : const Color(0xFFF1F1F1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
-                      width: 0.8,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: isNarrow ? MainAxisSize.max : MainAxisSize.min,
-                    children: [
-                      _buildNothingTabItem(
-                        index: 0,
-                        title: 'TREND',
-                        icon: Icons.show_chart_rounded,
-                        isDark: isDark,
-                        expand: isNarrow,
-                      ),
-                      _buildNothingTabItem(
-                        index: 1,
-                        title: 'DONUT',
-                        icon: Icons.pie_chart_outline_rounded,
-                        isDark: isDark,
-                        expand: isNarrow,
-                      ),
-                    ],
-                  ),
-                );
-
-                final titleWidget = Row(
-                  children: [
-                    Container(
-                      width: 38,
-                      height: 38,
+                    final toggleWidget = Container(
+                      padding: const EdgeInsets.all(3),
                       decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF161616) : const Color(0xFFF5F5F5),
+                        color: isDark
+                            ? const Color(0xFF000000)
+                            : const Color(0xFFF1F1F1),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                          color: isDark
+                              ? AppColors.nothingBorder
+                              : Colors.black.withValues(alpha: 0.08),
                           width: 0.8,
                         ),
                       ),
-                      child: Center(
-                        child: Icon(
-                          Icons.insights_rounded,
-                          color: isDark ? Colors.white : Colors.black,
-                          size: 18,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      child: Row(
+                        mainAxisSize: isNarrow
+                            ? MainAxisSize.max
+                            : MainAxisSize.min,
                         children: [
-                          Row(
-                            children: [
-                              const NothingLedIndicator(color: AppColors.nothingRed, size: 6, isPulsing: true),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: NothingDotText(
-                                  'ANALYTICS // TRENDS',
-                                  fontSize: 12.5,
-                                  letterSpacing: 1.2,
-                                  color: isDark ? Colors.white : Colors.black,
-                                ),
-                              ),
-                            ],
+                          _buildNothingTabItem(
+                            index: 0,
+                            title: 'TREND',
+                            icon: Icons.show_chart_rounded,
+                            isDark: isDark,
+                            expand: isNarrow,
                           ),
-                          const SizedBox(height: 2),
-                          Text(
-                            controller.formattedPeriodTitle.toUpperCase(),
-                            style: GoogleFonts.spaceGrotesk(
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.w600,
-                              color: isDark ? AppColors.nothingSubtext : const Color(0xFF6B7280),
-                              letterSpacing: 0.6,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                          _buildNothingTabItem(
+                            index: 1,
+                            title: 'DONUT',
+                            icon: Icons.pie_chart_outline_rounded,
+                            isDark: isDark,
+                            expand: isNarrow,
                           ),
                         ],
                       ),
-                    ),
-                  ],
-                );
+                    );
 
-                if (isNarrow) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      titleWidget,
-                      const SizedBox(height: 12),
-                      toggleWidget,
-                    ],
-                  );
-                }
+                    final titleWidget = Row(
+                      children: [
+                        Container(
+                          width: 38,
+                          height: 38,
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? const Color(0xFF161616)
+                                : const Color(0xFFF5F5F5),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isDark
+                                  ? AppColors.nothingBorder
+                                  : Colors.black.withValues(alpha: 0.08),
+                              width: 0.8,
+                            ),
+                          ),
+                          child: Center(
+                            child: Icon(
+                              Icons.insights_rounded,
+                              color: isDark ? Colors.white : Colors.black,
+                              size: 18,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const NothingLedIndicator(
+                                    color: AppColors.nothingRed,
+                                    size: 6,
+                                    isPulsing: true,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: NothingDotText(
+                                      'ANALYTICS // TRENDS',
+                                      fontSize: 12.5,
+                                      letterSpacing: 1.2,
+                                      isMono: false,
+                                      color: isDark
+                                          ? Colors.white
+                                          : Colors.black,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                controller.formattedPeriodTitle.toUpperCase(),
+                                style: NothingTypography.grotesk(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark
+                                      ? AppColors.nothingSubtext
+                                      : const Color(0xFF6B7280),
+                                  letterSpacing: NothingTypography.safeSpacing(
+                                    controller.formattedPeriodTitle,
+                                    0.6,
+                                  ),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    );
 
-                return Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(child: titleWidget),
-                    const SizedBox(width: 12),
-                    toggleWidget,
-                  ],
-                );
-              },
+                    if (isNarrow) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          titleWidget,
+                          const SizedBox(height: 12),
+                          toggleWidget,
+                        ],
+                      );
+                    }
+
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(child: titleWidget),
+                        const SizedBox(width: 12),
+                        toggleWidget,
+                      ],
+                    );
+                  },
+                ),
+                const SizedBox(height: 18),
+
+                // --- ANIMATED SWITCHER BETWEEN SPLINE AND DONUT ---
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 260),
+                  transitionBuilder: (child, anim) =>
+                      FadeTransition(opacity: anim, child: child),
+                  child: isSpline
+                      ? _buildNothingSplineChart(isDark)
+                      : _buildNothingDonutChart(isDark),
+                ),
+              ],
             ),
-            const SizedBox(height: 18),
-
-            // --- ANIMATED SWITCHER BETWEEN SPLINE AND DONUT ---
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 260),
-              transitionBuilder: (child, anim) => FadeTransition(opacity: anim, child: child),
-              child: isSpline ? _buildNothingSplineChart(isDark) : _buildNothingDonutChart(isDark),
-            ),
-          ],
-        ),
-      ).animate().fadeIn(duration: const Duration(milliseconds: 350)).slideY(begin: 0.04);
+          )
+          .animate()
+          .fadeIn(duration: const Duration(milliseconds: 350))
+          .slideY(begin: 0.04);
     });
   }
 
@@ -204,7 +258,9 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
           borderRadius: BorderRadius.circular(9),
           border: isSelected
               ? Border.all(
-                  color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.1),
+                  color: isDark
+                      ? AppColors.nothingBorder
+                      : Colors.black.withValues(alpha: 0.1),
                   width: 0.8,
                 )
               : null,
@@ -218,7 +274,9 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
               size: 13,
               color: isSelected
                   ? (isDark ? Colors.white : Colors.black)
-                  : (isDark ? AppColors.nothingSubtext : const Color(0xFF888888)),
+                  : (isDark
+                        ? AppColors.nothingSubtext
+                        : const Color(0xFF888888)),
             ),
             const SizedBox(width: 5),
             Text(
@@ -229,7 +287,9 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
                 letterSpacing: 0.8,
                 color: isSelected
                     ? (isDark ? Colors.white : Colors.black)
-                    : (isDark ? AppColors.nothingSubtext : const Color(0xFF888888)),
+                    : (isDark
+                          ? AppColors.nothingSubtext
+                          : const Color(0xFF888888)),
               ),
             ),
           ],
@@ -248,7 +308,11 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
     final data = controller.trailing6MonthsData;
     if (data.isEmpty) return const SizedBox(height: 200);
 
-    final currencyFmt = NumberFormat.currency(locale: 'th_TH', symbol: '฿', decimalDigits: 0);
+    final currencyFmt = NumberFormat.currency(
+      locale: 'th_TH',
+      symbol: '฿',
+      decimalDigits: 0,
+    );
     final spots = <FlSpot>[];
     double minY = double.infinity;
     double maxY = -double.infinity;
@@ -287,7 +351,9 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
             color: isDark ? const Color(0xFF0D0D0D) : const Color(0xFFF7F7F7),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+              color: isDark
+                  ? AppColors.nothingBorder
+                  : Colors.black.withValues(alpha: 0.08),
               width: 0.8,
             ),
           ),
@@ -299,7 +365,10 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const NothingLedIndicator(color: AppColors.nothingRed, size: 6),
+                    const NothingLedIndicator(
+                      color: AppColors.nothingRed,
+                      size: 6,
+                    ),
                     const SizedBox(width: 6),
                     Flexible(
                       child: Text(
@@ -327,7 +396,11 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       NothingLedIndicator(
-                        color: avgNet >= 0 ? (isDark ? Colors.white : Colors.black) : AppColors.nothingRed,
+                        color: avgNet >= 0
+                            ? (isDark ? Colors.white : Colors.black)
+                            : (isDark
+                                  ? AppColors.nothingRedLight
+                                  : AppColors.nothingRed),
                         size: 6,
                       ),
                       const SizedBox(width: 6),
@@ -338,7 +411,9 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
                           fontWeight: FontWeight.w700,
                           color: avgNet >= 0
                               ? (isDark ? Colors.white : Colors.black)
-                              : AppColors.nothingRed,
+                              : (isDark
+                                    ? AppColors.nothingRedLight
+                                    : AppColors.nothingRed),
                         ),
                         maxLines: 1,
                       ),
@@ -374,9 +449,15 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
               ),
               titlesData: FlTitlesData(
                 show: true,
-                rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                rightTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+                topTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+                leftTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
                 bottomTitles: AxisTitles(
                   sideTitles: SideTitles(
                     showTitles: true,
@@ -392,10 +473,16 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
                             (data[index]['month'] as String).toUpperCase(),
                             style: GoogleFonts.spaceGrotesk(
                               fontSize: 10,
-                              fontWeight: isPeak ? FontWeight.w800 : FontWeight.w500,
+                              fontWeight: isPeak
+                                  ? FontWeight.w800
+                                  : FontWeight.w500,
                               color: isPeak
-                                  ? AppColors.nothingRed
-                                  : (isDark ? AppColors.nothingSubtext : const Color(0xFF888888)),
+                                  ? (isDark
+                                        ? AppColors.nothingRedLight
+                                        : AppColors.nothingRed)
+                                  : (isDark
+                                        ? AppColors.nothingSubtext
+                                        : const Color(0xFF666666)),
                             ),
                           ),
                         );
@@ -408,9 +495,13 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
               borderData: FlBorderData(show: false),
               lineTouchData: LineTouchData(
                 touchTooltipData: LineTouchTooltipData(
-                  getTooltipColor: (_) => isDark ? const Color(0xFF000000) : Colors.white,
+                  getTooltipColor: (_) =>
+                      isDark ? const Color(0xFF000000) : Colors.white,
                   tooltipBorderRadius: BorderRadius.circular(10),
-                  tooltipPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  tooltipPadding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
                   getTooltipItems: (touchedSpots) {
                     return touchedSpots.map((spot) {
                       final index = spot.x.toInt();
@@ -421,7 +512,9 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
                         GoogleFonts.shareTechMono(
                           color: net >= 0
                               ? (isDark ? Colors.white : Colors.black)
-                              : AppColors.nothingRed,
+                              : (isDark
+                                    ? AppColors.nothingRedLight
+                                    : AppColors.nothingRed),
                           fontWeight: FontWeight.w700,
                           fontSize: 11.5,
                         ),
@@ -445,10 +538,14 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
                       return FlDotCirclePainter(
                         radius: isPeak ? 5 : 3.5,
                         color: isPeak
-                            ? AppColors.nothingRed
+                            ? (isDark
+                                  ? AppColors.nothingRedLight
+                                  : AppColors.nothingRed)
                             : (isDark ? Colors.white : Colors.black),
                         strokeWidth: isPeak ? 2.5 : 1.5,
-                        strokeColor: isDark ? const Color(0xFF000000) : Colors.white,
+                        strokeColor: isDark
+                            ? const Color(0xFF000000)
+                            : Colors.white,
                       );
                     },
                   ),
@@ -458,7 +555,9 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        (isDark ? Colors.white : Colors.black).withValues(alpha: isDark ? 0.08 : 0.05),
+                        (isDark ? Colors.white : Colors.black).withValues(
+                          alpha: isDark ? 0.08 : 0.05,
+                        ),
                         Colors.transparent,
                       ],
                     ),
@@ -477,7 +576,11 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
   // ==========================================
   Widget _buildNothingDonutChart(bool isDark) {
     final categories = controller.categoryBreakdown;
-    final currencyFmt = NumberFormat.currency(locale: 'th_TH', symbol: '฿', decimalDigits: 0);
+    final currencyFmt = NumberFormat.currency(
+      locale: 'th_TH',
+      symbol: '฿',
+      decimalDigits: 0,
+    );
 
     if (categories.isEmpty) {
       return Padding(
@@ -489,7 +592,9 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
               Icon(
                 Icons.pie_chart_outline_rounded,
                 size: 38,
-                color: isDark ? AppColors.nothingSubtext : const Color(0xFF999999),
+                color: isDark
+                    ? AppColors.nothingSubtext
+                    : const Color(0xFF999999),
               ),
               const SizedBox(height: 10),
               Text(
@@ -497,7 +602,9 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
                 style: GoogleFonts.spaceGrotesk(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: isDark ? AppColors.nothingSubtext : const Color(0xFF777777),
+                  color: isDark
+                      ? AppColors.nothingSubtext
+                      : const Color(0xFF777777),
                 ),
               ),
             ],
@@ -507,19 +614,20 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
     }
 
     final double totalExpenses = controller.actualExpenses;
-    final Map<String, dynamic>? activeCategory = (_touchedPieIndex >= 0 && _touchedPieIndex < categories.length)
+    final Map<String, dynamic>? activeCategory =
+        (_touchedPieIndex >= 0 && _touchedPieIndex < categories.length)
         ? categories[_touchedPieIndex]
         : null;
 
     // Palette with high contrast Nothing OS tones
     final nothingPalette = [
-      AppColors.nothingRed,
-      isDark ? Colors.white : const Color(0xFF222222),
-      isDark ? const Color(0xFFB0B0B0) : const Color(0xFF666666),
-      isDark ? const Color(0xFF777777) : const Color(0xFFAAAAAA),
-      const Color(0xFFD97706), // Amber
-      const Color(0xFF6366F1), // Indigo
-      const Color(0xFF10B981), // Emerald
+      isDark ? AppColors.nothingRedLight : AppColors.nothingRed,
+      isDark ? Colors.white : const Color(0xFF1E1E1E),
+      isDark ? const Color(0xFFD4D4D8) : const Color(0xFF555555),
+      isDark ? const Color(0xFFA1A1AA) : const Color(0xFF888888),
+      const Color(0xFFF59E0B), // Amber Alert
+      const Color(0xFF38BDF8), // Cyan Telemetry
+      AppColors.nothingGreen, // Nothing Green
     ];
 
     final sections = categories.asMap().entries.map((entry) {
@@ -541,7 +649,9 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
                   color: isDark ? Colors.black : Colors.white,
                   borderRadius: BorderRadius.circular(6),
                   border: Border.all(
-                    color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.2),
+                    color: isDark
+                        ? AppColors.nothingBorder
+                        : Colors.black.withValues(alpha: 0.2),
                     width: 0.8,
                   ),
                 ),
@@ -580,7 +690,9 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
                           _touchedPieIndex = -1;
                           return;
                         }
-                        _touchedPieIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
+                        _touchedPieIndex = pieTouchResponse
+                            .touchedSection!
+                            .touchedSectionIndex;
                       });
                     },
                   ),
@@ -603,7 +715,9 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
                       fontSize: 9.5,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 1.0,
-                      color: isDark ? AppColors.nothingSubtext : const Color(0xFF777777),
+                      color: isDark
+                          ? AppColors.nothingSubtext
+                          : const Color(0xFF777777),
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -619,7 +733,8 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
                         color: activeCategory != null
-                            ? nothingPalette[_touchedPieIndex % nothingPalette.length]
+                            ? nothingPalette[_touchedPieIndex %
+                                  nothingPalette.length]
                             : (isDark ? Colors.white : Colors.black),
                       ),
                     ),
@@ -630,7 +745,9 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
                       style: GoogleFonts.shareTechMono(
                         fontSize: 9.5,
                         fontWeight: FontWeight.w700,
-                        color: nothingPalette[_touchedPieIndex % nothingPalette.length],
+                        color:
+                            nothingPalette[_touchedPieIndex %
+                                nothingPalette.length],
                       ),
                     ),
                   ],
@@ -656,10 +773,14 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF0A0A0A) : const Color(0xFFF9F9F9),
+                color: isDark
+                    ? const Color(0xFF0A0A0A)
+                    : const Color(0xFFF9F9F9),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.07),
+                  color: isDark
+                      ? AppColors.nothingBorder
+                      : Colors.black.withValues(alpha: 0.07),
                   width: 0.8,
                 ),
               ),
@@ -683,7 +804,7 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
                       Expanded(
                         child: Text(
                           catName,
-                          style: GoogleFonts.spaceGrotesk(
+                          style: NothingTypography.grotesk(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: isDark ? Colors.white : Colors.black,
@@ -696,7 +817,10 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
 
                       // Percentage Chip
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 1.5,
+                        ),
                         decoration: BoxDecoration(
                           color: color.withValues(alpha: isDark ? 0.18 : 0.12),
                           borderRadius: BorderRadius.circular(6),

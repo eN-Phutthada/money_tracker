@@ -33,15 +33,7 @@ class BudgetSettingsView extends GetView<BudgetController> {
     return Scaffold(
       appBar: ModernAppBar(
         title: 'budget_settings'.tr,
-        badgeText: 'Smart Plan',
         subtitle: 'budget_subtitle'.tr,
-        actions: [
-          ModernAppBar.primaryActionButton(
-            onTap: controller.save,
-            label: 'save'.tr,
-            icon: Icons.check_rounded,
-          ),
-        ],
       ),
       body: LiquidGlassNavDock.floatingOnScreen(
         context: context,
@@ -70,9 +62,9 @@ class BudgetSettingsView extends GetView<BudgetController> {
                   _buildThreePillarsSection(context, currencyFmt, isDark),
                   const SizedBox(height: 26),
 
-                  // 5. LUXURY SAVE ACTION BUTTON
-                  _buildLuxurySaveButton(isDark),
-                  const SizedBox(height: 96),
+                  // 5. AUTO-SAVED STATUS INDICATOR
+                  _buildAutoSavedIndicator(isDark),
+                  const SizedBox(height: 84),
                 ],
               ),
             ),
@@ -108,13 +100,17 @@ class BudgetSettingsView extends GetView<BudgetController> {
                       child: Row(
                         children: [
                           Container(
-                            width: 38,
-                            height: 38,
+                            width: 36,
+                            height: 36,
                             decoration: BoxDecoration(
-                              color: isDark ? const Color(0xFF161616) : const Color(0xFFF4F4F4),
+                              color: isDark
+                                  ? const Color(0xFF161616)
+                                  : const Color(0xFFF4F4F4),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                                color: isDark
+                                    ? AppColors.nothingBorder
+                                    : Colors.black.withValues(alpha: 0.08),
                                 width: 0.8,
                               ),
                             ),
@@ -125,7 +121,7 @@ class BudgetSettingsView extends GetView<BudgetController> {
                               color: isPositive
                                   ? (isDark ? Colors.white : Colors.black)
                                   : AppColors.nothingRed,
-                              size: 18,
+                              size: 17,
                             ),
                           ),
                           const SizedBox(width: 10),
@@ -133,11 +129,15 @@ class BudgetSettingsView extends GetView<BudgetController> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                NothingDotText(
-                                  'PROJECTED // ENDING BALANCE',
-                                  fontSize: 11.5,
-                                  letterSpacing: 1.0,
-                                  color: isDark ? Colors.white : Colors.black,
+                                FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: Alignment.centerLeft,
+                                  child: NothingDotText(
+                                    'PROJECTED // ENDING BALANCE',
+                                    fontSize: 11,
+                                    letterSpacing: 0.8,
+                                    color: isDark ? Colors.white : Colors.black,
+                                  ),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
@@ -164,18 +164,29 @@ class BudgetSettingsView extends GetView<BudgetController> {
                     const SizedBox(width: 8),
 
                     // Status Pill
-                    NothingPill(
-                      label: isPositive ? 'BALANCED' : 'DEFICIT',
-                      color: isPositive
-                          ? (isDark ? const Color(0xFF1A1A1A) : const Color(0xFFEEEEEE))
-                          : AppColors.nothingRed.withValues(alpha: 0.15),
-                      textColor: isPositive
-                          ? (isDark ? Colors.white : Colors.black)
-                          : AppColors.nothingRed,
-                      showDot: true,
-                      dotColor: isPositive ? const Color(0xFF10B981) : AppColors.nothingRed,
-                      isDotMatrix: true,
-                      fontSize: 10,
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: NothingPill(
+                        label: isPositive ? 'BALANCED' : 'DEFICIT',
+                        color: isPositive
+                            ? (isDark
+                                  ? const Color(0xFF1A1A1A)
+                                  : const Color(0xFFEEEEEE))
+                            : AppColors.nothingRed.withValues(alpha: 0.15),
+                        textColor: isPositive
+                            ? (isDark ? Colors.white : Colors.black)
+                            : AppColors.nothingRed,
+                        showDot: true,
+                        dotColor: isPositive
+                            ? const Color(0xFF10B981)
+                            : AppColors.nothingRed,
+                        isDotMatrix: true,
+                        fontSize: 9.5,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 3,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -210,7 +221,9 @@ class BudgetSettingsView extends GetView<BudgetController> {
                         : const Color(0xFFF6F6F6),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.06),
+                      color: isDark
+                          ? AppColors.nothingBorder
+                          : Colors.black.withValues(alpha: 0.06),
                       width: 0.8,
                     ),
                   ),
@@ -236,11 +249,15 @@ class BudgetSettingsView extends GetView<BudgetController> {
                     vertical: 9,
                   ),
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF121212) : const Color(0xFFF9F9F9),
+                    color: isDark
+                        ? const Color(0xFF121212)
+                        : const Color(0xFFF9F9F9),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: isPositive
-                          ? (isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08))
+                          ? (isDark
+                                ? AppColors.nothingBorder
+                                : Colors.black.withValues(alpha: 0.08))
                           : AppColors.nothingRed.withValues(alpha: 0.35),
                       width: 0.8,
                     ),
@@ -248,7 +265,9 @@ class BudgetSettingsView extends GetView<BudgetController> {
                   child: Row(
                     children: [
                       NothingLedIndicator(
-                        color: isPositive ? const Color(0xFF10B981) : AppColors.nothingRed,
+                        color: isPositive
+                            ? const Color(0xFF10B981)
+                            : AppColors.nothingRed,
                         size: 6,
                       ),
                       const SizedBox(width: 8),
@@ -268,11 +287,7 @@ class BudgetSettingsView extends GetView<BudgetController> {
                 const SizedBox(height: 16),
 
                 // Segmented Allocation Progress Track & Legend
-                _buildSegmentedAllocationTrack(
-                  context,
-                  isDark,
-                  currencyFmt,
-                ),
+                _buildSegmentedAllocationTrack(context, isDark, currencyFmt),
               ],
             ),
           );
@@ -356,10 +371,14 @@ class BudgetSettingsView extends GetView<BudgetController> {
                 varRatio: varRatio,
                 savingsRatio: savingsRatio,
                 surplusRatio: surplusRatio,
-                fixedColor: AppColors.fixedCostAccent,
-                varColor: AppColors.variableCostAccent,
-                savingsColor: AppColors.accent,
-                surplusColor: AppColors.primary,
+                fixedColor: isDark
+                    ? const Color(0xFFE5E5EA)
+                    : const Color(0xFF4B5563),
+                varColor: isDark
+                    ? AppColors.nothingRedLight
+                    : AppColors.nothingRed,
+                savingsColor: const Color(0xFF3B82F6),
+                surplusColor: isDark ? Colors.white : Colors.black,
               ),
             ),
           ),
@@ -375,21 +394,21 @@ class BudgetSettingsView extends GetView<BudgetController> {
               label: 'fixed_cost_short'.tr,
               percent: (fixedRatio * 100).toInt(),
               amount: currencyFmt.format(fixedAmount),
-              color: AppColors.fixedCostAccent,
+              color: isDark ? const Color(0xFFE5E5EA) : const Color(0xFF3A3A3C),
               isDark: isDark,
             ),
             _buildAllocationChip(
               label: 'variable_cost_short'.tr,
               percent: (varRatio * 100).toInt(),
               amount: currencyFmt.format(varAmount),
-              color: AppColors.variableCostAccent,
+              color: isDark ? AppColors.nothingRedLight : AppColors.nothingRed,
               isDark: isDark,
             ),
             _buildAllocationChip(
               label: 'savings_short'.tr,
               percent: (savingsRatio * 100).toInt(),
               amount: currencyFmt.format(savingsAmount),
-              color: AppColors.accent,
+              color: const Color(0xFF3B82F6),
               isDark: isDark,
             ),
             if (surplusRatio > 0)
@@ -397,7 +416,7 @@ class BudgetSettingsView extends GetView<BudgetController> {
                 label: 'buffer_short'.tr,
                 percent: (surplusRatio * 100).toInt(),
                 amount: currencyFmt.format(surplusAmount),
-                color: AppColors.primary,
+                color: isDark ? Colors.white : Colors.black,
                 isDark: isDark,
               ),
           ],
@@ -539,20 +558,30 @@ class BudgetSettingsView extends GetView<BudgetController> {
             color: isDark ? const Color(0xFF141414) : const Color(0xFFF7F7F7),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+              color: isDark
+                  ? AppColors.nothingBorder
+                  : Colors.black.withValues(alpha: 0.08),
               width: 0.8,
             ),
           ),
           child: Column(
             children: [
               // Badge Pill
-              NothingPill(
-                label: badgeText.toUpperCase(),
-                color: isDark ? const Color(0xFF202020) : const Color(0xFFE8E8E8),
-                textColor: isDark ? Colors.white : Colors.black,
-                isDotMatrix: true,
-                fontSize: 8.5,
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: NothingPill(
+                  label: badgeText.toUpperCase(),
+                  color: isDark
+                      ? const Color(0xFF202020)
+                      : const Color(0xFFE8E8E8),
+                  textColor: isDark ? Colors.white : Colors.black,
+                  isDotMatrix: true,
+                  fontSize: 8.5,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 5,
+                    vertical: 1.5,
+                  ),
+                ),
               ),
               const SizedBox(height: 7),
 
@@ -643,67 +672,95 @@ class BudgetSettingsView extends GetView<BudgetController> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () => _showEditNumberDialog(
-                              context,
-                              'daily_allowance_input_title'.tr,
-                              controller.targetDailyAllowance,
-                              AppColors.variableCostAccent,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 4,
-                                vertical: 2,
+                        Flexible(
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () => _showEditNumberDialog(
+                                context,
+                                'daily_allowance_input_title'.tr,
+                                controller.targetDailyAllowance,
+                                AppColors.variableCostAccent,
                               ),
-                              child: Row(
-                                children: [
-                                  FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    child: Text(
-                                      currencyFmt.format(
-                                        controller.targetDailyAllowance.value,
-                                      ),
-                                      style: GoogleFonts.shareTechMono(
-                                        fontSize: 28,
-                                        fontWeight: FontWeight.w700,
-                                        color: isDark ? Colors.white : Colors.black,
-                                        letterSpacing: -0.5,
+                              borderRadius: BorderRadius.circular(12),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                  vertical: 2,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Flexible(
+                                      child: FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        alignment: Alignment.centerLeft,
+                                        child: Text(
+                                          currencyFmt.format(
+                                            controller
+                                                .targetDailyAllowance
+                                                .value,
+                                          ),
+                                          style: GoogleFonts.shareTechMono(
+                                            fontSize: 28,
+                                            fontWeight: FontWeight.w700,
+                                            color: isDark
+                                                ? Colors.white
+                                                : Colors.black,
+                                            letterSpacing: -0.5,
+                                          ),
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    padding: const EdgeInsets.all(4),
-                                    decoration: BoxDecoration(
-                                      color: isDark ? const Color(0xFF222222) : const Color(0xFFEEEEEE),
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(
-                                        color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
-                                        width: 0.8,
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.all(4),
+                                      decoration: BoxDecoration(
+                                        color: isDark
+                                            ? const Color(0xFF222222)
+                                            : const Color(0xFFEEEEEE),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: isDark
+                                              ? AppColors.nothingBorder
+                                              : Colors.black.withValues(
+                                                  alpha: 0.08,
+                                                ),
+                                          width: 0.8,
+                                        ),
+                                      ),
+                                      child: Icon(
+                                        Icons.edit_outlined,
+                                        size: 13,
+                                        color: isDark
+                                            ? Colors.white
+                                            : Colors.black,
                                       ),
                                     ),
-                                    child: Icon(
-                                      Icons.edit_outlined,
-                                      size: 13,
-                                      color: isDark ? Colors.white : Colors.black,
-                                    ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
                           ),
                         ),
+                        const SizedBox(width: 8),
 
                         // Monthly Run-Rate Pill
-                        NothingPill(
-                          label: currencyFmt.format(monthlyTotal),
-                          color: isDark ? const Color(0xFF1C1C1C) : const Color(0xFFEDEDED),
-                          textColor: isDark ? Colors.white : Colors.black,
-                          isDotMatrix: true,
-                          fontSize: 11,
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: NothingPill(
+                            label: currencyFmt.format(monthlyTotal),
+                            color: isDark
+                                ? const Color(0xFF1C1C1C)
+                                : const Color(0xFFEDEDED),
+                            textColor: isDark ? Colors.white : Colors.black,
+                            isDotMatrix: true,
+                            fontSize: 10.5,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -875,8 +932,8 @@ class BudgetSettingsView extends GetView<BudgetController> {
       final isPositive = availableBudget > 0;
 
       final Color accentColor = isPositive
-          ? AppColors.primary
-          : AppColors.deficitText;
+          ? (isDark ? Colors.white : Colors.black)
+          : (isDark ? AppColors.nothingRedLight : AppColors.nothingRed);
 
       return Container(
         padding: const EdgeInsets.all(14),
@@ -969,7 +1026,7 @@ class BudgetSettingsView extends GetView<BudgetController> {
                   _buildFormulaDeductionRow(
                     label: 'deduct_savings_target'.tr,
                     amount: currencyFmt.format(savings),
-                    color: AppColors.accent,
+                    color: const Color(0xFF3B82F6),
                     isDark: isDark,
                     prefix: '- ',
                   ),
@@ -977,7 +1034,9 @@ class BudgetSettingsView extends GetView<BudgetController> {
                   _buildFormulaDeductionRow(
                     label: 'deduct_remaining_fixed'.tr,
                     amount: currencyFmt.format(fixedCosts),
-                    color: AppColors.fixedCostAccent,
+                    color: isDark
+                        ? const Color(0xFFE5E5EA)
+                        : const Color(0xFF3A3A3C),
                     isDark: isDark,
                     prefix: '- ',
                   ),
@@ -1062,7 +1121,7 @@ class BudgetSettingsView extends GetView<BudgetController> {
                 // Apply Quota Action Button
                 Material(
                   color: isPositive
-                      ? AppColors.primary
+                      ? (isDark ? Colors.white : Colors.black)
                       : (isDark
                             ? AppColors.darkSurfaceSecondary
                             : AppColors.surfaceSecondary),
@@ -1082,7 +1141,7 @@ class BudgetSettingsView extends GetView<BudgetController> {
                             Icons.auto_awesome_rounded,
                             size: 15,
                             color: isPositive
-                                ? Colors.white
+                                ? (isDark ? Colors.black : Colors.white)
                                 : (isDark
                                       ? AppColors.darkTextTertiary
                                       : AppColors.textSecondary),
@@ -1094,7 +1153,7 @@ class BudgetSettingsView extends GetView<BudgetController> {
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
                               color: isPositive
-                                  ? Colors.white
+                                  ? (isDark ? Colors.black : Colors.white)
                                   : (isDark
                                         ? AppColors.darkTextTertiary
                                         : AppColors.textSecondary),
@@ -1205,13 +1264,13 @@ class BudgetSettingsView extends GetView<BudgetController> {
         ),
         const SizedBox(height: 10),
 
-        // Pillar 1: Monthly Income
+        // Pillar 1: Monthly Income (Vibrant Emerald / Mint Green)
         _buildPillarBentoCard(
           context,
           title: 'monthly_income_target'.tr,
           subtitle: 'planned_income_desc'.tr,
           value: controller.plannedIncome,
-          color: AppColors.primary,
+          color: isDark ? const Color(0xFF10B981) : const Color(0xFF059669),
           icon: Icons.account_balance_wallet_rounded,
           currencyFmt: currencyFmt,
           isDark: isDark,
@@ -1220,13 +1279,13 @@ class BudgetSettingsView extends GetView<BudgetController> {
         ),
         const SizedBox(height: 12),
 
-        // Pillar 2: Savings & Investments (DCA)
+        // Pillar 2: Savings & Investments (DCA - Sky/Blue)
         _buildPillarBentoCard(
           context,
           title: 'planned_savings_title'.tr,
           subtitle: 'planned_savings_desc'.tr,
           value: controller.targetMonthlySavings,
-          color: AppColors.accent,
+          color: isDark ? const Color(0xFF60A5FA) : const Color(0xFF2563EB),
           icon: Icons.savings_rounded,
           currencyFmt: currencyFmt,
           isDark: isDark,
@@ -1239,13 +1298,13 @@ class BudgetSettingsView extends GetView<BudgetController> {
         ),
         const SizedBox(height: 12),
 
-        // Pillar 3: Fixed Costs
+        // Pillar 3: Fixed Costs (Warm Amber / Orange)
         _buildPillarBentoCard(
           context,
           title: 'planned_fixed_costs_title'.tr,
           subtitle: 'planned_fixed_costs_desc'.tr,
           value: controller.plannedFixedCosts,
-          color: AppColors.fixedCostAccent,
+          color: isDark ? const Color(0xFFFBBF24) : const Color(0xFFD97706),
           icon: Icons.home_work_rounded,
           currencyFmt: currencyFmt,
           isDark: isDark,
@@ -1456,69 +1515,38 @@ class BudgetSettingsView extends GetView<BudgetController> {
   }
 
   // ==========================================
-  // 5. LUXURY GRADIENT SAVE BUTTON
+  // 5. NOTHING OS AUTO-SAVED STATUS INDICATOR
   // ==========================================
-  Widget _buildLuxurySaveButton(bool isDark) {
-    return Obx(() {
-      final isSuccess = controller.isSaveSuccess.value;
-
-      return ElevatedButton(
-        onPressed: controller.isSaving.value ? null : controller.save,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: isSuccess ? const Color(0xFF10B981) : AppColors.nothingRed,
-          foregroundColor: Colors.white,
-          elevation: 0,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: BorderSide(
-              color: Colors.white.withValues(alpha: 0.25),
-              width: 0.8,
+  Widget _buildAutoSavedIndicator(bool isDark) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF141414) : const Color(0xFFF6F6F6),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark
+              ? AppColors.nothingBorder
+              : Colors.black.withValues(alpha: 0.08),
+          width: 0.8,
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const NothingLedIndicator(size: 6, color: Color(0xFF10B981)),
+          const SizedBox(width: 8),
+          Text(
+            'auto_saved_indicator'.tr.toUpperCase(),
+            style: GoogleFonts.shareTechMono(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.0,
+              color: isDark ? Colors.white70 : Colors.black87,
             ),
           ),
-        ),
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 200),
-          child: isSuccess
-              ? Row(
-                  key: const ValueKey('saved_budget_success'),
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.check_circle_rounded,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'budget_save_success'.tr.toUpperCase(),
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1.0,
-                      ),
-                    ),
-                  ],
-                )
-              : Row(
-                  key: const ValueKey('save_budget_idle'),
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.check_rounded, size: 18),
-                    const SizedBox(width: 8),
-                    Text(
-                      'save_budget'.tr.toUpperCase(),
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1.0,
-                      ),
-                    ),
-                  ],
-                ),
-        ),
-      );
-    });
+        ],
+      ),
+    );
   }
 
   // ==========================================
@@ -1535,10 +1563,16 @@ class BudgetSettingsView extends GetView<BudgetController> {
           width: 26,
           height: 26,
           decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.12),
+            color: (isDark ? Colors.white : Colors.black).withValues(
+              alpha: isDark ? 0.16 : 0.08,
+            ),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(icon, size: 14, color: AppColors.primary),
+          child: Icon(
+            icon,
+            size: 14,
+            color: isDark ? Colors.white : Colors.black,
+          ),
         ),
         const SizedBox(width: 8),
         Expanded(
@@ -1594,10 +1628,11 @@ class BudgetSettingsView extends GetView<BudgetController> {
                 decimal: true,
               ),
               autofocus: true,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.w800,
                 letterSpacing: -0.5,
+                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
               ),
               decoration: InputDecoration(
                 prefixText: '฿ ',
@@ -1608,7 +1643,7 @@ class BudgetSettingsView extends GetView<BudgetController> {
                 ),
                 filled: true,
                 fillColor: isDark
-                    ? AppColors.darkBackground
+                    ? const Color(0xFF0F0F12)
                     : AppColors.surfaceSecondary,
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -1660,10 +1695,10 @@ class BudgetSettingsView extends GetView<BudgetController> {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: color.withValues(alpha: isDark ? 0.15 : 0.08),
+                        color: color.withValues(alpha: isDark ? 0.20 : 0.08),
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: color.withValues(alpha: isDark ? 0.35 : 0.25),
+                          color: color.withValues(alpha: isDark ? 0.45 : 0.25),
                           width: 1,
                         ),
                       ),
@@ -1672,7 +1707,7 @@ class BudgetSettingsView extends GetView<BudgetController> {
                         style: TextStyle(
                           fontSize: 11.5,
                           fontWeight: FontWeight.w700,
-                          color: color,
+                          color: isDark ? color : color,
                         ),
                       ),
                     ),
@@ -1725,7 +1760,9 @@ class BudgetSettingsView extends GetView<BudgetController> {
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: color,
-                    foregroundColor: Colors.white,
+                    foregroundColor: ThemeData.estimateBrightnessForColor(color) == Brightness.dark
+                        ? Colors.white
+                        : Colors.black,
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 20,

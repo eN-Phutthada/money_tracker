@@ -1,70 +1,81 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../data/models/transaction_model.dart';
+import '../../../data/models/wallet_health_model.dart';
 import '../../../theme/app_colors.dart';
 import '../../../widgets/nothing_ui_components.dart';
 import '../controllers/dashboard_controller.dart';
+import 'wallet_health_diagnostic_sheet.dart';
 
 /// บัตรแสดงยอดกระเป๋าเงินและสถานะทางการเงิน สไตล์ Nothing OS Design System
-/// ผสมผสานเรขาคณิต Squircle 28px, เส้นขอบ Hairline คมกริบ,
+/// ผสมผสานเรขาคณิต Squircle 28px, เส้นขอบ Hairline คมกริบ 0.8px,
 /// ตัวเลขสไตล์ Dot-Matrix และไฟสถานะ LED สีแดง Nothing Red
 class BalanceCard extends GetView<DashboardController> {
   const BalanceCard({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final currencyFmt = NumberFormat.currency(locale: 'th_TH', symbol: '฿', decimalDigits: 2);
+    final currencyFmt = NumberFormat.currency(
+      locale: 'th_TH',
+      symbol: '฿',
+      decimalDigits: 2,
+    );
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Obx(() {
-      final isMonthly = controller.currentPeriod.value == TimeFilterPeriod.monthly;
+      final isMonthly =
+          controller.currentPeriod.value == TimeFilterPeriod.monthly;
       final totalBalance = controller.totalCurrentBalance;
       final heroAmount = controller.periodHeroBalance;
-      final expected = controller.periodExpectedBalance;
-      final surplus = controller.surplusOrDeficit;
       final isSurplus = controller.isSurplus;
       final isHidden = controller.isBalanceHidden.value;
-
-      final Color statusColor = isSurplus ? (isDark ? Colors.white : Colors.black) : AppColors.nothingRed;
-
-      final double achievementRatio = expected > 0
-          ? (heroAmount / expected).clamp(0.0, 1.25)
-          : (heroAmount >= 0 ? 1.0 : 0.0);
-      final int achievementPercent = expected > 0
-          ? ((heroAmount / expected) * 100).round()
-          : (heroAmount >= 0 ? 100 : 0);
-
-      final int totalSegments = 16;
-      final int filledSegments = (achievementRatio.clamp(0.0, 1.0) * totalSegments).round();
+      final health = controller.walletHealth;
+      final Color statusColor = health.tierColor;
 
       return NothingCard(
+        isGlass: false,
         borderRadius: 28,
+        backgroundColor: isDark ? const Color(0xFF131313) : Colors.white,
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- HEADER ROW: Glyph Icon, Title, LED Pill & Privacy Toggle ---
+            // ========================================================
+            // 1. HEADER ROW: Glyph Icon, Title, Privacy Toggle & Micro Health Pill
+            // ========================================================
             Row(
               children: [
-                // Glyph Wallet Icon Container
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary,
+                // Glyph Wallet Icon Container (Interactive)
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => WalletHealthDiagnosticSheet.show(context),
                     borderRadius: BorderRadius.circular(13),
-                    border: Border.all(
-                      color: isDark ? AppColors.darkBorder : AppColors.border,
-                      width: 1.0,
+                    child: Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? const Color(0xFF181818)
+                            : const Color(0xFFF0F0F0),
+                        borderRadius: BorderRadius.circular(13),
+                        border: Border.all(
+                          color: isDark
+                              ? AppColors.nothingBorder
+                              : Colors.black.withValues(alpha: 0.08),
+                          width: 0.8,
+                        ),
+                      ),
+                      child: Icon(
+                        isSurplus
+                            ? Icons.account_balance_wallet_outlined
+                            : Icons.warning_amber_rounded,
+                        color: statusColor,
+                        size: 18,
+                      ),
                     ),
-                  ),
-                  child: Icon(
-                    isSurplus ? Icons.account_balance_wallet_outlined : Icons.warning_amber_rounded,
-                    color: statusColor,
-                    size: 18,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -77,28 +88,38 @@ class BalanceCard extends GetView<DashboardController> {
                       Row(
                         children: [
                           Flexible(
-                            child: Text(
-                              'wallet_status'.tr.toUpperCase(),
-                              style: GoogleFonts.spaceGrotesk(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 1.5,
-                                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                              ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                'wallet_status'.tr.toUpperCase(),
+                                style: NothingTypography.grotesk(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: NothingTypography.safeSpacing(
+                                    'wallet_status'.tr,
+                                    0.8,
+                                  ),
+                                  color: isDark ? Colors.white : Colors.black,
+                                ),
+                                maxLines: 1,
+                              ),
                             ),
                           ),
-                          const SizedBox(width: 6),
+                          const SizedBox(width: 4),
                           InkWell(
                             onTap: controller.toggleBalanceHidden,
                             borderRadius: BorderRadius.circular(12),
                             child: Padding(
                               padding: const EdgeInsets.all(4),
                               child: Icon(
-                                isHidden ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                                isHidden
+                                    ? Icons.visibility_off_outlined
+                                    : Icons.visibility_outlined,
                                 size: 15,
-                                color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                                color: isDark
+                                    ? const Color(0xFFB0B0B0)
+                                    : const Color(0xFF555555),
                               ),
                             ),
                           ),
@@ -107,12 +128,17 @@ class BalanceCard extends GetView<DashboardController> {
                       const SizedBox(height: 1),
                       Text(
                         controller.formattedPeriodTitle.toUpperCase(),
-                        style: GoogleFonts.spaceGrotesk(
+                        style: NothingTypography.grotesk(
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
-                          letterSpacing: 1.2,
-                          color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                        ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+                          letterSpacing: NothingTypography.safeSpacing(
+                            controller.formattedPeriodTitle,
+                            1.0,
+                          ),
+                          color: isDark
+                              ? const Color(0xFFAAAAAA)
+                              : const Color(0xFF666666),
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -121,79 +147,95 @@ class BalanceCard extends GetView<DashboardController> {
                 ),
                 const SizedBox(width: 8),
 
-                // Nothing OS Live Status Pill (LED Pip + Label)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: isSurplus
-                        ? (isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary)
-                        : (isDark ? const Color(0xFF260A0D) : const Color(0xFFFDE8E8)),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: isSurplus
-                          ? (isDark ? AppColors.darkBorder : AppColors.border)
-                          : AppColors.nothingRed.withValues(alpha: 0.5),
-                      width: 1.0,
+                // Nothing OS Micro Health Pill (LED + Score + Tier + Arrow)
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => WalletHealthDiagnosticSheet.show(context),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: health.tierColor.withValues(
+                            alpha: isDark ? 0.16 : 0.10,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: health.tierColor.withValues(
+                              alpha: isDark ? 0.45 : 0.25,
+                            ),
+                            width: 0.8,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            NothingLedIndicator(
+                              size: 5,
+                              color: health.tierColor,
+                              isPulsing:
+                                  health.tier == WalletHealthTier.critical,
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              '${health.totalScore} ${health.tierKey.tr.toUpperCase()}',
+                              style: NothingTypography.grotesk(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.4,
+                                color: health.tierColor,
+                              ),
+                            ),
+                            const SizedBox(width: 2),
+                            Icon(
+                              Icons.chevron_right_rounded,
+                              size: 13,
+                              color: health.tierColor,
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      NothingLedIndicator(
-                        size: 6,
-                        color: isSurplus ? (isDark ? Colors.white : Colors.black) : AppColors.nothingRed,
-                        isPulsing: !isSurplus,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        isSurplus ? 'safe_zone_surplus'.tr : 'caution_deficit'.tr,
-                        style: GoogleFonts.spaceGrotesk(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.3,
-                          color: isSurplus
-                              ? (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary)
-                              : AppColors.nothingRed,
-                        ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
-                      ),
-                    ],
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-
-            // --- MONTHLY BUDGET CAPSULE OR ALL-TIME CAPSULE ---
-            if (isMonthly)
-              _buildNothingMonthlyCapsule(
-                isDark: isDark,
-                currencyFmt: currencyFmt,
-              )
-            else
-              _buildNothingAllTimeCapsule(
-                balance: totalBalance,
-                isDark: isDark,
-                isHidden: isHidden,
-                currencyFmt: currencyFmt,
-              ),
             const SizedBox(height: 18),
 
-            // --- HERO BALANCE SECTION (NOTHING DOT MATRIX STYLE) ---
+            // ========================================================
+            // 2. HERO BALANCE SECTION (Dot Matrix / Share Tech Mono)
+            // ========================================================
             Row(
               children: [
-                const NothingLedIndicator(size: 5, color: AppColors.nothingRed),
+                NothingLedIndicator(
+                  size: 5,
+                  color: isDark ? Colors.white : Colors.black,
+                ),
                 const SizedBox(width: 6),
                 Flexible(
                   child: Text(
                     isMonthly
                         ? 'current_money_in_wallet'.tr.toUpperCase()
                         : '${'period_net_cashflow'.tr.toUpperCase()} (${controller.formattedPeriodTitle})',
-                    style: GoogleFonts.spaceGrotesk(
+                    style: NothingTypography.grotesk(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
-                      letterSpacing: 1.8,
-                      color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                    ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+                      letterSpacing: NothingTypography.safeSpacing(
+                        isMonthly
+                            ? 'current_money_in_wallet'.tr
+                            : 'period_net_cashflow'.tr,
+                        1.2,
+                      ),
+                      color: isDark
+                          ? const Color(0xFFAAAAAA)
+                          : const Color(0xFF666666),
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -217,7 +259,7 @@ class BalanceCard extends GetView<DashboardController> {
                             fontSize: 34,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 4,
-                            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                            color: isDark ? Colors.white : Colors.black,
                           ),
                         ),
                       ),
@@ -228,23 +270,37 @@ class BalanceCard extends GetView<DashboardController> {
                       child: FittedBox(
                         fit: BoxFit.scaleDown,
                         alignment: Alignment.centerLeft,
-                        child: _buildNothingFormattedAmount(heroAmount, isDark),
+                        child: TweenAnimationBuilder<double>(
+                          tween: Tween<double>(end: heroAmount),
+                          duration: const Duration(milliseconds: 450),
+                          curve: Curves.easeOutCubic,
+                          builder: (context, val, _) {
+                            return _buildNothingFormattedAmount(val, isDark);
+                          },
+                        ),
                       ),
                     ),
             ),
             const SizedBox(height: 8),
 
-            // Variance Tag (Monochrome Pill with Hairline Border)
+            // Safety / Pace Status Tag (Monochrome Pill with Hairline Border)
             FittedBox(
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerLeft,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
-                  color: isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary,
+                  color: isDark
+                      ? const Color(0xFF181818)
+                      : const Color(0xFFF0F0F0),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: isDark ? AppColors.darkBorder : AppColors.border,
+                    color: isDark
+                        ? AppColors.nothingBorder
+                        : Colors.black.withValues(alpha: 0.08),
                     width: 0.8,
                   ),
                 ),
@@ -252,20 +308,29 @@ class BalanceCard extends GetView<DashboardController> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      isSurplus ? Icons.trending_up_rounded : Icons.trending_down_rounded,
+                      isSurplus
+                          ? Icons.verified_user_rounded
+                          : Icons.warning_amber_rounded,
                       size: 13,
-                      color: statusColor,
+                      color: isSurplus
+                          ? AppColors.incomeColor(isDark)
+                          : (isDark
+                              ? AppColors.nothingRedLight
+                              : AppColors.nothingRed),
                     ),
                     const SizedBox(width: 6),
                     Text(
                       isMonthly
-                          ? '${'monthly_expected_remaining'.tr}: ${currencyFmt.format(expected)} (${'from_fixed_and_daily'.tr})'
-                          : '${surplus >= 0 ? '+' : ''}${currencyFmt.format(surplus)} (${'vs_budget_plan'.tr})',
-                      style: GoogleFonts.spaceGrotesk(
+                          ? (isSurplus
+                              ? 'safe_zone_covered'.tr
+                              : 'tight_zone_warning'.tr)
+                          : '${controller.surplusOrDeficit >= 0 ? '+' : ''}${currencyFmt.format(controller.surplusOrDeficit)} (${'vs_budget_plan'.tr})',
+                      style: NothingTypography.grotesk(
                         fontSize: 10.5,
                         fontWeight: FontWeight.w700,
-                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                      ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+                        letterSpacing: 0.2,
+                        color: isDark ? Colors.white : Colors.black,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -273,61 +338,22 @@ class BalanceCard extends GetView<DashboardController> {
                 ),
               ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 16),
 
-            // --- NOTHING SEGMENTED LED HEALTH BAR ---
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'plan_achievement'.trParams({'percent': '$achievementPercent'}).toUpperCase(),
-                        style: GoogleFonts.spaceGrotesk(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 1.2,
-                          color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                        ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '${'expected_balance'.tr.toUpperCase()}: ${currencyFmt.format(expected)}',
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.8,
-                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                      ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
-                      maxLines: 1,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 7),
-                NothingSegmentedBar(
-                  totalSegments: totalSegments,
-                  filledSegments: filledSegments,
-                  activeColor: isSurplus ? (isDark ? Colors.white : Colors.black) : AppColors.nothingRed,
-                  height: 4.5,
-                  spacing: 3.5,
-                ),
-              ],
-            ),
-            const SizedBox(height: 18),
-
-            // --- 3 CASH FLOW PILLARS (NOTHING INDUSTRIAL CELLS) ---
+            // ========================================================
+            // 3. THREE CASH FLOW PILLARS (Inflow / Outflow / Net Balance - NO TARGET!)
+            // ========================================================
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
-                color: isDark ? AppColors.darkSurfaceSecondary.withValues(alpha: 0.7) : AppColors.surfaceSecondary,
+                color: isDark
+                    ? const Color(0xFF161616)
+                    : const Color(0xFFF6F6F6),
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(
-                  color: isDark ? AppColors.darkBorder : AppColors.border,
+                  color: isDark
+                      ? AppColors.nothingBorder
+                      : Colors.black.withValues(alpha: 0.08),
                   width: 0.8,
                 ),
               ),
@@ -337,10 +363,10 @@ class BalanceCard extends GetView<DashboardController> {
                   Expanded(
                     child: _buildCashflowPillar(
                       icon: Icons.south_west_rounded,
-                      iconColor: isDark ? Colors.white : Colors.black,
+                      iconColor: AppColors.incomeColor(isDark),
                       label: 'total_inflow'.tr,
                       value: '+${currencyFmt.format(controller.actualIncome)}',
-                      valueColor: isDark ? Colors.white : Colors.black,
+                      valueColor: AppColors.incomeColor(isDark),
                       isDark: isDark,
                       isHidden: isHidden,
                     ),
@@ -348,7 +374,9 @@ class BalanceCard extends GetView<DashboardController> {
                   Container(
                     height: 28,
                     width: 0.8,
-                    color: isDark ? AppColors.darkBorder : AppColors.border,
+                    color: isDark
+                        ? AppColors.nothingBorder
+                        : Colors.black.withValues(alpha: 0.08),
                     margin: const EdgeInsets.symmetric(horizontal: 8),
                   ),
 
@@ -356,10 +384,11 @@ class BalanceCard extends GetView<DashboardController> {
                   Expanded(
                     child: _buildCashflowPillar(
                       icon: Icons.north_east_rounded,
-                      iconColor: AppColors.nothingRed,
+                      iconColor: AppColors.expenseColor(isDark),
                       label: 'total_outflow'.tr,
-                      value: '-${currencyFmt.format(controller.actualExpenses + controller.actualSavings)}',
-                      valueColor: AppColors.nothingRed,
+                      value:
+                          '-${currencyFmt.format(controller.actualExpenses + controller.actualSavings)}',
+                      valueColor: AppColors.expenseColor(isDark),
                       isDark: isDark,
                       isHidden: isHidden,
                     ),
@@ -367,18 +396,31 @@ class BalanceCard extends GetView<DashboardController> {
                   Container(
                     height: 28,
                     width: 0.8,
-                    color: isDark ? AppColors.darkBorder : AppColors.border,
+                    color: isDark
+                        ? AppColors.nothingBorder
+                        : Colors.black.withValues(alpha: 0.08),
                     margin: const EdgeInsets.symmetric(horizontal: 8),
                   ),
 
-                  // 3. Expected Target
+                  // 3. Net Balance (คงเหลือสุทธิ - Replaced former Target)
                   Expanded(
                     child: _buildCashflowPillar(
-                      icon: Icons.flag_outlined,
-                      iconColor: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                      label: 'expected_balance'.tr,
-                      value: currencyFmt.format(expected),
-                      valueColor: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                      icon: controller.actualBalance >= 0
+                          ? Icons.account_balance_wallet_outlined
+                          : Icons.trending_down_rounded,
+                      iconColor: controller.actualBalance >= 0
+                          ? (isDark ? Colors.white : Colors.black)
+                          : (isDark
+                              ? AppColors.nothingRedLight
+                              : AppColors.nothingRed),
+                      label: 'net_balance'.tr,
+                      value:
+                          '${controller.actualBalance >= 0 ? '+' : ''}${currencyFmt.format(controller.actualBalance)}',
+                      valueColor: controller.actualBalance >= 0
+                          ? (isDark ? Colors.white : Colors.black)
+                          : (isDark
+                              ? AppColors.nothingRedLight
+                              : AppColors.nothingRed),
                       isDark: isDark,
                       isHidden: isHidden,
                     ),
@@ -386,102 +428,265 @@ class BalanceCard extends GetView<DashboardController> {
                 ],
               ),
             ),
+            const SizedBox(height: 16),
+
+            // ========================================================
+            // 4. MONTHLY PLAN CAPSULE (CORRELATED WITH CURRENT DAY)
+            // ========================================================
+            if (isMonthly)
+              _buildNothingDayCorrelatedMonthlyCapsule(
+                isDark: isDark,
+                currencyFmt: currencyFmt,
+              )
+            else
+              _buildNothingAllTimeCapsule(
+                balance: totalBalance,
+                isDark: isDark,
+                isHidden: isHidden,
+                currencyFmt: currencyFmt,
+              ),
           ],
         ),
-      ).animate().fadeIn(duration: const Duration(milliseconds: 250));
+      );
     });
   }
 
-  /// แถบสรุปแผนค่าใช้จ่ายเดือนนี้ สไตล์ Nothing OS
-  Widget _buildNothingMonthlyCapsule({
+  // =========================================================================
+  // MONTHLY PLAN CAPSULE CORRELATED WITH CURRENT DAY (วันปัจจุบัน)
+  // =========================================================================
+  Widget _buildNothingDayCorrelatedMonthlyCapsule({
     required bool isDark,
     required NumberFormat currencyFmt,
   }) {
-    final fixed = controller.budgetPlan.value.plannedFixedCosts;
-    final variable = controller.budgetPlan.value.plannedVariableBudget(controller.daysInCurrentMonth);
-    final totalPlanned = controller.monthlyTotalPlannedExpenses;
-    final expectedEnding = controller.monthlyPlanEndingBalance;
-    final isEndingPositive = expectedEnding >= 0;
+    final currentDay = controller.currentDayInPeriod;
+    final totalDays = controller.daysInCurrentMonth;
+    final remainingDays = controller.remainingDaysInMonth;
+    final plannedToDate = controller.plannedVariableBudgetToDate;
+    final actualSpentToDate = controller.totalVariableExpenses;
+    final variance = controller.variableSpendingVarianceToDate;
+    final isOnTrack = controller.isVariableSpendingOnTrack;
+    final remainingDailyQuota = controller.remainingDailyAllowance;
+
+    final totalSegments = 16;
+    final filledSegments =
+        (controller.monthElapsedRatio * totalSegments).round().clamp(0, totalSegments);
+
+    final statusBgColor = isOnTrack
+        ? (isDark
+            ? const Color(0xFF0F291E)
+            : const Color(0xFFE8F5E9))
+        : (isDark
+            ? const Color(0xFF2E0C0E)
+            : const Color(0xFFFDE8E8));
+
+    final statusTextColor = isOnTrack
+        ? const Color(0xFF10B981)
+        : (isDark ? AppColors.nothingRedLight : AppColors.nothingRed);
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurfaceSecondary.withValues(alpha: 0.7) : AppColors.surfaceSecondary,
+        color: isDark ? const Color(0xFF161616) : const Color(0xFFF5F5F5),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: isDark ? AppColors.darkBorder : AppColors.border,
+          color: isDark
+              ? AppColors.nothingBorder
+              : Colors.black.withValues(alpha: 0.08),
           width: 0.8,
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Row 1: Header + Day Progress Badge
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const NothingLedIndicator(size: 5, color: AppColors.nothingRed),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'monthly_budget_summary'.tr.toUpperCase(),
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.2,
-                    color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                  ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.event_note_rounded,
+                    size: 14,
+                    color: isDark ? Colors.white : Colors.black,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'monthly_plan_cycle'.tr.toUpperCase(),
+                    style: NothingTypography.grotesk(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: NothingTypography.safeSpacing(
+                        'monthly_plan_cycle'.tr,
+                        0.6,
+                      ),
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
+                  ),
+                ],
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: isEndingPositive
-                      ? (isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.08))
-                      : AppColors.nothingRed.withValues(alpha: 0.15),
+                  color: isDark
+                      ? const Color(0xFF222222)
+                      : const Color(0xFFEAEAEA),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: isEndingPositive
-                        ? (isDark ? AppColors.darkBorder : AppColors.border)
-                        : AppColors.nothingRed.withValues(alpha: 0.5),
+                    color: isDark
+                        ? AppColors.nothingBorder
+                        : Colors.black.withValues(alpha: 0.08),
                     width: 0.8,
                   ),
                 ),
                 child: Text(
-                  '${'expected_balance_planned'.tr} ${currencyFmt.format(expectedEnding)}',
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 10,
+                  'day_progress_label'.trParams({
+                    'current': '$currentDay',
+                    'total': '$totalDays',
+                  }),
+                  style: GoogleFonts.shareTechMono(
+                    fontSize: 10.5,
                     fontWeight: FontWeight.w700,
-                    color: isEndingPositive
-                        ? (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary)
-                        : AppColors.nothingRed,
-                  ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+                    color: isDark ? Colors.white : Colors.black,
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
+
+          // Row 2: Month Progress Segmented Bar
+          NothingSegmentedBar(
+            totalSegments: totalSegments,
+            filledSegments: filledSegments,
+            activeColor: isDark ? Colors.white : Colors.black,
+            height: 4.0,
+            spacing: 3.0,
+          ),
+          const SizedBox(height: 12),
+
+          // Row 3: Spending Comparison to Current Day
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text(
-                'monthly_commitments_desc'.trParams({'fixed': currencyFmt.format(fixed), 'variable': currencyFmt.format(variable)}),
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w500,
-                  color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+              // Left: Planned to date & Spent to date
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'planned_to_date'.tr,
+                      style: NothingTypography.grotesk(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: isDark
+                            ? const Color(0xFFAAAAAA)
+                            : const Color(0xFF666666),
+                      ),
+                    ),
+                    const SizedBox(height: 1),
+                    Text(
+                      currencyFmt.format(plannedToDate),
+                      style: NothingTypography.mono(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? Colors.white : Colors.black,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${'actual_spent_to_date'.tr}: ${currencyFmt.format(actualSpentToDate)}',
+                      style: NothingTypography.grotesk(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w500,
+                        color: isDark
+                            ? const Color(0xFF888888)
+                            : const Color(0xFF777777),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              Text(
-                '${'total_outflow'.tr}: ${currencyFmt.format(totalPlanned)}',
-                style: GoogleFonts.shareTechMono(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+
+              // Right: Variance Status Pill
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: statusBgColor,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: statusTextColor.withValues(alpha: 0.35),
+                    width: 0.8,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '${variance >= 0 ? '+' : ''}${currencyFmt.format(variance)}',
+                      style: NothingTypography.mono(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                        color: statusTextColor,
+                      ),
+                    ),
+                    const SizedBox(height: 1),
+                    Text(
+                      isOnTrack
+                          ? 'saved_below_plan'.tr
+                          : 'spent_over_plan'.tr,
+                      style: NothingTypography.grotesk(
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w700,
+                        color: statusTextColor,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 10),
+
+          // Row 4: Remaining Cycle Guidance (No overflow)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: (isDark ? Colors.white : Colors.black)
+                  .withValues(alpha: isDark ? 0.05 : 0.03),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.trending_flat_rounded,
+                  size: 13,
+                  color: isDark
+                      ? const Color(0xFFAAAAAA)
+                      : const Color(0xFF666666),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'remaining_cycle_pace'.trParams({
+                      'days': '$remainingDays',
+                      'rate': currencyFmt.format(remainingDailyQuota),
+                    }),
+                    style: NothingTypography.grotesk(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: isDark
+                          ? const Color(0xFFD4D4D8)
+                          : const Color(0xFF444444),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -499,34 +704,56 @@ class BalanceCard extends GetView<DashboardController> {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurfaceSecondary.withValues(alpha: 0.7) : AppColors.surfaceSecondary,
+        color: isDark ? const Color(0xFF161616) : const Color(0xFFF5F5F5),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: isDark ? AppColors.darkBorder : AppColors.border,
+          color: isDark
+              ? AppColors.nothingBorder
+              : Colors.black.withValues(alpha: 0.08),
           width: 0.8,
         ),
       ),
       child: Row(
         children: [
-          const NothingLedIndicator(size: 5, color: Colors.white),
+          NothingLedIndicator(
+            size: 5,
+            color: isDark ? Colors.white : Colors.black,
+          ),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(
-              'total_current_balance'.tr.toUpperCase(),
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.2,
-                color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-              ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'total_current_balance'.tr.toUpperCase(),
+                style: NothingTypography.grotesk(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: NothingTypography.safeSpacing(
+                    'total_current_balance'.tr,
+                    0.8,
+                  ),
+                  color: isDark
+                      ? const Color(0xFFAAAAAA)
+                      : const Color(0xFF555555),
+                ),
+                maxLines: 1,
+              ),
             ),
           ),
-          Text(
-            isHidden ? '••••••••' : currencyFmt.format(balance),
-            style: GoogleFonts.shareTechMono(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+          const SizedBox(width: 8),
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerRight,
+              child: Text(
+                isHidden ? '••••••••' : currencyFmt.format(balance),
+                style: NothingTypography.mono(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white : Colors.black,
+                ),
+              ),
             ),
           ),
         ],
@@ -550,31 +777,38 @@ class BalanceCard extends GetView<DashboardController> {
           children: [
             Icon(icon, size: 11, color: iconColor),
             const SizedBox(width: 4),
-            Flexible(
-              child: Text(
-                label.toUpperCase(),
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 9.5,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.5,
-                  color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+            Expanded(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  label.toUpperCase(),
+                  style: NothingTypography.grotesk(
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: NothingTypography.safeSpacing(label, 0.2),
+                    color: isDark
+                        ? const Color(0xFFB0B0B0)
+                        : const Color(0xFF666666),
+                  ),
+                  maxLines: 1,
+                ),
               ),
             ),
           ],
         ),
         const SizedBox(height: 3),
-        Text(
-          isHidden ? '••••' : value,
-          style: GoogleFonts.shareTechMono(
-            fontSize: 12.5,
-            fontWeight: FontWeight.w700,
-            color: valueColor,
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(
+            isHidden ? '••••' : value,
+            style: NothingTypography.mono(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w700,
+              color: valueColor,
+            ),
           ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
         ),
       ],
     );
@@ -588,7 +822,11 @@ class BalanceCard extends GetView<DashboardController> {
     final wholeFormatted = NumberFormat('#,##0', 'th_TH').format(wholePart);
     final decimalFormatted = decimalPart.toString().padLeft(2, '0');
 
-    final textColor = isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
+    final textColor = isDark ? Colors.white : Colors.black;
+    final negativeColor = isDark
+        ? AppColors.nothingRedLight
+        : AppColors.nothingRed;
+    final amountColor = isNegative ? negativeColor : textColor;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -599,7 +837,7 @@ class BalanceCard extends GetView<DashboardController> {
           style: GoogleFonts.spaceGrotesk(
             fontSize: 20,
             fontWeight: FontWeight.w600,
-            color: isNegative ? AppColors.nothingRed : textColor,
+            color: amountColor,
           ),
         ),
         const SizedBox(width: 3),
@@ -609,7 +847,7 @@ class BalanceCard extends GetView<DashboardController> {
             fontSize: 36,
             fontWeight: FontWeight.w700,
             letterSpacing: -0.5,
-            color: isNegative ? AppColors.nothingRed : textColor,
+            color: amountColor,
           ),
         ),
         Text(
@@ -617,7 +855,7 @@ class BalanceCard extends GetView<DashboardController> {
           style: GoogleFonts.shareTechMono(
             fontSize: 18,
             fontWeight: FontWeight.w500,
-            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+            color: isDark ? const Color(0xFFAAAAAA) : const Color(0xFF666666),
           ),
         ),
       ],

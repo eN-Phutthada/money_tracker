@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'app/data/services/bank_slip_service.dart';
 import 'app/data/services/security_service.dart';
@@ -6,6 +7,7 @@ import 'app/data/services/storage_service.dart';
 import 'app/modules/security/controllers/security_controller.dart';
 import 'app/modules/security/views/pin_lock_view.dart';
 import 'app/routes/app_pages.dart';
+import 'app/routes/modern_page_transition.dart';
 import 'app/theme/app_theme.dart';
 import 'app/translations/app_translations.dart';
 
@@ -35,7 +37,6 @@ void main() async {
   runApp(MoneyTrackerApp(initialLocale: initialLocale));
 }
 
-/// Root Application Widget ด้วย GetX 4.7.3 (Simplified Architecture)
 class MoneyTrackerApp extends StatelessWidget {
   final Locale? initialLocale;
   const MoneyTrackerApp({super.key, this.initialLocale});
@@ -56,26 +57,45 @@ class MoneyTrackerApp extends StatelessWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.system,
+      defaultTransition: Transition.fadeIn,
+      customTransition: ModernNothingTransition(),
+      transitionDuration: const Duration(milliseconds: 220),
       initialRoute: AppPages.INITIAL,
       getPages: AppPages.routes,
       initialBinding: DashboardBinding(),
       builder: (context, child) {
-        final security = Get.put<SecurityController>(SecurityController(), permanent: true);
+        final security = Get.put<SecurityController>(
+          SecurityController(),
+          permanent: true,
+        );
         final mediaQuery = MediaQuery.of(context);
-        return MediaQuery(
-          data: mediaQuery.copyWith(
-            textScaler: mediaQuery.textScaler.clamp(minScaleFactor: 0.85, maxScaleFactor: 1.05),
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return AnnotatedRegion<SystemUiOverlayStyle>(
+          value: SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness: isDark
+                ? Brightness.light
+                : Brightness.dark,
+            statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
           ),
-          child: Stack(
-            children: [
-              ?child,
-              Obx(() {
-                if (security.isLocked.value) {
-                  return const PinLockView();
-                }
-                return const SizedBox.shrink();
-              }),
-            ],
+          child: MediaQuery(
+            data: mediaQuery.copyWith(
+              textScaler: mediaQuery.textScaler.clamp(
+                minScaleFactor: 0.85,
+                maxScaleFactor: 1.05,
+              ),
+            ),
+            child: Stack(
+              children: [
+                ?child,
+                Obx(() {
+                  if (security.isLocked.value) {
+                    return const PinLockView();
+                  }
+                  return const SizedBox.shrink();
+                }),
+              ],
+            ),
           ),
         );
       },

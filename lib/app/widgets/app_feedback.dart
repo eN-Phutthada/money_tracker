@@ -338,7 +338,7 @@ class _AppFeedbackHudState extends State<_AppFeedbackHud> with TickerProviderSta
         statusLabel = 'SUCCESS';
         break;
       case FeedbackType.info:
-        themeColor = AppColors.primary;
+        themeColor = isDark ? Colors.white : Colors.black;
         icon = Icons.info_rounded;
         statusLabel = 'INFO';
         break;
@@ -441,9 +441,9 @@ class _AppFeedbackHudState extends State<_AppFeedbackHud> with TickerProviderSta
                               ),
                               appearance: LiquidGlassAppearance(
                                 color: isDark
-                                    ? const Color(0xFF111726).withValues(alpha: 0.65)
-                                    : const Color(0xFFFFFFFF).withValues(alpha: 0.76),
-                                blur: const LiquidGlassBlur(sigmaX: 16, sigmaY: 16),
+                                    ? Colors.white.withValues(alpha: 0.08)
+                                    : Colors.white.withValues(alpha: 0.88),
+                                blur: const LiquidGlassBlur(sigmaX: 1, sigmaY: 1),
                               ),
                               refraction: const LiquidGlassRefraction(
                                 distortion: 0.08,
@@ -459,18 +459,18 @@ class _AppFeedbackHudState extends State<_AppFeedbackHud> with TickerProviderSta
                                   end: Alignment.bottomRight,
                                   colors: isDark
                                       ? [
-                                          AppColors.darkSurface.withValues(alpha: 0.30),
-                                          AppColors.darkSurfaceSecondary.withValues(alpha: 0.16),
+                                          Colors.white.withValues(alpha: 0.12),
+                                          Colors.white.withValues(alpha: 0.04),
                                         ]
                                       : [
-                                          Colors.white.withValues(alpha: 0.38),
-                                          Colors.white.withValues(alpha: 0.20),
+                                          const Color(0xFFFFFFFF),
+                                          const Color(0xFFF4F4F4),
                                         ],
                                 ),
                                 border: Border.all(
                                   color: isDark
-                                      ? Colors.white.withValues(alpha: 0.16 + (_shimmerController.value * 0.08))
-                                      : themeColor.withValues(alpha: 0.28 + (_shimmerController.value * 0.12)),
+                                      ? Colors.white.withValues(alpha: 0.15)
+                                      : Colors.black.withValues(alpha: 0.12),
                                   width: 1.2,
                                 ),
                               ),
@@ -529,14 +529,7 @@ class _AppFeedbackHudState extends State<_AppFeedbackHud> with TickerProviderSta
                                                           fontSize: 13.5,
                                                           fontWeight: FontWeight.w800,
                                                           letterSpacing: -0.2,
-                                                          color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                                                          shadows: [
-                                                            Shadow(
-                                                              color: (isDark ? Colors.black : Colors.white).withValues(alpha: 0.45),
-                                                              blurRadius: 2,
-                                                              offset: const Offset(0, 1),
-                                                            ),
-                                                          ],
+                                                          color: isDark ? Colors.white : Colors.black,
                                                         ),
                                                         maxLines: 1,
                                                         overflow: TextOverflow.ellipsis,
@@ -559,15 +552,8 @@ class _AppFeedbackHudState extends State<_AppFeedbackHud> with TickerProviderSta
                                                   style: TextStyle(
                                                     fontSize: 11.5,
                                                     height: 1.35,
-                                                    color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF1E293B),
+                                                    color: isDark ? const Color(0xFFCCCCCC) : const Color(0xFF333333),
                                                     fontWeight: FontWeight.w500,
-                                                    shadows: [
-                                                      Shadow(
-                                                        color: (isDark ? Colors.black : Colors.white).withValues(alpha: 0.30),
-                                                        blurRadius: 1.5,
-                                                        offset: const Offset(0, 0.5),
-                                                      ),
-                                                    ],
                                                   ),
                                                   maxLines: 2,
                                                   overflow: TextOverflow.ellipsis,
@@ -645,7 +631,7 @@ class _AppFeedbackHudState extends State<_AppFeedbackHud> with TickerProviderSta
     final IconData trendIcon;
 
     if (widget.transactionType == TransactionType.income) {
-      pillColor = AppColors.primary;
+      pillColor = Colors.black;
       prefix = '+';
       trendIcon = Icons.arrow_upward_rounded;
     } else if (widget.transactionType == TransactionType.savingsInvestment) {
@@ -738,7 +724,7 @@ class _AppFeedbackHudState extends State<_AppFeedbackHud> with TickerProviderSta
         child: Icon(
           Icons.close_rounded,
           size: 15,
-          color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+          color: isDark ? Colors.white : Colors.black,
         ),
       ),
     );
