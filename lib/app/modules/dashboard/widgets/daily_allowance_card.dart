@@ -95,36 +95,40 @@ class DailyAllowanceCard extends GetView<DashboardController> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'daily_allowance_today'.tr.toUpperCase(),
-                        style: NothingTypography.grotesk(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: NothingTypography.safeSpacing(
-                            'daily_allowance_today'.tr,
-                            0.8,
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'daily_allowance_today'.tr.toUpperCase(),
+                          style: NothingTypography.grotesk(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: NothingTypography.safeSpacing(
+                              'daily_allowance_today'.tr,
+                              0.8,
+                            ),
+                            color: isDark ? Colors.white : Colors.black,
                           ),
-                          color: isDark ? Colors.white : Colors.black,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 1),
-                      Text(
-                        controller.formattedPeriodTitle.toUpperCase(),
-                        style: NothingTypography.grotesk(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: NothingTypography.safeSpacing(
-                            controller.formattedPeriodTitle,
-                            0.8,
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          controller.formattedPeriodTitle.toUpperCase(),
+                          style: NothingTypography.grotesk(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: NothingTypography.safeSpacing(
+                              controller.formattedPeriodTitle,
+                              0.8,
+                            ),
+                            color: isDark
+                                ? const Color(0xFFB0B0B0)
+                                : const Color(0xFF666666),
                           ),
-                          color: isDark
-                              ? const Color(0xFFB0B0B0)
-                              : const Color(0xFF666666),
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
@@ -247,7 +251,7 @@ class DailyAllowanceCard extends GetView<DashboardController> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            isOverToday ? 'OVER' : '$usedPct%',
+                            isOverToday ? 'over_short'.tr.toUpperCase() : '$usedPct%',
                             style: NothingTypography.mono(
                               fontSize: isOverToday ? 12 : 14,
                               fontWeight: FontWeight.w700,
@@ -255,7 +259,7 @@ class DailyAllowanceCard extends GetView<DashboardController> {
                             ),
                           ),
                           Text(
-                            'USED',
+                            'used_label'.tr.toUpperCase(),
                             style: NothingTypography.grotesk(
                               fontSize: 8.5,
                               fontWeight: FontWeight.w700,
@@ -277,20 +281,22 @@ class DailyAllowanceCard extends GetView<DashboardController> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        isOverToday
-                            ? 'over_for_today'.tr.toUpperCase()
-                            : 'remaining_for_today'.tr.toUpperCase(),
-                        style: NothingTypography.grotesk(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.2,
-                          color: isDark
-                              ? const Color(0xFFB0B0B0)
-                              : const Color(0xFF555555),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          isOverToday
+                              ? 'over_for_today'.tr.toUpperCase()
+                              : 'remaining_for_today'.tr.toUpperCase(),
+                          style: NothingTypography.grotesk(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.2,
+                            color: isDark
+                                ? const Color(0xFFB0B0B0)
+                                : const Color(0xFF555555),
+                          ),
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 2),
 
@@ -409,39 +415,39 @@ class DailyAllowanceCard extends GetView<DashboardController> {
                       ),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: Text(
-                          'monthly_runrate_label'.tr.toUpperCase(),
-                          style: NothingTypography.grotesk(
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: NothingTypography.safeSpacing(
-                              'monthly_runrate_label'.tr,
-                              1.2,
-                            ),
-                            color: isDark ? Colors.white : Colors.black,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Flexible(
                         child: FittedBox(
                           fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerRight,
+                          alignment: Alignment.centerLeft,
                           child: Text(
-                            remainingDays > 0
-                                ? 'days_left'.trParams({
-                                    'days': '$remainingDays',
-                                  })
-                                : 'month_ended'.tr,
+                            'monthly_runrate_label'.tr.toUpperCase(),
                             style: NothingTypography.grotesk(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: isDark
-                                  ? const Color(0xFFB0B0B0)
-                                  : const Color(0xFF666666),
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: NothingTypography.safeSpacing(
+                                'monthly_runrate_label'.tr,
+                                0.6,
+                              ),
+                              color: isDark ? Colors.white : Colors.black,
                             ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          remainingDays > 0
+                              ? 'days_left'.trParams({
+                                  'days': '$remainingDays',
+                                })
+                              : 'month_ended'.tr,
+                          style: NothingTypography.grotesk(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: isDark
+                                ? const Color(0xFFB0B0B0)
+                                : const Color(0xFF666666),
                           ),
                         ),
                       ),

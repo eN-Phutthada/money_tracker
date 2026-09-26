@@ -808,7 +808,7 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
                                         const SizedBox(width: 5),
                                         Text(
                                           'scan_bank_slip'.tr.toUpperCase(),
-                                          style: GoogleFonts.spaceGrotesk(
+                                          style: NothingTypography.grotesk(
                                             fontSize: 10.5,
                                             fontWeight: FontWeight.w700,
                                             letterSpacing: 0.5,
@@ -1004,7 +1004,7 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
                           Expanded(
                             child: Text(
                               'quick_suggestions_hint'.tr.toUpperCase(),
-                              style: GoogleFonts.spaceGrotesk(
+                              style: NothingTypography.grotesk(
                                 fontSize: 10.5,
                                 fontWeight: FontWeight.w600,
                                 letterSpacing: 0.6,
@@ -1086,7 +1086,7 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
                                     const SizedBox(height: 4),
                                     Text(
                                       _titleController.text,
-                                      style: GoogleFonts.spaceGrotesk(
+                                      style: NothingTypography.grotesk(
                                         fontSize: 12,
                                         fontWeight: FontWeight.w700,
                                         color: isDark
@@ -1101,7 +1101,7 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
                                     const SizedBox(height: 2),
                                     Text(
                                       _noteController.text,
-                                      style: GoogleFonts.spaceGrotesk(
+                                      style: NothingTypography.grotesk(
                                         fontSize: 10.5,
                                         fontWeight: FontWeight.w500,
                                         color: isDark
@@ -1279,7 +1279,7 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
                             Expanded(
                               child: Text(
                                 _formatDate(_selectedDate),
-                                style: GoogleFonts.spaceGrotesk(
+                                style: NothingTypography.grotesk(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -1374,13 +1374,13 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
                         textInputAction: TextInputAction.next,
                         onEditingComplete: () =>
                             FocusScope.of(context).requestFocus(_noteFocusNode),
-                        style: GoogleFonts.spaceGrotesk(
+                        style: NothingTypography.grotesk(
                           fontSize: 13,
                           color: isDark ? Colors.white : Colors.black,
                         ),
                         decoration: InputDecoration(
                           hintText: 'title_hint'.tr,
-                          hintStyle: GoogleFonts.spaceGrotesk(
+                          hintStyle: NothingTypography.grotesk(
                             fontSize: 11.5,
                             color: AppColors.nothingSubtext,
                           ),
@@ -1445,13 +1445,13 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
                         textInputAction: TextInputAction.done,
                         onEditingComplete: () =>
                             FocusScope.of(context).unfocus(),
-                        style: GoogleFonts.spaceGrotesk(
+                        style: NothingTypography.grotesk(
                           fontSize: 12.5,
                           color: isDark ? Colors.white : Colors.black,
                         ),
                         decoration: InputDecoration(
                           hintText: 'note_hint'.tr,
-                          hintStyle: GoogleFonts.spaceGrotesk(
+                          hintStyle: NothingTypography.grotesk(
                             fontSize: 11.5,
                             color: AppColors.nothingSubtext,
                           ),
@@ -1546,7 +1546,7 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
                                               ? 'update_success_title'.tr
                                               : 'save_success_title'.tr)
                                           .toUpperCase(),
-                                      style: GoogleFonts.spaceGrotesk(
+                                      style: NothingTypography.grotesk(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w800,
                                         letterSpacing: 0.8,
@@ -1560,7 +1560,7 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
                                           : 'add_transaction'.tr)
                                       .toUpperCase(),
                                   key: const ValueKey('submit_idle'),
-                                  style: GoogleFonts.spaceGrotesk(
+                                  style: NothingTypography.grotesk(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w800,
                                     letterSpacing: 1.0,
@@ -1673,7 +1673,7 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
         ),
         child: Text(
           label,
-          style: GoogleFonts.spaceGrotesk(
+          style: NothingTypography.grotesk(
             fontSize: 9.5,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.5,
@@ -1713,7 +1713,7 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
         alignment: Alignment.center,
         child: Text(
           label,
-          style: GoogleFonts.spaceGrotesk(
+          style: NothingTypography.grotesk(
             fontSize: 10,
             fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
             letterSpacing: 0.5,
@@ -1766,7 +1766,7 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
             children: [
               Text(
                 label.toUpperCase(),
-                style: GoogleFonts.spaceGrotesk(
+                style: NothingTypography.grotesk(
                   fontSize: 10.5,
                   fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                   letterSpacing: 0.6,
@@ -1777,7 +1777,7 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
               ),
               Text(
                 subtitle,
-                style: GoogleFonts.spaceGrotesk(
+                style: NothingTypography.grotesk(
                   fontSize: 9,
                   color: isDark
                       ? AppColors.nothingSubtext

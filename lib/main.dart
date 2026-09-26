@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'app/data/services/bank_slip_service.dart';
 import 'app/data/services/security_service.dart';
 import 'app/data/services/storage_service.dart';
@@ -32,6 +33,18 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SecurityService().init();
   await BankSlipService().init();
+
+  // Pre-warm Prompt (Krungthai Smart Style) and Nothing Typography in background
+  GoogleFonts.pendingFonts([
+    GoogleFonts.prompt(fontWeight: FontWeight.w400),
+    GoogleFonts.prompt(fontWeight: FontWeight.w500),
+    GoogleFonts.prompt(fontWeight: FontWeight.w600),
+    GoogleFonts.prompt(fontWeight: FontWeight.w700),
+    GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w600),
+    GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w700),
+    GoogleFonts.shareTechMono(fontWeight: FontWeight.w700),
+  ]).ignore();
+
   final savedLang = await StorageService().loadLanguage();
   final initialLocale = resolveInitialLocale(savedLang);
   runApp(MoneyTrackerApp(initialLocale: initialLocale));

@@ -316,19 +316,19 @@ class _TransactionsListViewState extends State<TransactionsListView> {
                     controller: _searchController,
                     onChanged: (val) =>
                         setState(() => _searchQuery = val.trim()),
-                    style: GoogleFonts.spaceGrotesk(
+                    style: NothingTypography.grotesk(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                       color: isDark ? Colors.white : Colors.black,
-                    ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+                    ),
                     decoration: InputDecoration(
                       hintText: 'search_transactions_hint'.tr,
-                      hintStyle: GoogleFonts.spaceGrotesk(
+                      hintStyle: NothingTypography.grotesk(
                         fontSize: 12.5,
                         color: isDark
                             ? AppColors.nothingSubtext
                             : const Color(0xFF888888),
-                      ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+                      ),
                       prefixIcon: Icon(
                         Icons.search_rounded,
                         size: 18,
@@ -398,15 +398,12 @@ class _TransactionsListViewState extends State<TransactionsListView> {
                         const SizedBox(width: 6),
                         Text(
                           'scan_bank_slip'.tr.toUpperCase(),
-                          style:
-                              GoogleFonts.spaceGrotesk(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: isDark ? Colors.white : Colors.black,
-                                letterSpacing: 0.5,
-                              ).copyWith(
-                                fontFamilyFallback: ['Prompt', 'sans-serif'],
-                              ),
+                          style: NothingTypography.grotesk(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? Colors.white : Colors.black,
+                            letterSpacing: 0.5,
+                          ),
                         ),
                       ],
                     ),
@@ -541,17 +538,13 @@ class _TransactionsListViewState extends State<TransactionsListView> {
                                       ? AppColors.nothingSubtext
                                       : const Color(0xFF777777)),
                           ),
-                          style:
-                              GoogleFonts.spaceGrotesk(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color:
-                                    _selectedCategoryFilter != _allCategoryKey
-                                    ? (isDark ? Colors.black : Colors.white)
-                                    : (isDark ? Colors.white : Colors.black),
-                              ).copyWith(
-                                fontFamilyFallback: ['Prompt', 'sans-serif'],
-                              ),
+                          style: NothingTypography.grotesk(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: _selectedCategoryFilter != _allCategoryKey
+                                ? (isDark ? Colors.black : Colors.white)
+                                : (isDark ? Colors.white : Colors.black),
+                          ),
                           dropdownColor: isDark
                               ? const Color(0xFF161616)
                               : Colors.white,
@@ -564,23 +557,17 @@ class _TransactionsListViewState extends State<TransactionsListView> {
                               value: cat,
                               child: Text(
                                 catLabel,
-                                style:
-                                    GoogleFonts.spaceGrotesk(
-                                      fontSize: 11.5,
-                                      fontWeight: isCurrent
-                                          ? FontWeight.w800
-                                          : FontWeight.w500,
-                                      color: isCurrent
-                                          ? AppColors.nothingRed
-                                          : (isDark
-                                                ? Colors.white
-                                                : Colors.black),
-                                    ).copyWith(
-                                      fontFamilyFallback: [
-                                        'Prompt',
-                                        'sans-serif',
-                                      ],
-                                    ),
+                                style: NothingTypography.grotesk(
+                                  fontSize: 11.5,
+                                  fontWeight: isCurrent
+                                      ? FontWeight.w800
+                                      : FontWeight.w500,
+                                  color: isCurrent
+                                      ? AppColors.nothingRed
+                                      : (isDark
+                                            ? Colors.white
+                                            : Colors.black),
+                                ),
                               ),
                             );
                           }).toList(),
@@ -920,17 +907,14 @@ class _TransactionsListViewState extends State<TransactionsListView> {
                       const SizedBox(width: 8),
                       Text(
                         _formatGroupDate(firstDate).toUpperCase(),
-                        style:
-                            GoogleFonts.spaceGrotesk(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 1.8,
-                              color: isDark
-                                  ? AppColors.nothingSubtext
-                                  : const Color(0xFF777777),
-                            ).copyWith(
-                              fontFamilyFallback: ['Prompt', 'sans-serif'],
-                            ),
+                        style: NothingTypography.grotesk(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.8,
+                          color: isDark
+                              ? AppColors.nothingSubtext
+                              : const Color(0xFF777777),
+                        ),
                       ),
                     ],
                   ),
@@ -939,7 +923,7 @@ class _TransactionsListViewState extends State<TransactionsListView> {
                       if (dayIncome > 0)
                         Text(
                           '+${currencyFmt.format(dayIncome)}',
-                          style: GoogleFonts.shareTechMono(
+                          style: NothingTypography.mono(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                             color: isDark ? Colors.white70 : Colors.black87,
@@ -950,7 +934,7 @@ class _TransactionsListViewState extends State<TransactionsListView> {
                       if (dayExpense > 0)
                         Text(
                           '-${currencyFmt.format(dayExpense)}',
-                          style: GoogleFonts.shareTechMono(
+                          style: NothingTypography.mono(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                             color: AppColors.nothingRed,
@@ -1054,12 +1038,12 @@ class _TransactionsListViewState extends State<TransactionsListView> {
             const SizedBox(width: 6),
             Text(
               'delete_transaction'.tr.toUpperCase(),
-              style: GoogleFonts.spaceGrotesk(
+              style: NothingTypography.grotesk(
                 color: itemRed,
                 fontWeight: FontWeight.w800,
                 fontSize: 12,
                 letterSpacing: 0.8,
-              ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+              ),
             ),
           ],
         ),
@@ -1141,14 +1125,11 @@ class _TransactionsListViewState extends State<TransactionsListView> {
                       children: [
                         Text(
                           item.title.tr,
-                          style:
-                              GoogleFonts.spaceGrotesk(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: isDark ? Colors.white : Colors.black,
-                              ).copyWith(
-                                fontFamilyFallback: ['Prompt', 'sans-serif'],
-                              ),
+                          style: NothingTypography.grotesk(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? Colors.white : Colors.black,
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -1169,18 +1150,12 @@ class _TransactionsListViewState extends State<TransactionsListView> {
                               ),
                               child: Text(
                                 natureLabel.toUpperCase(),
-                                style:
-                                    GoogleFonts.spaceGrotesk(
-                                      fontSize: 9.5,
-                                      fontWeight: FontWeight.w700,
-                                      letterSpacing: 0.4,
-                                      color: natureColor,
-                                    ).copyWith(
-                                      fontFamilyFallback: [
-                                        'Prompt',
-                                        'sans-serif',
-                                      ],
-                                    ),
+                                style: NothingTypography.grotesk(
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.4,
+                                  color: natureColor,
+                                ),
                                 maxLines: 1,
                               ),
                             ),
@@ -1190,19 +1165,13 @@ class _TransactionsListViewState extends State<TransactionsListView> {
                             Flexible(
                               child: Text(
                                 '${item.categoryName.tr}${item.note != null && item.note!.trim().isNotEmpty && item.note != item.title ? " • ${item.note}" : ""}',
-                                style:
-                                    GoogleFonts.spaceGrotesk(
-                                      fontSize: 10.5,
-                                      fontWeight: FontWeight.w500,
-                                      color: isDark
-                                          ? AppColors.nothingSubtext
-                                          : const Color(0xFF777777),
-                                    ).copyWith(
-                                      fontFamilyFallback: [
-                                        'Prompt',
-                                        'sans-serif',
-                                      ],
-                                    ),
+                                style: NothingTypography.grotesk(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w500,
+                                  color: isDark
+                                      ? AppColors.nothingSubtext
+                                      : const Color(0xFF777777),
+                                ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -1214,7 +1183,7 @@ class _TransactionsListViewState extends State<TransactionsListView> {
                               flex: 2,
                               child: Text(
                                 '• ${item.date.day}/${item.date.month}/$yearNum $timeStr',
-                                style: GoogleFonts.shareTechMono(
+                                style: NothingTypography.mono(
                                   fontSize: 10.5,
                                   color: isDark
                                       ? AppColors.nothingSubtext
@@ -1299,23 +1268,22 @@ class _TransactionsListViewState extends State<TransactionsListView> {
               NothingDotText(
                 (isFilterActive ? 'no_search_results'.tr : 'no_transactions'.tr)
                     .toUpperCase(),
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.2,
-                  color: isDark ? Colors.white : Colors.black,
-                ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.2,
+                color: isDark ? Colors.white : Colors.black,
+                isMono: false,
               ),
               if (isFilterActive) ...[
                 const SizedBox(height: 6),
                 Text(
                   'no_search_results_desc'.tr,
-                  style: GoogleFonts.spaceGrotesk(
+                  style: NothingTypography.grotesk(
                     fontSize: 11,
                     color: isDark
                         ? AppColors.nothingSubtext
                         : const Color(0xFF777777),
-                  ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),

@@ -5,6 +5,7 @@ import 'package:money_tracker/app/data/models/transaction_model.dart';
 import 'package:money_tracker/app/modules/budget/controllers/budget_controller.dart';
 import 'package:money_tracker/app/modules/dashboard/controllers/dashboard_controller.dart';
 import 'package:money_tracker/app/translations/app_translations.dart';
+import 'package:money_tracker/app/widgets/nothing_ui_components.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -427,6 +428,74 @@ void main() {
         expect(th[key], isNotNull, reason: 'Missing th_TH key "$key"');
         expect(en[key], isNotNull, reason: 'Missing en_US key "$key"');
       }
+    });
+
+    test('NothingTypography Krungthai Smart style (Prompt) fallback resolves properly', () {
+      final fallbackReg = NothingTypography.thaiFallback(FontWeight.w400);
+      final fallbackBold = NothingTypography.thaiFallback(FontWeight.w700);
+
+      expect(fallbackReg.contains('Prompt'), isTrue);
+      expect(fallbackReg.contains('sans-serif'), isTrue);
+      expect(fallbackBold.contains('Prompt'), isTrue);
+      expect(fallbackBold.contains('sans-serif'), isTrue);
+
+      final promptStyle = NothingTypography.prompt(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: Colors.black,
+      );
+      expect(promptStyle.fontSize, equals(14));
+      expect(promptStyle.fontWeight, equals(FontWeight.w600));
+
+      expect(NothingTypography.hasThai('ยอดเงินคงเหลือ'), isTrue);
+      expect(NothingTypography.hasThai('BALANCE'), isFalse);
+      expect(NothingTypography.safeSpacing('ข้อความ', 1.5), equals(0.15));
+      expect(NothingTypography.safeSpacing('ENGLISH', 1.5), equals(1.5));
+    });
+
+    test('Monthly runrate label and used label are concise and properly translated', () {
+      final th = AppTranslations().keys['th_TH']!;
+      final en = AppTranslations().keys['en_US']!;
+
+      expect(th['monthly_runrate_label'], equals('เฉลี่ยวันที่เหลือ'));
+      expect(en['monthly_runrate_label'], equals('Monthly Run-Rate'));
+      expect(th['monthly_runrate_label']!.endsWith(':'), isFalse);
+      expect(en['monthly_runrate_label']!.endsWith(':'), isFalse);
+
+      expect(th['used_label'], isNotNull);
+      expect(en['used_label'], equals('USED'));
+    });
+
+    test('Dashboard and Analytics elements are properly translated in Thai', () {
+      final th = AppTranslations().keys['th_TH']!;
+      final en = AppTranslations().keys['en_US']!;
+
+      expect(th['app_subtitle'], equals('การเงินส่วนบุคคล'));
+      expect(en['app_subtitle'], equals('Personal Finance'));
+
+      expect(th['analytics_trends_title'], equals('วิเคราะห์ // แนวโน้ม'));
+      expect(en['analytics_trends_title'], equals('ANALYTICS // TRENDS'));
+
+      expect(th['chart_tab_trend'], equals('แนวโน้ม'));
+      expect(th['chart_tab_donut'], equals('สัดส่วน'));
+      expect(en['chart_tab_trend'], equals('TREND'));
+      expect(en['chart_tab_donut'], equals('DONUT'));
+
+      expect(th['peak_stat'], equals('สูงสุด'));
+      expect(th['avg_stat'], equals('เฉลี่ย'));
+      expect(en['peak_stat'], equals('PEAK'));
+      expect(en['avg_stat'], equals('AVG'));
+
+      expect(th['recent_activity'], equals('รายการล่าสุด'));
+      expect(en['recent_activity'], equals('RECENT ACTIVITY'));
+
+      expect(th['badge_income'], equals('รายรับ'));
+      expect(th['badge_fixed'], equals('คงที่'));
+      expect(th['badge_var'], equals('ผันแปร'));
+      expect(th['badge_savings'], equals('เงินออม'));
+      expect(th['badge_withdraw'], equals('ถอนเงิน'));
+
+      expect(th['system_vault'], equals('ระบบ // คลังข้อมูล'));
     });
   });
 }

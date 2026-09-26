@@ -13,76 +13,83 @@ class AppTheme {
         ? ThemeData(brightness: Brightness.dark).textTheme
         : ThemeData(brightness: Brightness.light).textTheme;
 
-    // Use SpaceGrotesk as primary tech font with Prompt (sans-serif Thai font) for Thai glyphs
+    // Use SpaceGrotesk as primary tech font with Prompt (Krungthai Smart style Thai font by Cadson Demak)
     final spaceTheme = GoogleFonts.spaceGroteskTextTheme(baseTextTheme);
-    final promptFallback = GoogleFonts.prompt();
-    final fallbackList = [promptFallback.fontFamily ?? 'Prompt', 'sans-serif'];
 
-    // Ensure all styles in the typography hierarchy have Prompt fallback
+    List<String> getPromptFallback([FontWeight? weight]) {
+      final p = GoogleFonts.prompt(fontWeight: weight ?? FontWeight.w400);
+      return [
+        if (p.fontFamily != null) p.fontFamily!,
+        'Prompt',
+        'sans-serif',
+      ];
+    }
+
+    // Ensure all styles in the typography hierarchy have weight-matched Prompt fallback
     return spaceTheme.copyWith(
       displayLarge: spaceTheme.displayLarge?.copyWith(
-        fontFamilyFallback: fallbackList,
+        fontFamilyFallback: getPromptFallback(FontWeight.w800),
         letterSpacing: -1.0,
         fontWeight: FontWeight.w800,
       ),
       displayMedium: spaceTheme.displayMedium?.copyWith(
-        fontFamilyFallback: fallbackList,
+        fontFamilyFallback: getPromptFallback(FontWeight.w700),
         letterSpacing: -0.5,
         fontWeight: FontWeight.w700,
       ),
       displaySmall: spaceTheme.displaySmall?.copyWith(
-        fontFamilyFallback: fallbackList,
+        fontFamilyFallback: getPromptFallback(FontWeight.w700),
         fontWeight: FontWeight.w700,
       ),
       headlineLarge: spaceTheme.headlineLarge?.copyWith(
-        fontFamilyFallback: fallbackList,
+        fontFamilyFallback: getPromptFallback(FontWeight.w700),
         letterSpacing: 0.5,
         fontWeight: FontWeight.w700,
       ),
       headlineMedium: spaceTheme.headlineMedium?.copyWith(
-        fontFamilyFallback: fallbackList,
+        fontFamilyFallback: getPromptFallback(FontWeight.w600),
         letterSpacing: 0.2,
         fontWeight: FontWeight.w600,
       ),
       headlineSmall: spaceTheme.headlineSmall?.copyWith(
-        fontFamilyFallback: fallbackList,
+        fontFamilyFallback: getPromptFallback(FontWeight.w600),
         fontWeight: FontWeight.w600,
       ),
       titleLarge: spaceTheme.titleLarge?.copyWith(
-        fontFamilyFallback: fallbackList,
+        fontFamilyFallback: getPromptFallback(FontWeight.w700),
         letterSpacing: 0.2,
         fontWeight: FontWeight.w700,
       ),
       titleMedium: spaceTheme.titleMedium?.copyWith(
-        fontFamilyFallback: fallbackList,
+        fontFamilyFallback: getPromptFallback(FontWeight.w600),
         letterSpacing: 0.1,
         fontWeight: FontWeight.w600,
       ),
       titleSmall: spaceTheme.titleSmall?.copyWith(
-        fontFamilyFallback: fallbackList,
+        fontFamilyFallback: getPromptFallback(FontWeight.w600),
         fontWeight: FontWeight.w600,
       ),
       labelLarge: spaceTheme.labelLarge?.copyWith(
-        fontFamilyFallback: fallbackList,
+        fontFamilyFallback: getPromptFallback(FontWeight.w700),
         letterSpacing: 1.5,
         fontWeight: FontWeight.w700,
       ),
       labelMedium: spaceTheme.labelMedium?.copyWith(
-        fontFamilyFallback: fallbackList,
+        fontFamilyFallback: getPromptFallback(FontWeight.w600),
         fontWeight: FontWeight.w600,
       ),
       labelSmall: spaceTheme.labelSmall?.copyWith(
-        fontFamilyFallback: fallbackList,
+        fontFamilyFallback: getPromptFallback(FontWeight.w500),
         fontWeight: FontWeight.w500,
       ),
       bodyLarge: spaceTheme.bodyLarge?.copyWith(
-        fontFamilyFallback: fallbackList,
+        fontFamilyFallback: getPromptFallback(FontWeight.w400),
       ),
       bodyMedium: spaceTheme.bodyMedium?.copyWith(
-        fontFamilyFallback: fallbackList,
+        fontFamilyFallback: getPromptFallback(FontWeight.w400),
       ),
       bodySmall: spaceTheme.bodySmall?.copyWith(
-        fontFamilyFallback: fallbackList,
+        fontFamilyFallback: getPromptFallback(FontWeight.w400),
       ),
     );
   }

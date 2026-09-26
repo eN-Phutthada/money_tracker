@@ -12,12 +12,6 @@ import '../../../widgets/nothing_ui_components.dart';
 import '../../../routes/app_routes.dart';
 import '../controllers/budget_controller.dart';
 
-/// หน้าจอตั้งค่าเป้าหมายงบประมาณ (Budget Settings View) สไตล์ Modern FinTech 2026
-/// นำเสนอในรูปแบบ Budgeting Studio ระดับพรีเมียม:
-/// 1. Hero Financial Projection Matrix พร้อมแถบแสดงสัดส่วน 4 มิติ และข้อความแนะนำสุขภาพการเงิน
-/// 2. Smart Financial Strategy Bento Deck สำหรับสลับสูตร 50/30/20, 60/20/20, 40/30/30 อัตโนมัติ
-/// 3. Interactive Daily Allowance Studio พร้อมปุ่ม Quick Stepper และ Slider ปรับระดับ
-/// 4. 3 เสาหลักโครงสร้างงบประมาณ (Income, Savings, Fixed Costs) แบบการ์ด Bento แยกอิสระ
 class BudgetSettingsView extends GetView<BudgetController> {
   const BudgetSettingsView({super.key});
 
@@ -46,25 +40,18 @@ class BudgetSettingsView extends GetView<BudgetController> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // 1. HERO FINANCIAL PROJECTION MATRIX
                   _buildHeroProjectionMatrix(context, currencyFmt, isDark),
                   const SizedBox(height: 20),
 
-                  // 2. SMART FINANCIAL STRATEGY BENTO DECK
                   _buildStrategyBentoDeck(context, isDark),
                   const SizedBox(height: 20),
 
-                  // 3. INTERACTIVE DAILY ALLOWANCE STUDIO
                   _buildDailyAllowanceStudio(context, currencyFmt, isDark),
                   const SizedBox(height: 20),
 
-                  // 4. THREE PILLARS OF FINANCIAL ARCHITECTURE
                   _buildThreePillarsSection(context, currencyFmt, isDark),
-                  const SizedBox(height: 26),
 
-                  // 5. AUTO-SAVED STATUS INDICATOR
-                  _buildAutoSavedIndicator(isDark),
-                  const SizedBox(height: 84),
+                  const SizedBox(height: 100),
                 ],
               ),
             ),
@@ -105,20 +92,36 @@ class BudgetSettingsView extends GetView<BudgetController> {
                             decoration: BoxDecoration(
                               color: isPositive
                                   ? (isDark
-                                      ? const Color(0xFF10B981).withValues(alpha: 0.12)
-                                      : const Color(0xFF10B981).withValues(alpha: 0.08))
+                                        ? const Color(
+                                            0xFF10B981,
+                                          ).withValues(alpha: 0.12)
+                                        : const Color(
+                                            0xFF10B981,
+                                          ).withValues(alpha: 0.08))
                                   : (isDark
-                                      ? AppColors.nothingRed.withValues(alpha: 0.15)
-                                      : AppColors.nothingRed.withValues(alpha: 0.08)),
+                                        ? AppColors.nothingRed.withValues(
+                                            alpha: 0.15,
+                                          )
+                                        : AppColors.nothingRed.withValues(
+                                            alpha: 0.08,
+                                          )),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
                                 color: isPositive
                                     ? (isDark
-                                        ? const Color(0xFF10B981).withValues(alpha: 0.35)
-                                        : const Color(0xFF10B981).withValues(alpha: 0.25))
+                                          ? const Color(
+                                              0xFF10B981,
+                                            ).withValues(alpha: 0.35)
+                                          : const Color(
+                                              0xFF10B981,
+                                            ).withValues(alpha: 0.25))
                                     : (isDark
-                                        ? AppColors.nothingRed.withValues(alpha: 0.40)
-                                        : AppColors.nothingRed.withValues(alpha: 0.25)),
+                                          ? AppColors.nothingRed.withValues(
+                                              alpha: 0.40,
+                                            )
+                                          : AppColors.nothingRed.withValues(
+                                              alpha: 0.25,
+                                            )),
                                 width: 0.8,
                               ),
                             ),
@@ -127,7 +130,9 @@ class BudgetSettingsView extends GetView<BudgetController> {
                                   ? Icons.auto_graph_rounded
                                   : Icons.trending_down_rounded,
                               color: isPositive
-                                  ? (isDark ? const Color(0xFF10B981) : const Color(0xFF059669))
+                                  ? (isDark
+                                        ? const Color(0xFF10B981)
+                                        : const Color(0xFF059669))
                                   : AppColors.nothingRed,
                               size: 18,
                             ),
@@ -141,18 +146,24 @@ class BudgetSettingsView extends GetView<BudgetController> {
                                   fit: BoxFit.scaleDown,
                                   alignment: Alignment.centerLeft,
                                   child: NothingDotText(
-                                    'projected_ending_balance_header'.tr.toUpperCase(),
+                                    'projected_ending_balance_header'.tr
+                                        .toUpperCase(),
                                     fontSize: 12,
                                     letterSpacing: 1.0,
                                     fontWeight: FontWeight.w700,
                                     color: isPositive
-                                        ? (isDark ? Colors.white : const Color(0xFF111111))
+                                        ? (isDark
+                                              ? Colors.white
+                                              : const Color(0xFF111111))
                                         : AppColors.nothingRed,
                                   ),
                                 ),
                                 const SizedBox(height: 3),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 1.5,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: isDark
                                         ? const Color(0xFF1C1C1E)
@@ -161,7 +172,9 @@ class BudgetSettingsView extends GetView<BudgetController> {
                                     border: Border.all(
                                       color: isDark
                                           ? AppColors.nothingBorder
-                                          : Colors.black.withValues(alpha: 0.08),
+                                          : Colors.black.withValues(
+                                              alpha: 0.08,
+                                            ),
                                       width: 0.8,
                                     ),
                                   ),
@@ -169,7 +182,7 @@ class BudgetSettingsView extends GetView<BudgetController> {
                                     'days_in_cycle'.trParams({
                                       'days': '${controller.daysInMonth}',
                                     }).toUpperCase(),
-                                    style: GoogleFonts.shareTechMono(
+                                    style: NothingTypography.mono(
                                       fontSize: 9.5,
                                       fontWeight: FontWeight.w700,
                                       letterSpacing: 0.8,
@@ -200,7 +213,9 @@ class BudgetSettingsView extends GetView<BudgetController> {
                             ? const Color(0xFF10B981)
                             : AppColors.nothingRed,
                         textColor: isPositive
-                            ? (isDark ? const Color(0xFF34D399) : const Color(0xFF059669))
+                            ? (isDark
+                                  ? const Color(0xFF34D399)
+                                  : const Color(0xFF059669))
                             : AppColors.nothingRed,
                         showDot: true,
                         dotColor: isPositive
@@ -257,7 +272,7 @@ class BudgetSettingsView extends GetView<BudgetController> {
                     'budget_calc_desc'.trParams({
                       'days': controller.daysInMonth.toString(),
                     }),
-                    style: GoogleFonts.spaceGrotesk(
+                    style: NothingTypography.grotesk(
                       fontSize: 10.5,
                       fontWeight: FontWeight.w500,
                       color: isDark
@@ -300,7 +315,7 @@ class BudgetSettingsView extends GetView<BudgetController> {
                       Expanded(
                         child: Text(
                           controller.healthStatusMessage,
-                          style: GoogleFonts.spaceGrotesk(
+                          style: NothingTypography.grotesk(
                             fontSize: 11.5,
                             fontWeight: FontWeight.w600,
                             color: isDark ? Colors.white : Colors.black,
@@ -348,10 +363,14 @@ class BudgetSettingsView extends GetView<BudgetController> {
     );
 
     // High-contrast, distinct 4-pillar colors
-    final fixedColor = isDark ? const Color(0xFFD4D4D8) : const Color(0xFF4B5563);
+    final fixedColor = isDark
+        ? const Color(0xFFD4D4D8)
+        : const Color(0xFF4B5563);
     final varColor = AppColors.expenseColor(isDark);
     final savingsColor = AppColors.savingsColor(isDark);
-    final surplusColor = isDark ? const Color(0xFF10B981) : const Color(0xFF059669);
+    final surplusColor = isDark
+        ? const Color(0xFF10B981)
+        : const Color(0xFF059669);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -361,13 +380,13 @@ class BudgetSettingsView extends GetView<BudgetController> {
           children: [
             Text(
               'allocation_breakdown'.tr,
-              style: GoogleFonts.spaceGrotesk(
+              style: NothingTypography.grotesk(
                 fontSize: 11.5,
                 fontWeight: FontWeight.w700,
                 color: isDark
                     ? AppColors.darkTextSecondary
                     : AppColors.textSecondary,
-              ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+              ),
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
@@ -469,7 +488,10 @@ class BudgetSettingsView extends GetView<BudgetController> {
       decoration: BoxDecoration(
         color: color.withValues(alpha: isDark ? 0.12 : 0.08),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: isDark ? 0.35 : 0.25), width: 0.8),
+        border: Border.all(
+          color: color.withValues(alpha: isDark ? 0.35 : 0.25),
+          width: 0.8,
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -482,11 +504,11 @@ class BudgetSettingsView extends GetView<BudgetController> {
           const SizedBox(width: 5),
           Text(
             '$label $percent%',
-            style: GoogleFonts.spaceGrotesk(
+            style: NothingTypography.grotesk(
               fontSize: 10,
               fontWeight: FontWeight.w700,
               color: color,
-            ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+            ),
           ),
           const SizedBox(width: 5),
           Text(
@@ -632,7 +654,7 @@ class BudgetSettingsView extends GetView<BudgetController> {
               // Subtitle
               Text(
                 subtitle,
-                style: GoogleFonts.spaceGrotesk(
+                style: NothingTypography.grotesk(
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
                   color: isDark
@@ -655,7 +677,7 @@ class BudgetSettingsView extends GetView<BudgetController> {
                 ),
                 child: Text(
                   breakdownText,
-                  style: GoogleFonts.shareTechMono(
+                  style: NothingTypography.mono(
                     fontSize: 8.5,
                     fontWeight: FontWeight.w700,
                     color: isDark ? Colors.white70 : Colors.black87,
@@ -802,7 +824,7 @@ class BudgetSettingsView extends GetView<BudgetController> {
                           'amount': currencyFmt.format(monthlyTotal),
                           'days': controller.daysInMonth.toString(),
                         }),
-                        style: GoogleFonts.spaceGrotesk(
+                        style: NothingTypography.grotesk(
                           fontSize: 11,
                           fontWeight: FontWeight.w500,
                           color: isDark
@@ -1276,9 +1298,6 @@ class BudgetSettingsView extends GetView<BudgetController> {
     );
   }
 
-  // ==========================================
-  // 4. THREE PILLARS OF FINANCIAL ARCHITECTURE
-  // ==========================================
   Widget _buildThreePillarsSection(
     BuildContext context,
     NumberFormat currencyFmt,
@@ -1294,7 +1313,6 @@ class BudgetSettingsView extends GetView<BudgetController> {
         ),
         const SizedBox(height: 10),
 
-        // Pillar 1: Monthly Income (Vibrant Emerald / Mint Green)
         _buildPillarBentoCard(
           context,
           title: 'monthly_income_target'.tr,
@@ -1309,7 +1327,6 @@ class BudgetSettingsView extends GetView<BudgetController> {
         ),
         const SizedBox(height: 12),
 
-        // Pillar 2: Savings & Investments (DCA - Sky/Blue)
         _buildPillarBentoCard(
           context,
           title: 'planned_savings_title'.tr,
@@ -1328,7 +1345,6 @@ class BudgetSettingsView extends GetView<BudgetController> {
         ),
         const SizedBox(height: 12),
 
-        // Pillar 3: Fixed Costs (Warm Amber / Orange)
         _buildPillarBentoCard(
           context,
           title: 'planned_fixed_costs_title'.tr,
@@ -1383,7 +1399,6 @@ class BudgetSettingsView extends GetView<BudgetController> {
         children: [
           Row(
             children: [
-              // Squircle Icon
               Container(
                 width: 38,
                 height: 38,
@@ -1395,7 +1410,6 @@ class BudgetSettingsView extends GetView<BudgetController> {
               ),
               const SizedBox(width: 12),
 
-              // Title
               Expanded(
                 child: Text(
                   title,
@@ -1412,7 +1426,6 @@ class BudgetSettingsView extends GetView<BudgetController> {
               ),
               const SizedBox(width: 10),
 
-              // Value Display & Edit Trigger
               Material(
                 color: Colors.transparent,
                 child: InkWell(
@@ -1453,7 +1466,6 @@ class BudgetSettingsView extends GetView<BudgetController> {
           ),
           const SizedBox(height: 8),
 
-          // Subtitle / Description - Full Width
           Padding(
             padding: const EdgeInsets.only(left: 2, right: 2),
             child: Text(
@@ -1470,7 +1482,6 @@ class BudgetSettingsView extends GetView<BudgetController> {
           ),
           const SizedBox(height: 10),
 
-          // Quick Adjustment Chips Row with Ratio Pill
           Row(
             children: [
               if (ratioTextBuilder != null)
@@ -1544,44 +1555,6 @@ class BudgetSettingsView extends GetView<BudgetController> {
     );
   }
 
-  // ==========================================
-  // 5. NOTHING OS AUTO-SAVED STATUS INDICATOR
-  // ==========================================
-  Widget _buildAutoSavedIndicator(bool isDark) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF141414) : const Color(0xFFF6F6F6),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark
-              ? AppColors.nothingBorder
-              : Colors.black.withValues(alpha: 0.08),
-          width: 0.8,
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const NothingLedIndicator(size: 6, color: Color(0xFF10B981)),
-          const SizedBox(width: 8),
-          Text(
-            'auto_saved_indicator'.tr.toUpperCase(),
-            style: GoogleFonts.shareTechMono(
-              fontSize: 11.5,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.0,
-              color: isDark ? Colors.white70 : Colors.black87,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ==========================================
-  // SECTION HEADER HELPER
-  // ==========================================
   Widget _buildSectionHeader({
     required IconData icon,
     required String title,
@@ -1622,9 +1595,6 @@ class BudgetSettingsView extends GetView<BudgetController> {
     );
   }
 
-  // ==========================================
-  // MODERN FINTECH QUICK EDIT DIALOG
-  // ==========================================
   void _showEditNumberDialog(
     BuildContext context,
     String title,
@@ -1651,7 +1621,6 @@ class BudgetSettingsView extends GetView<BudgetController> {
             ),
             const SizedBox(height: 18),
 
-            // Number Input
             TextField(
               controller: textController,
               keyboardType: const TextInputType.numberWithOptions(
@@ -1662,7 +1631,9 @@ class BudgetSettingsView extends GetView<BudgetController> {
                 fontSize: 24,
                 fontWeight: FontWeight.w800,
                 letterSpacing: -0.5,
-                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                color: isDark
+                    ? AppColors.darkTextPrimary
+                    : AppColors.textPrimary,
               ),
               decoration: InputDecoration(
                 prefixText: '฿ ',
@@ -1699,7 +1670,6 @@ class BudgetSettingsView extends GetView<BudgetController> {
             ),
             const SizedBox(height: 12),
 
-            // Quick Add & Subtract Chips
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -1747,7 +1717,6 @@ class BudgetSettingsView extends GetView<BudgetController> {
             ),
             const SizedBox(height: 22),
 
-            // Actions (Cancel / Confirm)
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
@@ -1790,7 +1759,9 @@ class BudgetSettingsView extends GetView<BudgetController> {
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: color,
-                    foregroundColor: ThemeData.estimateBrightnessForColor(color) == Brightness.dark
+                    foregroundColor:
+                        ThemeData.estimateBrightnessForColor(color) ==
+                            Brightness.dark
                         ? Colors.white
                         : Colors.black,
                     elevation: 0,
@@ -1816,7 +1787,6 @@ class BudgetSettingsView extends GetView<BudgetController> {
   }
 }
 
-/// CustomPainter สำหรับวาดแท่งสัดส่วนงบประมาณแบบแม่นยำและลื่นไหล
 class BudgetRatioBarPainter extends CustomPainter {
   final double fixedRatio;
   final double varRatio;

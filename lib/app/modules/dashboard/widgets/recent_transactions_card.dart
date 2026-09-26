@@ -130,9 +130,12 @@ class RecentTransactionsCard extends GetView<DashboardController> {
                         const SizedBox(width: 6),
                         Flexible(
                           child: NothingDotText(
-                            'RECENT ACTIVITY',
+                            'recent_activity'.tr.toUpperCase(),
                             fontSize: 12.5,
-                            letterSpacing: 1.2,
+                            letterSpacing: NothingTypography.safeSpacing(
+                              'recent_activity'.tr,
+                              1.2,
+                            ),
                             isMono: false,
                             color: isDark ? Colors.white : Colors.black,
                           ),
@@ -174,11 +177,11 @@ class RecentTransactionsCard extends GetView<DashboardController> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              'ALL',
-                              style: GoogleFonts.spaceGrotesk(
+                              'all'.tr.toUpperCase(),
+                              style: NothingTypography.grotesk(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
-                                letterSpacing: 0.8,
+                                letterSpacing: NothingTypography.safeSpacing('all'.tr, 0.8),
                                 color: isDark ? Colors.white : Colors.black,
                               ),
                             ),
@@ -247,7 +250,7 @@ class RecentTransactionsCard extends GetView<DashboardController> {
                       const SizedBox(height: 12),
                       Text(
                         'no_transactions'.tr,
-                        style: GoogleFonts.spaceGrotesk(
+                        style: NothingTypography.grotesk(
                           fontSize: 12.5,
                           fontWeight: FontWeight.w600,
                           color: isDark
@@ -265,7 +268,7 @@ class RecentTransactionsCard extends GetView<DashboardController> {
                         icon: const Icon(Icons.add, size: 15),
                         label: Text(
                           'add_first_transaction'.tr.toUpperCase(),
-                          style: GoogleFonts.spaceGrotesk(
+                          style: NothingTypography.grotesk(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 0.6,
@@ -311,22 +314,24 @@ class RecentTransactionsCard extends GetView<DashboardController> {
                     if (item.isSavingsWithdrawal) {
                       amountColor = statusWithdrawal;
                       prefix = '+';
-                      natureLabel = 'WITHDRAW';
+                      natureLabel = 'badge_withdraw'.tr.toUpperCase();
                       natureColor = statusWithdrawal;
                     } else if (item.isIncome) {
                       amountColor = statusIncome;
                       prefix = '+';
-                      natureLabel = 'INCOME';
+                      natureLabel = 'badge_income'.tr.toUpperCase();
                       natureColor = statusIncome;
                     } else if (item.isSavings) {
                       amountColor = statusSavings;
                       prefix = '';
-                      natureLabel = 'SAVINGS';
+                      natureLabel = 'badge_savings'.tr.toUpperCase();
                       natureColor = statusSavings;
                     } else {
                       amountColor = statusRed;
                       prefix = '-';
-                      natureLabel = item.isFixedCost ? 'FIXED' : 'VAR';
+                      natureLabel = item.isFixedCost
+                          ? 'badge_fixed'.tr.toUpperCase()
+                          : 'badge_var'.tr.toUpperCase();
                       natureColor = item.isFixedCost
                           ? (isDark
                                 ? const Color(0xFFD4D4D8)

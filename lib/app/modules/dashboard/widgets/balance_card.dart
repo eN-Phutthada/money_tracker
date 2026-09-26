@@ -834,7 +834,7 @@ class BalanceCard extends GetView<DashboardController> {
       children: [
         Text(
           '${isNegative ? '-' : ''}฿',
-          style: GoogleFonts.spaceGrotesk(
+          style: NothingTypography.grotesk(
             fontSize: 20,
             fontWeight: FontWeight.w600,
             color: amountColor,
@@ -843,7 +843,7 @@ class BalanceCard extends GetView<DashboardController> {
         const SizedBox(width: 3),
         Text(
           wholeFormatted,
-          style: GoogleFonts.shareTechMono(
+          style: NothingTypography.mono(
             fontSize: 36,
             fontWeight: FontWeight.w700,
             letterSpacing: -0.5,
@@ -852,7 +852,7 @@ class BalanceCard extends GetView<DashboardController> {
         ),
         Text(
           '.$decimalFormatted',
-          style: GoogleFonts.shareTechMono(
+          style: NothingTypography.mono(
             fontSize: 18,
             fontWeight: FontWeight.w500,
             color: isDark ? const Color(0xFFAAAAAA) : const Color(0xFF666666),

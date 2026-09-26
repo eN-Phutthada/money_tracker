@@ -102,14 +102,14 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
                         children: [
                           _buildNothingTabItem(
                             index: 0,
-                            title: 'TREND',
+                            title: 'chart_tab_trend'.tr.toUpperCase(),
                             icon: Icons.show_chart_rounded,
                             isDark: isDark,
                             expand: isNarrow,
                           ),
                           _buildNothingTabItem(
                             index: 1,
-                            title: 'DONUT',
+                            title: 'chart_tab_donut'.tr.toUpperCase(),
                             icon: Icons.pie_chart_outline_rounded,
                             isDark: isDark,
                             expand: isNarrow,
@@ -158,7 +158,7 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
                                   const SizedBox(width: 6),
                                   Expanded(
                                     child: NothingDotText(
-                                      'ANALYTICS // TRENDS',
+                                      'analytics_trends_title'.tr.toUpperCase(),
                                       fontSize: 12.5,
                                       letterSpacing: 1.2,
                                       isMono: false,
@@ -281,10 +281,10 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
             const SizedBox(width: 5),
             Text(
               title,
-              style: GoogleFonts.spaceGrotesk(
+              style: NothingTypography.grotesk(
                 fontSize: 10.5,
                 fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                letterSpacing: 0.8,
+                letterSpacing: NothingTypography.safeSpacing(title, 0.8),
                 color: isSelected
                     ? (isDark ? Colors.white : Colors.black)
                     : (isDark
@@ -372,8 +372,8 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
                     const SizedBox(width: 6),
                     Flexible(
                       child: Text(
-                        'PEAK: $peakMonthName // ${currencyFmt.format(peakNet)}',
-                        style: GoogleFonts.shareTechMono(
+                        '${'peak_stat'.tr.toUpperCase()}: $peakMonthName // ${currencyFmt.format(peakNet)}',
+                        style: NothingTypography.mono(
                           fontSize: 10.5,
                           fontWeight: FontWeight.w700,
                           color: isDark ? Colors.white : Colors.black,
@@ -405,8 +405,8 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        'AVG: ${currencyFmt.format(avgNet)}',
-                        style: GoogleFonts.shareTechMono(
+                        '${'avg_stat'.tr.toUpperCase()}: ${currencyFmt.format(avgNet)}',
+                        style: NothingTypography.mono(
                           fontSize: 10.5,
                           fontWeight: FontWeight.w700,
                           color: avgNet >= 0
@@ -599,7 +599,7 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
               const SizedBox(height: 10),
               Text(
                 'no_expense_records'.tr,
-                style: GoogleFonts.spaceGrotesk(
+                style: NothingTypography.grotesk(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   color: isDark
@@ -710,11 +710,16 @@ class _FlFinanceChartCardState extends State<FlFinanceChartCard> {
                   Text(
                     activeCategory != null
                         ? (activeCategory['name'] as String).tr.toUpperCase()
-                        : 'EXPENSES',
-                    style: GoogleFonts.spaceGrotesk(
+                        : 'total_expenses_cutout'.tr.toUpperCase(),
+                    style: NothingTypography.grotesk(
                       fontSize: 9.5,
                       fontWeight: FontWeight.w700,
-                      letterSpacing: 1.0,
+                      letterSpacing: NothingTypography.safeSpacing(
+                        activeCategory != null
+                            ? (activeCategory['name'] as String).tr
+                            : 'total_expenses_cutout'.tr,
+                        1.0,
+                      ),
                       color: isDark
                           ? AppColors.nothingSubtext
                           : const Color(0xFF777777),

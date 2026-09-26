@@ -31,10 +31,14 @@
   - เมื่อปรับโค้ดหรือลบฟังก์ชัน ต้องตรวจสอบและลบ `import` ที่ไม่ได้ใช้งานออกทันที (เช่น `flutter_animate`, `intl`)
   - ห้ามประกาศตัวแปรทิ้งไว้โดยไม่มีการเรียกใช้งาน (`The value of the local variable isn't used`)
 
-### 2.3 การออกแบบสไตล์ Nothing OS
+### 2.3 การออกแบบสไตล์ Nothing OS & ระบบฟอนต์ไทยสไตล์ Krungthai Smart
 - **Typography**:
   - ตัวเลขสถิติ, ยอดเงิน, คะแนน: ใช้ `GoogleFonts.shareTechMono` หรือ `NothingTypography.mono`
   - ข้อความทั่วไป, หัวข้อ, บันทึก: ใช้ `GoogleFonts.spaceGrotesk` หรือ `NothingTypography.grotesk`
+  - **ฟอนต์ภาษาไทย (Krungthai Smart Style)**:
+    - ฟอนต์ไทยหลักใช้สไตล์โมเดิร์นแบงก์กิ้งไร้หัว (Loopless) แบบเดียวกับ Krungthai Smart / Krungthai NEXT โดยใช้ฟอนต์ **Prompt** ที่พัฒนาโดย **Cadson Demak** (ผู้พัฒนาเดียวกัน)
+    - รองรับ fallback ตรงตามน้ำหนักตัวอักษรด้วย `NothingTypography.thaiFallback(weight)` หรือเรียกใช้ผ่าน `NothingTypography.prompt(...)`, `NothingTypography.grotesk(...)`, หรือ `NothingTypography.mono(...)`
+    - ห้ามฮาร์ดโค้ด fallback ลอยๆ เป็น `['Prompt', 'sans-serif']` โดยไม่ดึง family name ผ่าน `GoogleFonts.prompt(fontWeight: ...)` เนื่องจากระบบ `google_fonts` กำหนด internal family แยกตามน้ำหนัก (`Prompt_regular`, `Prompt_600`, `Prompt_700`)
 - **Border & Surfaces**:
   - เส้นขอบคมกริบแบบ Hairline: `width: 0.8` (ห้ามใช้เส้นขอบหนา 1.5 - 2.0 เว้นแต่เป็น Focus border ของ input field)
   - ความโค้ง Squircle:

@@ -83,22 +83,22 @@ class DashboardHeader extends GetView<DashboardController> {
                       children: [
                         Text(
                           'select_period'.tr.toUpperCase(),
-                          style: GoogleFonts.spaceGrotesk(
+                          style: NothingTypography.grotesk(
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
-                            letterSpacing: 1.2,
+                            letterSpacing: NothingTypography.safeSpacing('select_period'.tr, 1.2),
                             color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                          ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                         Text(
                           'select_period_desc'.tr,
-                          style: GoogleFonts.spaceGrotesk(
+                          style: NothingTypography.grotesk(
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
                             color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                          ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -242,13 +242,13 @@ class DashboardHeader extends GetView<DashboardController> {
                               ],
                               Text(
                                 monthName,
-                                style: GoogleFonts.spaceGrotesk(
+                                style: NothingTypography.grotesk(
                                   fontSize: 12,
                                   fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                                   color: isSelected
                                       ? (isDark ? Colors.black : Colors.white)
                                       : (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
-                                ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+                                ),
                               ),
                             ],
                           ),
@@ -288,12 +288,12 @@ class DashboardHeader extends GetView<DashboardController> {
                         const SizedBox(width: 8),
                         Text(
                           'jump_to_current_month'.tr.toUpperCase(),
-                          style: GoogleFonts.spaceGrotesk(
+                          style: NothingTypography.grotesk(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            letterSpacing: 1.0,
+                            letterSpacing: NothingTypography.safeSpacing('jump_to_current_month'.tr, 1.0),
                             color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                          ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+                          ),
                         ),
                       ],
                     ),
@@ -404,12 +404,12 @@ class DashboardHeader extends GetView<DashboardController> {
           alignment: Alignment.center,
           child: Text(
             title,
-            style: GoogleFonts.spaceGrotesk(
+            style: NothingTypography.grotesk(
               fontSize: 11.5,
               fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-              letterSpacing: 1.2,
+              letterSpacing: NothingTypography.safeSpacing(title, 1.2),
               color: fg,
-            ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -518,12 +518,12 @@ class DashboardHeader extends GetView<DashboardController> {
                               children: [
                                 Text(
                                   controller.formattedPeriodTitle.toUpperCase(),
-                                  style: GoogleFonts.spaceGrotesk(
+                                  style: NothingTypography.grotesk(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w700,
-                                    letterSpacing: 1.0,
+                                    letterSpacing: NothingTypography.safeSpacing(controller.formattedPeriodTitle, 1.0),
                                     color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                                  ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+                                  ),
                                 ),
                                 if (isMonthly) ...[
                                   const SizedBox(width: 4),
@@ -575,11 +575,11 @@ class DashboardHeader extends GetView<DashboardController> {
                             fit: BoxFit.scaleDown,
                             child: Text(
                               isMonthly ? 'current_month'.tr : 'current_year'.tr,
-                              style: GoogleFonts.spaceGrotesk(
+                              style: NothingTypography.grotesk(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700,
                                 color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                              ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+                              ),
                             ),
                           ),
                         ],
@@ -607,12 +607,12 @@ class DashboardHeader extends GetView<DashboardController> {
                       const SizedBox(width: 5),
                       Text(
                         'active_period'.tr.toUpperCase(),
-                        style: GoogleFonts.spaceGrotesk(
+                        style: NothingTypography.grotesk(
                           fontSize: 9,
                           fontWeight: FontWeight.w700,
-                          letterSpacing: 0.8,
+                          letterSpacing: NothingTypography.safeSpacing('active_period'.tr, 0.8),
                           color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                        ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+                        ),
                       ),
                     ],
                   ),
@@ -667,7 +667,7 @@ class DashboardHeader extends GetView<DashboardController> {
                     const SizedBox(width: 4),
                     Text(
                       'items_count_badge'.trParams({'count': '${controller.transactions.length}'}),
-                      style: GoogleFonts.spaceGrotesk(
+                      style: NothingTypography.grotesk(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
                         color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,

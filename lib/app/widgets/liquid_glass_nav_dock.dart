@@ -386,10 +386,13 @@ class LiquidGlassNavDock extends StatelessWidget {
                     size: 5,
                   ),
                   const SizedBox(width: 8),
-                  const NothingDotText(
-                    'SYSTEM // VAULT',
+                  NothingDotText(
+                    'system_vault'.tr.toUpperCase(),
                     fontSize: 10,
-                    letterSpacing: 1.2,
+                    letterSpacing: NothingTypography.safeSpacing(
+                      'system_vault'.tr,
+                      1.2,
+                    ),
                   ),
                 ],
               ),

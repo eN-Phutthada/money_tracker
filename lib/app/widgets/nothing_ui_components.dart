@@ -8,9 +8,21 @@ import '../theme/app_colors.dart';
 /// ผสมผสานความเรียบหรูแบบอินดัสเทรียล, เรขาคณิต Squircle, และไฟ LED Glyph
 
 /// ตัวช่วยกำหนดรูปแบบตัวอักษรสไตล์ Nothing OS Design System
-/// พร้อม fallback ฟอนต์ไทย (Prompt) และระบบป้องกันตัวอักษรไทยสระลอย/ห่างเกินไป
+/// ผสมผสาน Typography สไตล์โมโนสเปซและอินดัสเทรียล (Space Grotesk / Share Tech Mono)
+/// และฟอนต์ไทยสไตล์ Krungthai Smart (Prompt โดย Cadson Demak - Loopless Modern Banking Sans)
+/// พร้อมระบบป้องกันตัวอักษรไทยสระลอย/ห่างเกินไป และการ fallback ตรงตามน้ำหนักตัวอักษร
 class NothingTypography {
-  static const List<String> fallbackFonts = ['Prompt', 'sans-serif'];
+  /// คืนค่า List ของ Font Family Fallback สำหรับภาษาไทยสไตล์ Krungthai Smart (Prompt โดย Cadson Demak)
+  static List<String> thaiFallback([FontWeight? weight]) {
+    final promptStyle = GoogleFonts.prompt(fontWeight: weight ?? FontWeight.w400);
+    return [
+      if (promptStyle.fontFamily != null) promptStyle.fontFamily!,
+      'Prompt',
+      'sans-serif',
+    ];
+  }
+
+  static List<String> get fallbackFonts => thaiFallback();
 
   /// ตรวจสอบว่าข้อความมีอักขระภาษาไทยหรือไม่
   static bool hasThai(String text) => RegExp(r'[\u0E00-\u0E7F]').hasMatch(text);
@@ -18,10 +30,33 @@ class NothingTypography {
   /// คืนค่า letterSpacing ที่ปลอดภัย (สำหรับภาษาไทยห้ามเกิน 0.3 ป้องกันสระลอย/วรรณยุกต์หลุด)
   static double safeSpacing(String? text, double desiredSpacing) {
     if (text == null || text.isEmpty) return desiredSpacing;
-    return hasThai(text) ? 0.2 : desiredSpacing;
+    return hasThai(text) ? 0.15 : desiredSpacing;
+  }
+
+  /// ฟอนต์ Prompt สไตล์ Krungthai Smart (Cadson Demak)
+  /// สำหรับข้อความภาษาไทยโดยเฉพาะ (Loopless, Modern Banking Sans)
+  static TextStyle prompt({
+    double fontSize = 13,
+    FontWeight fontWeight = FontWeight.w600,
+    Color? color,
+    double letterSpacing = 0.15,
+    double? height,
+    TextDecoration? decoration,
+    FontStyle? fontStyle,
+  }) {
+    return GoogleFonts.prompt(
+      fontSize: fontSize,
+      fontWeight: fontWeight,
+      color: color,
+      letterSpacing: letterSpacing,
+      height: height,
+      decoration: decoration,
+      fontStyle: fontStyle,
+    );
   }
 
   /// ฟอนต์ Space Grotesk สำหรับหัวข้อ, ปุ่ม, แท็บ, ฉลาก, ป้ายสถานะ
+  /// พร้อม fallback ฟอนต์ไทยสไตล์ Krungthai Smart (Prompt) ที่ตรงตามน้ำหนักตัวอักษร
   static TextStyle grotesk({
     double fontSize = 13,
     FontWeight fontWeight = FontWeight.w600,
@@ -40,11 +75,12 @@ class NothingTypography {
       decoration: decoration,
       fontStyle: fontStyle,
     ).copyWith(
-      fontFamilyFallback: fallbackFonts,
+      fontFamilyFallback: thaiFallback(fontWeight),
     );
   }
 
   /// ฟอนต์ Share Tech Mono สำหรับตัวเลข, จำนวนเงิน, สถิติ, วันที่เวลา, มาตรวัด
+  /// พร้อม fallback ฟอนต์ไทยสไตล์ Krungthai Smart (Prompt) ที่ตรงตามน้ำหนักตัวอักษร
   static TextStyle mono({
     double fontSize = 13,
     FontWeight fontWeight = FontWeight.w700,
@@ -61,7 +97,7 @@ class NothingTypography {
       height: height,
       fontStyle: fontStyle,
     ).copyWith(
-      fontFamilyFallback: fallbackFonts,
+      fontFamilyFallback: thaiFallback(fontWeight),
     );
   }
 }
@@ -98,6 +134,7 @@ class NothingDotText extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final defaultColor = isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
     final effectiveSpacing = NothingTypography.safeSpacing(text, letterSpacing);
+    final isThaiText = NothingTypography.hasThai(text);
 
     final baseStyle = style ?? (isMono
         ? NothingTypography.mono(
@@ -106,12 +143,19 @@ class NothingDotText extends StatelessWidget {
             color: color ?? defaultColor,
             letterSpacing: effectiveSpacing,
           )
-        : NothingTypography.grotesk(
-            fontSize: fontSize,
-            fontWeight: fontWeight,
-            color: color ?? defaultColor,
-            letterSpacing: effectiveSpacing,
-          ));
+        : (isThaiText
+            ? NothingTypography.prompt(
+                fontSize: fontSize,
+                fontWeight: fontWeight,
+                color: color ?? defaultColor,
+                letterSpacing: effectiveSpacing,
+              )
+            : NothingTypography.grotesk(
+                fontSize: fontSize,
+                fontWeight: fontWeight,
+                color: color ?? defaultColor,
+                letterSpacing: effectiveSpacing,
+              )));
 
     return Text(
       text,
