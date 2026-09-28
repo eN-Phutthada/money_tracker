@@ -1670,6 +1670,134 @@ class _BankSlipSheetState extends State<BankSlipSheet> {
                     ),
                   ],
 
+                  if (widget.slip.receiptItems.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF141414) : const Color(0xFFF5F5F5),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                          width: 0.8,
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const NothingLedIndicator(
+                                    size: 5,
+                                    color: AppColors.nothingRed,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'receipt_items_title'.tr.toUpperCase(),
+                                    style: NothingTypography.grotesk(
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: NothingTypography.safeSpacing('receipt_items_title'.tr, 0.8),
+                                      color: isDark ? Colors.white : Colors.black,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: isDark ? const Color(0xFF222222) : const Color(0xFFE5E5E5),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                                    width: 0.8,
+                                  ),
+                                ),
+                                child: Text(
+                                  '${widget.slip.totalItemCount} ${'pieces_unit'.tr}',
+                                  style: NothingTypography.mono(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    color: isDark ? Colors.white : Colors.black,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          Divider(
+                            height: 1,
+                            thickness: 0.8,
+                            color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                          ),
+                          const SizedBox(height: 10),
+                          ...widget.slip.receiptItems.map((item) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '•',
+                                    style: TextStyle(
+                                      color: isDark ? AppColors.nothingRedLight : AppColors.nothingRed,
+                                      fontSize: 14,
+                                      height: 1.2,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      item,
+                                      style: NothingTypography.grotesk(
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.w600,
+                                        color: isDark ? const Color(0xFFE4E4E7) : const Color(0xFF27272A),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }),
+                          const SizedBox(height: 8),
+                          Divider(
+                            height: 1,
+                            thickness: 0.8,
+                            color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                '${'receipt_net_total_label'.tr} ${widget.slip.totalItemCount} ${'pieces_unit'.tr}',
+                                style: NothingTypography.grotesk(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: isDark ? const Color(0xFFA1A1AA) : const Color(0xFF71717A),
+                                ),
+                              ),
+                              Text(
+                                '${currencyFormat.format(_currentAmount)} ${'baht_unit'.tr}',
+                                style: NothingTypography.mono(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: isDark ? Colors.white : Colors.black,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+
                   const SizedBox(height: 16),
 
                   // Slip Details Table

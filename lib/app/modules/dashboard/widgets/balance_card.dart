@@ -503,29 +503,35 @@ class BalanceCard extends GetView<DashboardController> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.event_note_rounded,
-                    size: 14,
-                    color: isDark ? Colors.white : Colors.black,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    'monthly_plan_cycle'.tr.toUpperCase(),
-                    style: NothingTypography.grotesk(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: NothingTypography.safeSpacing(
-                        'monthly_plan_cycle'.tr,
-                        0.6,
-                      ),
+              Flexible(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.event_note_rounded,
+                      size: 14,
                       color: isDark ? Colors.white : Colors.black,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        'monthly_plan_cycle'.tr.toUpperCase(),
+                        overflow: TextOverflow.ellipsis,
+                        style: NothingTypography.grotesk(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: NothingTypography.safeSpacing(
+                            'monthly_plan_cycle'.tr,
+                            0.6,
+                          ),
+                          color: isDark ? Colors.white : Colors.black,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 8, vertical: 3),

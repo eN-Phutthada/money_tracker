@@ -104,43 +104,47 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (titleWidget != null)
-              Flexible(child: titleWidget!)
-            else if (title != null)
-              Flexible(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    title!.toUpperCase(),
-                    style: NothingTypography.grotesk(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: NothingTypography.safeSpacing(title, 0.8),
-                      color: isDark ? Colors.white : Colors.black,
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (titleWidget != null)
+                titleWidget!
+              else if (title != null)
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      title!.toUpperCase(),
+                      style: NothingTypography.grotesk(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: NothingTypography.safeSpacing(title, 0.8),
+                        color: isDark ? Colors.white : Colors.black,
+                      ),
+                      maxLines: 1,
                     ),
-                    maxLines: 1,
                   ),
                 ),
-              ),
-            if (badgeWidget != null) ...[
-              const SizedBox(width: 8),
-              badgeWidget!,
-            ] else if (badgeText != null) ...[
-              const SizedBox(width: 8),
-              NothingPill(
-                label: badgeText!,
-                color: (badgeColor ?? AppColors.nothingRed).withValues(alpha: isDark ? 0.18 : 0.12),
-                textColor: badgeColor ?? AppColors.nothingRed,
-                showDot: true,
-                dotColor: badgeColor ?? AppColors.nothingRed,
-                isDotMatrix: true,
-              ),
+              if (badgeWidget != null) ...[
+                const SizedBox(width: 8),
+                badgeWidget!,
+              ] else if (badgeText != null) ...[
+                const SizedBox(width: 8),
+                NothingPill(
+                  label: badgeText!,
+                  color: (badgeColor ?? AppColors.nothingRed).withValues(alpha: isDark ? 0.18 : 0.12),
+                  textColor: badgeColor ?? AppColors.nothingRed,
+                  showDot: true,
+                  dotColor: badgeColor ?? AppColors.nothingRed,
+                  isDotMatrix: true,
+                ),
+              ],
             ],
-          ],
+          ),
         ),
         if (subtitleWidget != null) ...[
           const SizedBox(height: 2),

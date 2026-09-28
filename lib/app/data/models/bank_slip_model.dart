@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import '../../modules/dashboard/controllers/dashboard_controller.dart';
 import 'transaction_model.dart';
 
@@ -33,6 +34,9 @@ class BankSlipData {
   /// รายการสินค้าที่ตรวจพบจากใบเสร็จ (เช่น 7-Eleven, ซูเปอร์มาร์เก็ต)
   final List<String> receiptItems;
 
+  /// จำนวนชิ้นรวมของสินค้าจากใบเสร็จ (เช่น 3 ชิ้น)
+  final int? receiptItemCount;
+
   const BankSlipData({
     required this.amount,
     required this.transactionDate,
@@ -53,7 +57,21 @@ class BankSlipData {
     required this.predictionConfidence,
     required this.predictionReason,
     this.receiptItems = const [],
+    this.receiptItemCount,
   });
+
+  /// จำนวนชิ้นรวมของสินค้าจากใบเสร็จ
+  int get totalItemCount => receiptItemCount ?? (receiptItems.isNotEmpty ? receiptItems.length : 1);
+
+  /// ข้อความสรุปยอดสุทธิ เช่น "ยอดสุทธิ 3 ชิ้น 52.00 บาท" (คำนวณผ่าน GetX Translation)
+  String get receiptSummaryText {
+    final count = totalItemCount;
+    final formattedAmt = NumberFormat('#,##0.00').format(amount);
+    return 'receipt_net_total_summary'.trParams({
+      'qty': '$count',
+      'amount': formattedAmt,
+    });
+  }
 
   /// สร้างสำเนาที่มีค่าบางฟิลด์ถูกแทนที่ (สำหรับ history-based enhancement)
   BankSlipData copyWith({
@@ -76,6 +94,7 @@ class BankSlipData {
     double? predictionConfidence,
     String? predictionReason,
     List<String>? receiptItems,
+    int? receiptItemCount,
   }) {
     return BankSlipData(
       amount: amount ?? this.amount,
@@ -97,6 +116,7 @@ class BankSlipData {
       predictionConfidence: predictionConfidence ?? this.predictionConfidence,
       predictionReason: predictionReason ?? this.predictionReason,
       receiptItems: receiptItems ?? this.receiptItems,
+      receiptItemCount: receiptItemCount ?? this.receiptItemCount,
     );
   }
 
@@ -425,8 +445,11 @@ class BankSlipData {
     var s = raw.trim();
     // ตัดเลขลำดับ/จำนวนนำหน้า เช่น "1 ", "1. ", "01 ", "1x "
     s = s.replaceFirst(RegExp(r'^(?:\d{1,2}[\.\s\:\-xX]+)+'), '').trim();
-    // ตัดราคาต่อท้าย เช่น " 47.00", " (47.-)", " 47.-", " 47"
-    s = s.replaceAll(RegExp(r'\s*\(?\s*\d{1,5}(?:\.\d{1,2})?\s*(?:บาท|บ\.|THB|\.-|-)?\s*\)?$'), '').trim();
+    // ตัดราคาต่อท้าย เช่น " (47.-)", " 47.00", " 47 บาท" (ระวังไม่ตัดตัวเลขที่เป็นส่วนหนึ่งของชื่อสินค้า เช่น อิชิตัน 420, M-150)
+    s = s.replaceAll(
+      RegExp(r'\s*(?:\(\s*\d+(?:\.\d{1,2})?\s*(?:บาท|บ\.|THB|\.-|-)?\s*\)|\d{1,5}\.\d{2}\s*(?:บาท|บ\.|THB|\.-)?|\d{1,5}\s*(?:บาท|บ\.|THB|\.-))\s*$', caseSensitive: false),
+      '',
+    ).trim();
     // ตัดเครื่องหมายขยะที่หัวท้าย
     s = s.replaceAll(RegExp(r'^[\.\-\:\s,]+|[\.\-\:\s,]+$'), '').trim();
     return s;
@@ -553,6 +576,7 @@ class BankSlipData {
       'predictionConfidence': predictionConfidence,
       'predictionReason': predictionReason,
       'receiptItems': receiptItems,
+      'receiptItemCount': receiptItemCount,
     };
   }
 
@@ -588,6 +612,7 @@ class BankSlipData {
               ?.map((e) => e.toString())
               .toList() ??
           const [],
+      receiptItemCount: json['receiptItemCount'] as int?,
     );
   }
 }

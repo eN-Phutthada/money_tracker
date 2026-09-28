@@ -556,7 +556,10 @@ class WalletHealthDiagnosticSheet extends StatelessWidget {
     });
 
     if (isDesktop) {
-      return content;
+      return SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        child: content,
+      );
     }
 
     return Container(

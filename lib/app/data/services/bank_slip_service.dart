@@ -269,6 +269,8 @@ class BankSlipService {
               finalDate.minute != 0,
           predictionConfidence: ocr.predictionConfidence,
           predictionReason: ocr.predictionReason,
+          receiptItems: ocr.receiptItems,
+          receiptItemCount: ocr.receiptItemCount,
         );
       } else if (qrSlip != null) {
         // หากพบเฉพาะ QR Code
@@ -284,7 +286,7 @@ class BankSlipService {
               finalDate.minute != 0,
         );
       } else if (ocrSlip != null &&
-          (ocrSlip.isKrungthai || ocrSlip.amount > 0)) {
+          (ocrSlip.isKrungthai || ocrSlip.amount > 0 || ocrSlip.isReceipt)) {
         // หากพบเฉพาะ OCR Text และมีข้อมูลที่เชื่อถือได้
         final finalDate = resolveAccurateDateTime(
           ocrSlip: ocrSlip,

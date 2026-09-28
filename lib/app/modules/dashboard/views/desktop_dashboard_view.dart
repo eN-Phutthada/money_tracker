@@ -113,9 +113,16 @@ class DesktopDashboardView extends GetView<DashboardController> {
           ),
         ),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minWidth: constraints.maxWidth),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
           // Current Period Title & Controls
           Obx(() {
             final isCurrent = controller.isCurrentPeriod;
@@ -257,6 +264,10 @@ class DesktopDashboardView extends GetView<DashboardController> {
             ],
           ),
         ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }

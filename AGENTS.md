@@ -1,6 +1,6 @@
 # AGENTS.md - Guidelines & Development Rules for Money Tracker
 
-> **Project**: Money Tracker (FinTech 2026 Edition)  
+> **Project**: Money Tracker
 > **Tech Stack**: Flutter (Dart), GetX State Management, Nothing OS Design System  
 > **Target Platforms**: Mobile (iOS / Android) & Desktop (Windows / macOS / Web)
 

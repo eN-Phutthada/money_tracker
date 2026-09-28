@@ -127,18 +127,16 @@ class DashboardView extends GetView<DashboardController> {
       titleWidget: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Flexible(
-            child: Text(
-              'Money Tracker',
-              style: NothingTypography.grotesk(
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.3,
-                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+          Text(
+            'Money Tracker',
+            style: NothingTypography.grotesk(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.3,
+              color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(width: 8),
           Obx(() {
@@ -195,13 +193,9 @@ class DashboardView extends GetView<DashboardController> {
           }),
         ],
       ),
-      subtitleWidget: StreamBuilder<DateTime>(
-        stream: Stream.periodic(
-          const Duration(seconds: 1),
-          (_) => DateTime.now(),
-        ),
-        builder: (context, snapshot) {
-          final now = snapshot.data ?? DateTime.now();
+      subtitleWidget: Builder(
+        builder: (context) {
+          final now = DateTime.now();
           final hour = now.hour.toString().padLeft(2, '0');
           final minute = now.minute.toString().padLeft(2, '0');
           final timeStr = '$hour:$minute';
