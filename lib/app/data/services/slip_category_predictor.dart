@@ -67,7 +67,8 @@ class SlipCategoryPredictor {
 
     // 1. ตรวจสอบสัญญาณรายการเงินเข้าที่ชัดเจน (Explicit Income Signals)
     // ระมัดระวังไม่ให้คำว่า "โอนเงินเข้าบัญชี..." ของสลิปโอนออกถูกเข้าใจผิดว่าเป็นเงินเข้า
-    final isExplicitIncomeHeader = lowerFull.contains('เงินเข้าสำเร็จ') ||
+    final isExplicitIncomeHeader =
+        lowerFull.contains('เงินเข้าสำเร็จ') ||
         lowerFull.contains('เงินโอนเข้าสำเร็จ') ||
         lowerFull.contains('แจ้งเตือนเงินเข้า') ||
         lowerFull.contains('มีเงินโอนเข้า') ||
@@ -93,8 +94,8 @@ class SlipCategoryPredictor {
       hasExplicitIncomeSignal: isExplicitIncomeHeader,
     );
 
-    final combined =
-        '${memo ?? ''} ${receiverName ?? ''} $fullText'.toLowerCase();
+    final combined = '${memo ?? ''} ${receiverName ?? ''} $fullText'
+        .toLowerCase();
 
     // Score map: category → accumulated score
     final scores = <String, int>{for (final d in _defs) d.category: 0};
@@ -159,10 +160,12 @@ class SlipCategoryPredictor {
       );
 
       // กรองไม่ให้หมวดหมู่รายรับชนะในสลิปรายจ่าย และไม่ให้หมวดหมู่รายจ่ายชนะในสลิปรายรับ
-      if (resolvedType == TransactionType.income && catDef.type == TransactionType.expense) {
+      if (resolvedType == TransactionType.income &&
+          catDef.type == TransactionType.expense) {
         continue;
       }
-      if (resolvedType == TransactionType.expense && catDef.type == TransactionType.income) {
+      if (resolvedType == TransactionType.expense &&
+          catDef.type == TransactionType.income) {
         continue;
       }
 
@@ -172,7 +175,9 @@ class SlipCategoryPredictor {
       }
     }
 
-    final fallback = resolvedType == TransactionType.income ? _fallbackIncomeDef : _fallbackDef;
+    final fallback = resolvedType == TransactionType.income
+        ? _fallbackIncomeDef
+        : _fallbackDef;
 
     final def = _defs.firstWhere(
       (d) => d.category == best,
@@ -182,8 +187,8 @@ class SlipCategoryPredictor {
     final finalType = (resolvedType == TransactionType.income)
         ? TransactionType.income
         : (def.type == TransactionType.savingsInvestment
-            ? TransactionType.savingsInvestment
-            : TransactionType.expense);
+              ? TransactionType.savingsInvestment
+              : TransactionType.expense);
 
     final confidence = _toConfidence(
       bestScore > 0 ? bestScore : 0,
@@ -231,8 +236,12 @@ class SlipCategoryPredictor {
     if (userProfileName != null && userProfileName.trim().isNotEmpty) {
       final userClean = _cleanPersonName(userProfileName);
       if (userClean.isNotEmpty) {
-        final senderClean = senderName != null ? _cleanPersonName(senderName) : '';
-        final receiverClean = receiverName != null ? _cleanPersonName(receiverName) : '';
+        final senderClean = senderName != null
+            ? _cleanPersonName(senderName)
+            : '';
+        final receiverClean = receiverName != null
+            ? _cleanPersonName(receiverName)
+            : '';
 
         // ถ้าชื่อผู้ใช้ตรงกับผู้ส่ง -> ผู้ใช้เป็นคนโอนเงินออก -> รายจ่าย 100%
         if (senderClean.isNotEmpty && _nameMatches(senderClean, userClean)) {
@@ -258,8 +267,10 @@ class SlipCategoryPredictor {
     // 3. ตรวจสอบกรณีผู้ส่งเป็นบริษัท/นายจ้าง และผู้รับเป็นบุคคลธรรมดา พร้อมมีสัญญาณเงินเดือน/ค่าจ้าง -> รายรับ
     if (senderName != null && senderName.trim().isNotEmpty) {
       final senderIsOrg = _isMerchantOrBusiness(senderName);
-      final receiverIsPerson = receiverName == null || !_isMerchantOrBusiness(receiverName);
-      final hasSalaryKeyword = lowerMemo.contains('เงินเดือน') ||
+      final receiverIsPerson =
+          receiverName == null || !_isMerchantOrBusiness(receiverName);
+      final hasSalaryKeyword =
+          lowerMemo.contains('เงินเดือน') ||
           lowerMemo.contains('salary') ||
           lowerMemo.contains('payroll') ||
           lowerMemo.contains('ค่าจ้าง') ||
@@ -270,7 +281,9 @@ class SlipCategoryPredictor {
           lowerFull.contains('เงินเดือน') ||
           lowerFull.contains('payroll');
 
-      if (senderIsOrg && receiverIsPerson && (hasSalaryKeyword || hasExplicitIncomeSignal)) {
+      if (senderIsOrg &&
+          receiverIsPerson &&
+          (hasSalaryKeyword || hasExplicitIncomeSignal)) {
         return TransactionType.income;
       }
     }
@@ -315,22 +328,82 @@ class SlipCategoryPredictor {
   static bool _isMerchantOrBusiness(String name) {
     final lower = name.toLowerCase().trim();
     final prefixes = [
-      'ร้าน', 'บจก.', 'บริษัท', 'หจก.', 'บมจ.', 'โรงพยาบาล', 'รพ.', 'คลินิก',
-      'การไฟฟ้า', 'การประปา', 'เทศบาล', 'มหาวิทยาลัย', 'โรงเรียน', 'สำนักงาน',
-      'สหกรณ์', 'ห้างหุ้นส่วน', 'ห้างสรรพสินค้า', 'ซุปเปอร์', 'มินิมาร์ท',
-      'บลจ.', 'บมจ', 'บจ.',
+      'ร้าน',
+      'บจก.',
+      'บริษัท',
+      'หจก.',
+      'บมจ.',
+      'โรงพยาบาล',
+      'รพ.',
+      'คลินิก',
+      'การไฟฟ้า',
+      'การประปา',
+      'เทศบาล',
+      'มหาวิทยาลัย',
+      'โรงเรียน',
+      'สำนักงาน',
+      'สหกรณ์',
+      'ห้างหุ้นส่วน',
+      'ห้างสรรพสินค้า',
+      'ซุปเปอร์',
+      'มินิมาร์ท',
+      'บลจ.',
+      'บมจ',
+      'บจ.',
     ];
     for (final p in prefixes) {
       if (name.startsWith(p) || lower.startsWith(p)) return true;
     }
     final keywords = [
-      'co.,', 'ltd', 'limited', 'inc', 'corp', 'store', 'shop', 'market',
-      'cafe', 'coffee', 'restaurant', 'express', 'shopee', 'lazada', 'grab',
-      'lineman', 'foodpanda', 'netflix', 'spotify', 'apple', 'google',
-      '7-eleven', 'เซเว่น', 'โลตัส', 'บิ๊กซี', 'ท็อปส์', 'amazon', 'station',
-      'service', 'clinic', 'hospital', 'delivery', 'kfc', 'mcdonald',
-      'starbucks', 'ptt', 'ปตท', 'bbl', 'ktb', 'scb', 'kbank', 'ktam',
-      'dime', 'uob', 'ttb', 'cimb', 'tisco', 'shopeepay', 'truemoney',
+      'co.,',
+      'ltd',
+      'limited',
+      'inc',
+      'corp',
+      'store',
+      'shop',
+      'market',
+      'cafe',
+      'coffee',
+      'restaurant',
+      'express',
+      'shopee',
+      'lazada',
+      'grab',
+      'lineman',
+      'foodpanda',
+      'netflix',
+      'spotify',
+      'apple',
+      'google',
+      '7-eleven',
+      'เซเว่น',
+      'โลตัส',
+      'บิ๊กซี',
+      'ท็อปส์',
+      'amazon',
+      'station',
+      'service',
+      'clinic',
+      'hospital',
+      'delivery',
+      'kfc',
+      'mcdonald',
+      'starbucks',
+      'ptt',
+      'ปตท',
+      'bbl',
+      'ktb',
+      'scb',
+      'kbank',
+      'ktam',
+      'dime',
+      'uob',
+      'ttb',
+      'cimb',
+      'tisco',
+      'shopeepay',
+      'truemoney',
     ];
     for (final kw in keywords) {
       if (lower.contains(kw)) return true;
@@ -374,8 +447,7 @@ class SlipCategoryPredictor {
   ) {
     if (receiverName == null && memo == null) return null;
 
-    final normReceiver =
-        receiverName != null ? _normalize(receiverName) : null;
+    final normReceiver = receiverName != null ? _normalize(receiverName) : null;
     final normMemo = memo != null ? _normalize(memo) : null;
 
     final categoryCount = <String, int>{};
@@ -384,8 +456,7 @@ class SlipCategoryPredictor {
       // พยายามสกัด receiver จาก note format "ผู้รับ: X | ..."
       String? txReceiver;
       if (tx.note != null) {
-        final m =
-            RegExp(r'ผู้รับ:\s*(.+?)(?:\s*\||\s*$)').firstMatch(tx.note!);
+        final m = RegExp(r'ผู้รับ:\s*(.+?)(?:\s*\||\s*$)').firstMatch(tx.note!);
         if (m != null) txReceiver = _normalize(m.group(1)!);
       }
       final txTitle = _normalize(tx.title);
@@ -414,8 +485,9 @@ class SlipCategoryPredictor {
     }
 
     if (categoryCount.isEmpty) return null;
-    final best = categoryCount.entries
-        .reduce((a, b) => a.value >= b.value ? a : b);
+    final best = categoryCount.entries.reduce(
+      (a, b) => a.value >= b.value ? a : b,
+    );
     return (best.key, best.value);
   }
 
@@ -472,8 +544,17 @@ class SlipCategoryPredictor {
       amountMin: 5000,
       amountMax: 1000000,
       keywords: [
-        'เงินเดือน', 'payroll', 'salary', 'ค่าจ้าง', 'โบนัส', 'bonus',
-        'สวัสดิการ', 'เบี้ยเลี้ยง', 'เงินปันผล', 'dividend', 'บำนาญ',
+        'เงินเดือน',
+        'payroll',
+        'salary',
+        'ค่าจ้าง',
+        'โบนัส',
+        'bonus',
+        'สวัสดิการ',
+        'เบี้ยเลี้ยง',
+        'เงินปันผล',
+        'dividend',
+        'บำนาญ',
       ],
     ),
     _CatDef(
@@ -483,8 +564,17 @@ class SlipCategoryPredictor {
       amountMin: 50,
       amountMax: 500000,
       keywords: [
-        'ขายของ', 'รายได้เสริม', 'ค่าสอน', 'คอมมิชชั่น', 'commission',
-        'freelance', 'ฟรีแลนซ์', 'รับจ้าง', 'ค่าบริการ', 'ค่าแรง', 'ยอดขาย',
+        'ขายของ',
+        'รายได้เสริม',
+        'ค่าสอน',
+        'คอมมิชชั่น',
+        'commission',
+        'freelance',
+        'ฟรีแลนซ์',
+        'รับจ้าง',
+        'ค่าบริการ',
+        'ค่าแรง',
+        'ยอดขาย',
       ],
     ),
     _CatDef(
@@ -494,7 +584,13 @@ class SlipCategoryPredictor {
       amountMin: 10,
       amountMax: 100000,
       keywords: [
-        'คืนเงิน', 'โอนคืน', 'refund', 'เงินคืน', 'คืนค่า', 'cashback', 'แคชแบ็ค',
+        'คืนเงิน',
+        'โอนคืน',
+        'refund',
+        'เงินคืน',
+        'คืนค่า',
+        'cashback',
+        'แคชแบ็ค',
       ],
     ),
 
@@ -506,16 +602,60 @@ class SlipCategoryPredictor {
       amountMin: 30,
       amountMax: 1500,
       keywords: [
-        'ข้าว', 'อาหาร', 'กิน', 'ก๋วยเตี๋ยว', 'ขนม', 'ชาบู',
-        'ส้มตำ', 'lunch', 'dinner', 'food', 'meal', 'กะเพรา',
-        'หมูกระทะ', 'เซเว่น', '7-eleven', '7-11', 'breakfast',
-        'ซีพี ออลล์', 'ซีพีออลล์', 'cp all', 'cpall', '7-delivery',
-        'ร้านอาหาร', 'pizza', 'sushi', 'ข้าวมันไก่', 'ยำ',
-        'ต้มยำ', 'ผัดไทย', 'ลาบ', 'line man', 'lineman', 'grabfood',
-        'grab food', 'foodpanda', 'robinhood', 'kfc', 'mcdonald',
-        'chester', 'bar b q', 'mk', 'bonchon', 'yayoi', 'hachiban',
-        'swensen', 'swensens', 'dairy queen', 'ชาบูชิ', 'บุฟเฟ่ต์',
-        'เบเกอรี่', 'ขนมปัง', 'ไอศกรีม', 'ไอติม', 'delivery',
+        'ข้าว',
+        'อาหาร',
+        'กิน',
+        'ก๋วยเตี๋ยว',
+        'ขนม',
+        'ชาบู',
+        'ส้มตำ',
+        'lunch',
+        'dinner',
+        'food',
+        'meal',
+        'กะเพรา',
+        'หมูกระทะ',
+        'เซเว่น',
+        '7-eleven',
+        '7-11',
+        'breakfast',
+        'ซีพี ออลล์',
+        'ซีพีออลล์',
+        'cp all',
+        'cpall',
+        '7-delivery',
+        'ร้านอาหาร',
+        'pizza',
+        'sushi',
+        'ข้าวมันไก่',
+        'ยำ',
+        'ต้มยำ',
+        'ผัดไทย',
+        'ลาบ',
+        'line man',
+        'lineman',
+        'grabfood',
+        'grab food',
+        'foodpanda',
+        'robinhood',
+        'kfc',
+        'mcdonald',
+        'chester',
+        'bar b q',
+        'mk',
+        'bonchon',
+        'yayoi',
+        'hachiban',
+        'swensen',
+        'swensens',
+        'dairy queen',
+        'ชาบูชิ',
+        'บุฟเฟ่ต์',
+        'เบเกอรี่',
+        'ขนมปัง',
+        'ไอศกรีม',
+        'ไอติม',
+        'delivery',
       ],
     ),
     _CatDef(
@@ -525,9 +665,20 @@ class SlipCategoryPredictor {
       amountMin: 30,
       amountMax: 350,
       keywords: [
-        'กาแฟ', 'ชา', 'cafe', 'coffee', 'starbucks', 'amazon',
-        'tea', 'ชานม', 'เต่าบิน', 'แบล็คแคนยอน', 'คาเฟ่',
-        'bubble', 'doi chaang', 'inthanin',
+        'กาแฟ',
+        'ชา',
+        'cafe',
+        'coffee',
+        'starbucks',
+        'amazon',
+        'tea',
+        'ชานม',
+        'เต่าบิน',
+        'แบล็คแคนยอน',
+        'คาเฟ่',
+        'bubble',
+        'doi chaang',
+        'inthanin',
       ],
     ),
     _CatDef(
@@ -537,11 +688,35 @@ class SlipCategoryPredictor {
       amountMin: 20,
       amountMax: 1200,
       keywords: [
-        'bts', 'mrt', 'grab', 'bolt', 'น้ำมัน', 'แท็กซี่',
-        'ค่าทางด่วน', 'ตั๋ว', 'ปตท', 'บางจาก', 'shell',
-        'caltex', 'วิน', 'รถไฟ', 'lyft', 'uber', 'm-flow', 'mflow',
-        'easypass', 'easy pass', 'ทางด่วน', 'bems', 'srtet',
-        'airport rail link', 'ปั๊ม', 'esso', 'ptg', 'susco', 'เติมน้ำมัน',
+        'bts',
+        'mrt',
+        'grab',
+        'bolt',
+        'น้ำมัน',
+        'แท็กซี่',
+        'ค่าทางด่วน',
+        'ตั๋ว',
+        'ปตท',
+        'บางจาก',
+        'shell',
+        'caltex',
+        'วิน',
+        'รถไฟ',
+        'lyft',
+        'uber',
+        'm-flow',
+        'mflow',
+        'easypass',
+        'easy pass',
+        'ทางด่วน',
+        'bems',
+        'srtet',
+        'airport rail link',
+        'ปั๊ม',
+        'esso',
+        'ptg',
+        'susco',
+        'เติมน้ำมัน',
       ],
     ),
     _CatDef(
@@ -551,8 +726,15 @@ class SlipCategoryPredictor {
       amountMin: 1500,
       amountMax: 30000,
       keywords: [
-        'ค่าห้อง', 'ค่าเช่า', 'หอ', 'คอนโด', 'rent', 'นิติ',
-        'อาคาร', 'หมู่บ้าน', 'apartment',
+        'ค่าห้อง',
+        'ค่าเช่า',
+        'หอ',
+        'คอนโด',
+        'rent',
+        'นิติ',
+        'อาคาร',
+        'หมู่บ้าน',
+        'apartment',
       ],
     ),
     _CatDef(
@@ -562,11 +744,31 @@ class SlipCategoryPredictor {
       amountMin: 100,
       amountMax: 10000,
       keywords: [
-        'ค่าน้ำ', 'ค่าไฟ', 'การไฟฟ้านครหลวง', 'การประปา',
-        'pea', 'mea', 'เน็ต', 'internet', 'โทรศัพท์',
-        'ais', 'true', 'dtac', 'nt broadband', 'tot',
-        'wifi', 'broadband', 'กฟน.', 'กฟภ.', 'กปน.', 'กปภ.',
-        'ค่าโทร', 'ais fibre', 'true online', '3bb', 'nt',
+        'ค่าน้ำ',
+        'ค่าไฟ',
+        'การไฟฟ้านครหลวง',
+        'การประปา',
+        'pea',
+        'mea',
+        'เน็ต',
+        'internet',
+        'โทรศัพท์',
+        'ais',
+        'true',
+        'dtac',
+        'nt broadband',
+        'tot',
+        'wifi',
+        'broadband',
+        'กฟน.',
+        'กฟภ.',
+        'กปน.',
+        'กปภ.',
+        'ค่าโทร',
+        'ais fibre',
+        'true online',
+        '3bb',
+        'nt',
       ],
     ),
     _CatDef(
@@ -576,9 +778,18 @@ class SlipCategoryPredictor {
       amountMin: 100,
       amountMax: 20000,
       keywords: [
-        'ยา', 'หมอ', 'คลินิก', 'โรงพยาบาล', 'hospital',
-        'pharmacy', 'ทันตกรรม', 'ฟัน', 'แพทย์', 'รักษา',
-        'วัคซีน', 'clinic',
+        'ยา',
+        'หมอ',
+        'คลินิก',
+        'โรงพยาบาล',
+        'hospital',
+        'pharmacy',
+        'ทันตกรรม',
+        'ฟัน',
+        'แพทย์',
+        'รักษา',
+        'วัคซีน',
+        'clinic',
       ],
     ),
     _CatDef(
@@ -588,9 +799,18 @@ class SlipCategoryPredictor {
       amountMin: 200,
       amountMax: 50000,
       keywords: [
-        'เรียน', 'หนังสือ', 'คอร์ส', 'course', 'tuition',
-        'ค่าเทอม', 'มหาลัย', 'university', 'school',
-        'สถาบัน', 'อบรม', 'สอบ',
+        'เรียน',
+        'หนังสือ',
+        'คอร์ส',
+        'course',
+        'tuition',
+        'ค่าเทอม',
+        'มหาลัย',
+        'university',
+        'school',
+        'สถาบัน',
+        'อบรม',
+        'สอบ',
       ],
     ),
     _CatDef(
@@ -600,11 +820,29 @@ class SlipCategoryPredictor {
       amountMin: 500,
       amountMax: 500000,
       keywords: [
-        'ออม', 'dca', 'กองทุน', 'หุ้น', 'savings', 'invest',
-        'สลาก', 'ทอง', 'crypto', 'binance', 'innovestx',
-        'dime', 'ลงทุน', 'พันธบัตร', 'ssf', 'rmf',
-        'ซื้อกองทุน', 'ซื้อหุ้น', 'เปิดพอร์ต', 'dime!',
-        'krungthai xspring', 'k-cyber', 'scb easy invest',
+        'ออม',
+        'dca',
+        'กองทุน',
+        'หุ้น',
+        'savings',
+        'invest',
+        'สลาก',
+        'ทอง',
+        'crypto',
+        'binance',
+        'innovestx',
+        'dime',
+        'ลงทุน',
+        'พันธบัตร',
+        'ssf',
+        'rmf',
+        'ซื้อกองทุน',
+        'ซื้อหุ้น',
+        'เปิดพอร์ต',
+        'dime!',
+        'krungthai xspring',
+        'k-cyber',
+        'scb easy invest',
       ],
     ),
     _CatDef(
@@ -614,13 +852,40 @@ class SlipCategoryPredictor {
       amountMin: 100,
       amountMax: 15000,
       keywords: [
-        'shopee', 'lazada', 'tiktok', 'เสื้อ', 'กางเกง',
-        'รองเท้า', 'ของเล่น', 'uniqlo', 'zara', 'shop',
-        'หูฟัง', 'samsung', 'apple', 'แว่น', 'กระเป๋า',
-        'เครื่องสำอาง', 'ชุด', 'tiktok shop', 'line man mart',
-        'lotus', 'big c', 'cj express', 'makro', 'watson',
-        'watsons', 'boots', 'ikea', 'homepro', 'mr.diy', 'diy',
-        'decathlon', 'supermarket', 'ซูเปอร์มาร์เก็ต', 'ตลาด',
+        'shopee',
+        'lazada',
+        'tiktok',
+        'เสื้อ',
+        'กางเกง',
+        'รองเท้า',
+        'ของเล่น',
+        'uniqlo',
+        'zara',
+        'shop',
+        'หูฟัง',
+        'samsung',
+        'apple',
+        'แว่น',
+        'กระเป๋า',
+        'เครื่องสำอาง',
+        'ชุด',
+        'tiktok shop',
+        'line man mart',
+        'lotus',
+        'big c',
+        'cj express',
+        'makro',
+        'watson',
+        'watsons',
+        'boots',
+        'ikea',
+        'homepro',
+        'mr.diy',
+        'diy',
+        'decathlon',
+        'supermarket',
+        'ซูเปอร์มาร์เก็ต',
+        'ตลาด',
       ],
     ),
     _CatDef(
@@ -630,10 +895,25 @@ class SlipCategoryPredictor {
       amountMin: 100,
       amountMax: 5000,
       keywords: [
-        'netflix', 'spotify', 'youtube', 'สตรีมมิ่ง',
-        'streaming', 'เอ็นเอฟ', 'nf', 'disney', 'prime',
-        'hbo', 'apple tv', 'ตั๋วหนัง', 'major', 'sf',
-        'เกม', 'steam', 'game', 'concert', 'ท่องเที่ยว',
+        'netflix',
+        'spotify',
+        'youtube',
+        'สตรีมมิ่ง',
+        'streaming',
+        'เอ็นเอฟ',
+        'nf',
+        'disney',
+        'prime',
+        'hbo',
+        'apple tv',
+        'ตั๋วหนัง',
+        'major',
+        'sf',
+        'เกม',
+        'steam',
+        'game',
+        'concert',
+        'ท่องเที่ยว',
       ],
     ),
     _CatDef(

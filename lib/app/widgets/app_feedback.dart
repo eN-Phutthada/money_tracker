@@ -147,12 +147,14 @@ class AppFeedback {
 
     OverlayState? overlay;
     try {
-      if (Get.key.currentState != null && Get.key.currentState!.overlay != null) {
+      if (Get.key.currentState != null &&
+          Get.key.currentState!.overlay != null) {
         overlay = Get.key.currentState!.overlay;
       }
     } catch (_) {}
 
-    overlay ??= Overlay.maybeOf(context, rootOverlay: true) ?? Overlay.maybeOf(context);
+    overlay ??=
+        Overlay.maybeOf(context, rootOverlay: true) ?? Overlay.maybeOf(context);
     if (overlay == null) return;
 
     try {
@@ -212,7 +214,8 @@ class _AppFeedbackHud extends StatefulWidget {
   State<_AppFeedbackHud> createState() => _AppFeedbackHudState();
 }
 
-class _AppFeedbackHudState extends State<_AppFeedbackHud> with TickerProviderStateMixin {
+class _AppFeedbackHudState extends State<_AppFeedbackHud>
+    with TickerProviderStateMixin {
   late AnimationController _entryController;
   late Animation<double> _slideAnimation;
   late Animation<double> _scaleAnimation;
@@ -278,7 +281,8 @@ class _AppFeedbackHudState extends State<_AppFeedbackHud> with TickerProviderSta
       duration: const Duration(milliseconds: 2400),
     );
 
-    final isTest = WidgetsBinding.instance.runtimeType.toString().contains('Test') ||
+    final isTest =
+        WidgetsBinding.instance.runtimeType.toString().contains('Test') ||
         Platform.environment.containsKey('FLUTTER_TEST');
     if (!isTest) {
       _shimmerController.repeat(reverse: true);
@@ -316,7 +320,9 @@ class _AppFeedbackHudState extends State<_AppFeedbackHud> with TickerProviderSta
   }
 
   void _resumeCountdown() {
-    if (!_isDismissing && !_progressController.isAnimating && _progressController.value < 1.0) {
+    if (!_isDismissing &&
+        !_progressController.isAnimating &&
+        _progressController.value < 1.0) {
       _progressController.forward();
     }
   }
@@ -354,7 +360,11 @@ class _AppFeedbackHudState extends State<_AppFeedbackHud> with TickerProviderSta
         break;
     }
 
-    final currencyFmt = NumberFormat.currency(locale: 'th_TH', symbol: '฿', decimalDigits: 2);
+    final currencyFmt = NumberFormat.currency(
+      locale: 'th_TH',
+      symbol: '฿',
+      decimalDigits: 2,
+    );
 
     return Positioned(
       top: topPadding > 0 ? topPadding + 10 : 18,
@@ -364,8 +374,10 @@ class _AppFeedbackHudState extends State<_AppFeedbackHud> with TickerProviderSta
         animation: Listenable.merge([_entryController, _shimmerController]),
         builder: (context, child) {
           final totalTranslateY = _slideAnimation.value + _dragOffsetY;
-          final totalOpacity = (_opacityAnimation.value * (1.0 - (-_dragOffsetY / 120.0).clamp(0.0, 1.0)))
-              .clamp(0.0, 1.0);
+          final totalOpacity =
+              (_opacityAnimation.value *
+                      (1.0 - (-_dragOffsetY / 120.0).clamp(0.0, 1.0)))
+                  .clamp(0.0, 1.0);
 
           return Transform.translate(
             offset: Offset(0, totalTranslateY),
@@ -394,7 +406,9 @@ class _AppFeedbackHudState extends State<_AppFeedbackHud> with TickerProviderSta
                         });
                       },
                       onVerticalDragEnd: (details) {
-                        if (_dragOffsetY < -25 || (details.primaryVelocity != null && details.primaryVelocity! < -250)) {
+                        if (_dragOffsetY < -25 ||
+                            (details.primaryVelocity != null &&
+                                details.primaryVelocity! < -250)) {
                           HapticFeedback.selectionClick();
                           animateDismiss();
                         } else {
@@ -412,14 +426,18 @@ class _AppFeedbackHudState extends State<_AppFeedbackHud> with TickerProviderSta
                             boxShadow: [
                               // Outer Dynamic Ambient Theme Glow
                               BoxShadow(
-                                color: themeColor.withValues(alpha: isDark ? 0.32 : 0.22),
+                                color: themeColor.withValues(
+                                  alpha: isDark ? 0.32 : 0.22,
+                                ),
                                 blurRadius: 28,
                                 spreadRadius: -2,
                                 offset: const Offset(0, 10),
                               ),
                               // Deep Surface Drop Shadow
                               BoxShadow(
-                                color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.12),
+                                color: Colors.black.withValues(
+                                  alpha: isDark ? 0.45 : 0.12,
+                                ),
                                 blurRadius: 20,
                                 spreadRadius: 0,
                                 offset: const Offset(0, 6),
@@ -443,7 +461,10 @@ class _AppFeedbackHudState extends State<_AppFeedbackHud> with TickerProviderSta
                                 color: isDark
                                     ? Colors.white.withValues(alpha: 0.08)
                                     : Colors.white.withValues(alpha: 0.88),
-                                blur: const LiquidGlassBlur(sigmaX: 1, sigmaY: 1),
+                                blur: const LiquidGlassBlur(
+                                  sigmaX: 1,
+                                  sigmaY: 1,
+                                ),
                               ),
                               refraction: const LiquidGlassRefraction(
                                 distortion: 0.08,
@@ -475,116 +496,148 @@ class _AppFeedbackHudState extends State<_AppFeedbackHud> with TickerProviderSta
                                 ),
                               ),
                               child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    // Main Content Area
-                                    Padding(
-                                      padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
-                                      child: Row(
-                                        crossAxisAlignment: CrossAxisAlignment.center,
-                                        children: [
-                                          // Glowing Squircle Icon Badge
-                                          _buildIconBadge(themeColor, icon, isDark),
-                                          const SizedBox(width: 12),
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  // Main Content Area
+                                  Padding(
+                                    padding: const EdgeInsets.fromLTRB(
+                                      14,
+                                      12,
+                                      12,
+                                      12,
+                                    ),
+                                    child: Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
+                                      children: [
+                                        // Glowing Squircle Icon Badge
+                                        _buildIconBadge(
+                                          themeColor,
+                                          icon,
+                                          isDark,
+                                        ),
+                                        const SizedBox(width: 12),
 
-                                          // Notification Text & Amount Chip
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                // Header row with status pill and amount
-                                                Row(
-                                                  children: [
-                                                    // Micro status indicator beacon
-                                                    Container(
-                                                      width: 5,
-                                                      height: 5,
-                                                      margin: const EdgeInsets.only(right: 5),
-                                                      decoration: BoxDecoration(
-                                                        shape: BoxShape.circle,
-                                                        color: themeColor,
-                                                        boxShadow: [
-                                                          BoxShadow(
-                                                            color: themeColor.withValues(alpha: 0.6),
-                                                            blurRadius: 4,
-                                                          ),
-                                                        ],
-                                                      ),
+                                        // Notification Text & Amount Chip
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              // Header row with status pill and amount
+                                              Row(
+                                                children: [
+                                                  // Micro status indicator beacon
+                                                  Container(
+                                                    width: 5,
+                                                    height: 5,
+                                                    margin:
+                                                        const EdgeInsets.only(
+                                                          right: 5,
+                                                        ),
+                                                    decoration: BoxDecoration(
+                                                      shape: BoxShape.circle,
+                                                      color: themeColor,
+                                                      boxShadow: [
+                                                        BoxShadow(
+                                                          color: themeColor
+                                                              .withValues(
+                                                                alpha: 0.6,
+                                                              ),
+                                                          blurRadius: 4,
+                                                        ),
+                                                      ],
                                                     ),
-                                                    Text(
-                                                      statusLabel,
+                                                  ),
+                                                  Text(
+                                                    statusLabel,
+                                                    style: TextStyle(
+                                                      fontSize: 9,
+                                                      fontWeight:
+                                                          FontWeight.w800,
+                                                      letterSpacing: 0.6,
+                                                      color: themeColor,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 6),
+                                                  Flexible(
+                                                    child: Text(
+                                                      widget.title,
                                                       style: TextStyle(
-                                                        fontSize: 9,
-                                                        fontWeight: FontWeight.w800,
-                                                        letterSpacing: 0.6,
-                                                        color: themeColor,
+                                                        fontSize: 13.5,
+                                                        fontWeight:
+                                                            FontWeight.w800,
+                                                        letterSpacing: -0.2,
+                                                        color: isDark
+                                                            ? Colors.white
+                                                            : Colors.black,
                                                       ),
+                                                      maxLines: 1,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
                                                     ),
+                                                  ),
+                                                  if (widget.amount !=
+                                                      null) ...[
                                                     const SizedBox(width: 6),
                                                     Flexible(
-                                                      child: Text(
-                                                        widget.title,
-                                                        style: TextStyle(
-                                                          fontSize: 13.5,
-                                                          fontWeight: FontWeight.w800,
-                                                          letterSpacing: -0.2,
-                                                          color: isDark ? Colors.white : Colors.black,
-                                                        ),
-                                                        maxLines: 1,
-                                                        overflow: TextOverflow.ellipsis,
+                                                      child: FittedBox(
+                                                        fit: BoxFit.scaleDown,
+                                                        child:
+                                                            _buildAmountBadge(
+                                                              currencyFmt,
+                                                            ),
                                                       ),
                                                     ),
-                                                    if (widget.amount != null) ...[
-                                                      const SizedBox(width: 6),
-                                                      Flexible(
-                                                        child: FittedBox(
-                                                          fit: BoxFit.scaleDown,
-                                                          child: _buildAmountBadge(currencyFmt),
-                                                        ),
-                                                      ),
-                                                    ],
                                                   ],
+                                                ],
+                                              ),
+                                              const SizedBox(height: 3),
+                                              Text(
+                                                widget.message,
+                                                style: TextStyle(
+                                                  fontSize: 11.5,
+                                                  height: 1.35,
+                                                  color: isDark
+                                                      ? const Color(0xFFCCCCCC)
+                                                      : const Color(0xFF333333),
+                                                  fontWeight: FontWeight.w500,
                                                 ),
-                                                const SizedBox(height: 3),
-                                                Text(
-                                                  widget.message,
-                                                  style: TextStyle(
-                                                    fontSize: 11.5,
-                                                    height: 1.35,
-                                                    color: isDark ? const Color(0xFFCCCCCC) : const Color(0xFF333333),
-                                                    fontWeight: FontWeight.w500,
-                                                  ),
-                                                  maxLines: 2,
-                                                  overflow: TextOverflow.ellipsis,
-                                                ),
-                                              ],
-                                            ),
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ],
                                           ),
+                                        ),
 
-                                          // Optional Action Button (e.g. Undo / View)
-                                          if (widget.actionLabel != null && widget.onAction != null) ...[
-                                            const SizedBox(width: 8),
-                                            _buildActionButton(themeColor, isDark),
-                                          ],
-
-                                          const SizedBox(width: 6),
-
-                                          // Smooth Dismiss Button
-                                          _buildCloseButton(isDark),
+                                        // Optional Action Button (e.g. Undo / View)
+                                        if (widget.actionLabel != null &&
+                                            widget.onAction != null) ...[
+                                          const SizedBox(width: 8),
+                                          _buildActionButton(
+                                            themeColor,
+                                            isDark,
+                                          ),
                                         ],
-                                      ),
-                                    ),
 
-                                    // Liquid Progress Countdown Bar at the bottom rim
-                                    _buildProgressBar(themeColor),
-                                  ],
-                                ),
+                                        const SizedBox(width: 6),
+
+                                        // Smooth Dismiss Button
+                                        _buildCloseButton(isDark),
+                                      ],
+                                    ),
+                                  ),
+
+                                  // Liquid Progress Countdown Bar at the bottom rim
+                                  _buildProgressBar(themeColor),
+                                ],
                               ),
                             ),
                           ),
                         ),
                       ),
+                    ),
                   ),
                 ),
               ),
@@ -615,11 +668,7 @@ class _AppFeedbackHudState extends State<_AppFeedbackHud> with TickerProviderSta
         ],
       ),
       alignment: Alignment.center,
-      child: Icon(
-        icon,
-        color: themeColor,
-        size: 23,
-      ),
+      child: Icon(icon, color: themeColor, size: 23),
     );
   }
 
@@ -739,9 +788,7 @@ class _AppFeedbackHudState extends State<_AppFeedbackHud> with TickerProviderSta
         return Container(
           height: 2.5,
           width: double.infinity,
-          decoration: BoxDecoration(
-            color: themeColor.withValues(alpha: 0.08),
-          ),
+          decoration: BoxDecoration(color: themeColor.withValues(alpha: 0.08)),
           alignment: Alignment.centerLeft,
           child: FractionallySizedBox(
             widthFactor: progress,

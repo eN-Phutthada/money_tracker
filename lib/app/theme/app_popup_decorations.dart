@@ -57,69 +57,75 @@ class AppGlassDialog extends StatelessWidget {
     );
 
     return Dialog(
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: maxWidth,
-          maxHeight: maxHeight ?? double.infinity,
-        ),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(26),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.75 : 0.12),
-                blurRadius: 36,
-                spreadRadius: -4,
-                offset: const Offset(0, 14),
-              ),
-            ],
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 24,
           ),
-          child: LiquidGlassLens(
-            style: style,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: maxWidth,
+              maxHeight: maxHeight ?? double.infinity,
+            ),
             child: Container(
-              padding: padding ?? const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(26),
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: isDark
-                      ? [
-                          const Color(0xFF1A1A1E).withValues(alpha: 0.96),
-                          const Color(0xFF121214).withValues(alpha: 0.92),
-                        ]
-                      : [
-                          Colors.white.withValues(alpha: 0.95),
-                          Colors.white.withValues(alpha: 0.88),
-                        ],
-                ),
-                border: Border.all(
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.12)
-                      : Colors.black.withValues(alpha: 0.10),
-                  width: 0.8,
-                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: isDark ? 0.75 : 0.12),
+                    blurRadius: 36,
+                    spreadRadius: -4,
+                    offset: const Offset(0, 14),
+                  ),
+                ],
               ),
-              child: DefaultTextStyle.merge(
-                style: TextStyle(
-                  color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+              child: LiquidGlassLens(
+                style: style,
+                child: Container(
+                  padding: padding ?? const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(26),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: isDark
+                          ? [
+                              const Color(0xFF1A1A1E).withValues(alpha: 0.96),
+                              const Color(0xFF121214).withValues(alpha: 0.92),
+                            ]
+                          : [
+                              Colors.white.withValues(alpha: 0.95),
+                              Colors.white.withValues(alpha: 0.88),
+                            ],
+                    ),
+                    border: Border.all(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.12)
+                          : Colors.black.withValues(alpha: 0.10),
+                      width: 0.8,
+                    ),
+                  ),
+                  child: DefaultTextStyle.merge(
+                    style: TextStyle(
+                      color: isDark
+                          ? AppColors.darkTextPrimary
+                          : AppColors.textPrimary,
+                    ),
+                    child: child,
+                  ),
                 ),
-                child: child,
               ),
             ),
           ),
-        ),
-      ),
-    ).animate().scale(
+        )
+        .animate()
+        .scale(
           begin: const Offset(0.94, 0.94),
           curve: Curves.easeOutCubic,
           duration: const Duration(milliseconds: 240),
-        ).fadeIn(
-          duration: const Duration(milliseconds: 200),
-        );
+        )
+        .fadeIn(duration: const Duration(milliseconds: 200));
   }
 }
 
@@ -218,10 +224,7 @@ class AppPopupHeader extends StatelessWidget {
                 ],
               ),
             ),
-            if (trailing != null) ...[
-              const SizedBox(width: 8),
-              trailing!,
-            ],
+            if (trailing != null) ...[const SizedBox(width: 8), trailing!],
             if (onClose != null) ...[
               const SizedBox(width: 8),
               Material(
@@ -260,7 +263,9 @@ class AppPopupHeader extends StatelessWidget {
         const SizedBox(height: 12),
         Container(
           height: 0.8,
-          color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+          color: isDark
+              ? AppColors.nothingBorder
+              : Colors.black.withValues(alpha: 0.08),
         ),
       ],
     );
@@ -293,10 +298,16 @@ class AppGlassCard extends StatelessWidget {
     Widget card = Container(
       padding: padding ?? const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: backgroundColor ?? (isDark ? const Color(0xFF141414) : const Color(0xFFF8F8F8)),
+        color:
+            backgroundColor ??
+            (isDark ? const Color(0xFF141414) : const Color(0xFFF8F8F8)),
         borderRadius: BorderRadius.circular(borderRadius),
         border: Border.all(
-          color: borderColor ?? (isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08)),
+          color:
+              borderColor ??
+              (isDark
+                  ? AppColors.nothingBorder
+                  : Colors.black.withValues(alpha: 0.08)),
           width: 0.8,
         ),
       ),
@@ -382,13 +393,20 @@ class AppConfirmDialog extends StatelessWidget {
               TextButton(
                 onPressed: onCancel ?? () => Get.back(),
                 style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
                 child: Text(
                   cancelText ?? 'cancel'.tr.toUpperCase(),
                   style: NothingTypography.grotesk(
-                    color: isDark ? AppColors.nothingSubtext : const Color(0xFF6B7280),
+                    color: isDark
+                        ? AppColors.nothingSubtext
+                        : const Color(0xFF6B7280),
                     fontWeight: FontWeight.w600,
                     letterSpacing: 0.6,
                   ),
@@ -401,8 +419,13 @@ class AppConfirmDialog extends StatelessWidget {
                   backgroundColor: primaryColor,
                   foregroundColor: Colors.white,
                   elevation: 0,
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 10,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
                 child: Text(
                   confirmText ?? 'confirm'.tr.toUpperCase(),
@@ -435,7 +458,9 @@ void showThemePickerDialog(BuildContext context) {
           color: isDark ? const Color(0xFF0F0F0F) : Colors.white,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
           border: Border.all(
-            color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+            color: isDark
+                ? AppColors.nothingBorder
+                : Colors.black.withValues(alpha: 0.08),
             width: 0.8,
           ),
         ),
@@ -450,7 +475,9 @@ void showThemePickerDialog(BuildContext context) {
                 width: 36,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF333333) : const Color(0xFFDDDDDD),
+                  color: isDark
+                      ? const Color(0xFF333333)
+                      : const Color(0xFFDDDDDD),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -463,7 +490,10 @@ void showThemePickerDialog(BuildContext context) {
               children: [
                 Row(
                   children: [
-                    const NothingLedIndicator(color: AppColors.nothingRed, size: 6),
+                    const NothingLedIndicator(
+                      color: AppColors.nothingRed,
+                      size: 6,
+                    ),
                     const SizedBox(width: 8),
                     NothingDotText(
                       'THEME SETTINGS',
@@ -481,7 +511,9 @@ void showThemePickerDialog(BuildContext context) {
                     child: Icon(
                       Icons.close_rounded,
                       size: 18,
-                      color: isDark ? AppColors.nothingSubtext : const Color(0xFF888888),
+                      color: isDark
+                          ? AppColors.nothingSubtext
+                          : const Color(0xFF888888),
                     ),
                   ),
                 ),
@@ -492,8 +524,10 @@ void showThemePickerDialog(BuildContext context) {
             // Options List (Light & Dark - System theme handled in background)
             Obx(() {
               final currentMode = dashboardController.themeMode.value;
-              final isActuallyDark = currentMode == ThemeMode.dark ||
-                  (currentMode == ThemeMode.system && (Get.isDarkMode || dashboardController.isDarkMode.value));
+              final isActuallyDark =
+                  currentMode == ThemeMode.dark ||
+                  (currentMode == ThemeMode.system &&
+                      (Get.isDarkMode || dashboardController.isDarkMode.value));
 
               return Column(
                 children: [
@@ -545,7 +579,9 @@ void showLanguagePickerDialog(BuildContext context) {
           color: isDark ? const Color(0xFF0F0F0F) : Colors.white,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
           border: Border.all(
-            color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+            color: isDark
+                ? AppColors.nothingBorder
+                : Colors.black.withValues(alpha: 0.08),
             width: 0.8,
           ),
         ),
@@ -560,7 +596,9 @@ void showLanguagePickerDialog(BuildContext context) {
                 width: 36,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF333333) : const Color(0xFFDDDDDD),
+                  color: isDark
+                      ? const Color(0xFF333333)
+                      : const Color(0xFFDDDDDD),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -573,7 +611,10 @@ void showLanguagePickerDialog(BuildContext context) {
               children: [
                 Row(
                   children: [
-                    const NothingLedIndicator(color: AppColors.nothingRed, size: 6),
+                    const NothingLedIndicator(
+                      color: AppColors.nothingRed,
+                      size: 6,
+                    ),
                     const SizedBox(width: 8),
                     NothingDotText(
                       'LANGUAGE SETTINGS',
@@ -591,7 +632,9 @@ void showLanguagePickerDialog(BuildContext context) {
                     child: Icon(
                       Icons.close_rounded,
                       size: 18,
-                      color: isDark ? AppColors.nothingSubtext : const Color(0xFF888888),
+                      color: isDark
+                          ? AppColors.nothingSubtext
+                          : const Color(0xFF888888),
                     ),
                   ),
                 ),
@@ -667,7 +710,9 @@ Widget _buildNothingOptionTile({
           border: Border.all(
             color: isSelected
                 ? AppColors.nothingRed
-                : (isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08)),
+                : (isDark
+                      ? AppColors.nothingBorder
+                      : Colors.black.withValues(alpha: 0.08)),
             width: isSelected ? 1.0 : 0.8,
           ),
         ),
@@ -676,7 +721,9 @@ Widget _buildNothingOptionTile({
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF222222) : const Color(0xFFE5E5E5),
+                color: isDark
+                    ? const Color(0xFF222222)
+                    : const Color(0xFFE5E5E5),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
@@ -699,7 +746,9 @@ Widget _buildNothingOptionTile({
                           title,
                           style: NothingTypography.grotesk(
                             fontSize: 13.5,
-                            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                            fontWeight: isSelected
+                                ? FontWeight.w800
+                                : FontWeight.w600,
                             color: isDark ? Colors.white : Colors.black,
                           ),
                           maxLines: 1,
@@ -714,7 +763,10 @@ Widget _buildNothingOptionTile({
                           textColor: AppColors.nothingRed,
                           isDotMatrix: true,
                           fontSize: 9,
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 5,
+                            vertical: 1.5,
+                          ),
                         ),
                       ],
                     ],
@@ -724,7 +776,9 @@ Widget _buildNothingOptionTile({
                     subtitle,
                     style: NothingTypography.grotesk(
                       fontSize: 11,
-                      color: isDark ? AppColors.nothingSubtext : const Color(0xFF777777),
+                      color: isDark
+                          ? AppColors.nothingSubtext
+                          : const Color(0xFF777777),
                     ),
                   ),
                 ],

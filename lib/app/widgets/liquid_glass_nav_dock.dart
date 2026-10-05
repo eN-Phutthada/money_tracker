@@ -277,7 +277,9 @@ class LiquidGlassNavDock extends StatelessWidget {
                   size: 21,
                   color: isActive
                       ? (isDark ? Colors.white : Colors.black)
-                      : (isDark ? Colors.white.withValues(alpha: 0.60) : Colors.black.withValues(alpha: 0.60)),
+                      : (isDark
+                            ? Colors.white.withValues(alpha: 0.60)
+                            : Colors.black.withValues(alpha: 0.60)),
                 ),
               ),
               if (isActive) ...[
@@ -316,11 +318,15 @@ class LiquidGlassNavDock extends StatelessWidget {
     return Theme(
       data: Theme.of(context).copyWith(
         popupMenuTheme: PopupMenuThemeData(
-          color: isDark ? const Color(0xFF1A1A1A) : Colors.white.withValues(alpha: 0.98),
+          color: isDark
+              ? const Color(0xFF1A1A1A)
+              : Colors.white.withValues(alpha: 0.98),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
             side: BorderSide(
-              color: isDark ? Colors.white.withValues(alpha: 0.12) : Colors.black.withValues(alpha: 0.12),
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.12)
+                  : Colors.black.withValues(alpha: 0.12),
               width: 0.8,
             ),
           ),
@@ -333,11 +339,15 @@ class LiquidGlassNavDock extends StatelessWidget {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
           side: BorderSide(
-            color: isDark ? Colors.white.withValues(alpha: 0.12) : Colors.black.withValues(alpha: 0.12),
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.12)
+                : Colors.black.withValues(alpha: 0.12),
             width: 0.8,
           ),
         ),
-        color: isDark ? const Color(0xFF1A1A1A) : Colors.white.withValues(alpha: 0.98),
+        color: isDark
+            ? const Color(0xFF1A1A1A)
+            : Colors.white.withValues(alpha: 0.98),
         elevation: 16,
         onSelected: (val) {
           HapticFeedback.selectionClick();
@@ -408,10 +418,14 @@ class LiquidGlassNavDock extends StatelessWidget {
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFEEEEEE),
+                      color: isDark
+                          ? const Color(0xFF2A2A2A)
+                          : const Color(0xFFEEEEEE),
                       borderRadius: BorderRadius.circular(9),
                       border: Border.all(
-                        color: isDark ? Colors.white.withValues(alpha: 0.10) : Colors.black.withValues(alpha: 0.08),
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.10)
+                            : Colors.black.withValues(alpha: 0.08),
                         width: 0.8,
                       ),
                     ),
@@ -458,10 +472,14 @@ class LiquidGlassNavDock extends StatelessWidget {
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFEEEEEE),
+                      color: isDark
+                          ? const Color(0xFF2A2A2A)
+                          : const Color(0xFFEEEEEE),
                       borderRadius: BorderRadius.circular(9),
                       border: Border.all(
-                        color: isDark ? Colors.white.withValues(alpha: 0.10) : Colors.black.withValues(alpha: 0.08),
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.10)
+                            : Colors.black.withValues(alpha: 0.08),
                         width: 0.8,
                       ),
                     ),
@@ -504,10 +522,14 @@ class LiquidGlassNavDock extends StatelessWidget {
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFEEEEEE),
+                      color: isDark
+                          ? const Color(0xFF2A2A2A)
+                          : const Color(0xFFEEEEEE),
                       borderRadius: BorderRadius.circular(9),
                       border: Border.all(
-                        color: isDark ? Colors.white.withValues(alpha: 0.10) : Colors.black.withValues(alpha: 0.08),
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.10)
+                            : Colors.black.withValues(alpha: 0.08),
                         width: 0.8,
                       ),
                     ),
@@ -543,10 +565,14 @@ class LiquidGlassNavDock extends StatelessWidget {
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFEEEEEE),
+                      color: isDark
+                          ? const Color(0xFF2A2A2A)
+                          : const Color(0xFFEEEEEE),
                       borderRadius: BorderRadius.circular(9),
                       border: Border.all(
-                        color: isDark ? Colors.white.withValues(alpha: 0.10) : Colors.black.withValues(alpha: 0.08),
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.10)
+                            : Colors.black.withValues(alpha: 0.08),
                         width: 0.8,
                       ),
                     ),
@@ -582,10 +608,14 @@ class LiquidGlassNavDock extends StatelessWidget {
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFEEEEEE),
+                      color: isDark
+                          ? const Color(0xFF2A2A2A)
+                          : const Color(0xFFEEEEEE),
                       borderRadius: BorderRadius.circular(9),
                       border: Border.all(
-                        color: isDark ? Colors.white.withValues(alpha: 0.10) : Colors.black.withValues(alpha: 0.08),
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.10)
+                            : Colors.black.withValues(alpha: 0.08),
                         width: 0.8,
                       ),
                     ),
@@ -699,8 +729,8 @@ class LiquidGlassNavDock extends StatelessWidget {
                       color: isVaultActive
                           ? (isDark ? Colors.white : Colors.black)
                           : (isDark
-                              ? Colors.white.withValues(alpha: 0.60)
-                              : Colors.black.withValues(alpha: 0.60)),
+                                ? Colors.white.withValues(alpha: 0.60)
+                                : Colors.black.withValues(alpha: 0.60)),
                     ),
                     Positioned(
                       top: -1,
@@ -791,7 +821,9 @@ class _CenterAddButtonState extends State<_CenterAddButton> {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.nothingRed.withValues(alpha: _isPressed ? 0.25 : 0.45),
+                  color: AppColors.nothingRed.withValues(
+                    alpha: _isPressed ? 0.25 : 0.45,
+                  ),
                   blurRadius: _isPressed ? 8 : 14,
                   offset: Offset(0, _isPressed ? 2 : 4),
                 ),

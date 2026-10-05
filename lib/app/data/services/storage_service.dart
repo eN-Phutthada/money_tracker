@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/widgets.dart';
 import 'package:path_provider/path_provider.dart';
 import '../models/budget_plan_model.dart';
+import '../models/scheduled_payment_model.dart';
 import '../models/transaction_model.dart';
 
 /// Storage Service สำหรับจัดเก็บข้อมูลธุรกรรมและงบประมาณลงเครื่อง
@@ -31,7 +32,9 @@ class StorageService {
     } catch (_) {
       // Fallback
       if (Platform.isWindows) {
-        final appData = Platform.environment['APPDATA'] ?? Platform.environment['LOCALAPPDATA'];
+        final appData =
+            Platform.environment['APPDATA'] ??
+            Platform.environment['LOCALAPPDATA'];
         if (appData != null && appData.isNotEmpty) {
           final dir = Directory('$appData/MoneyTracker');
           if (!await dir.exists()) await dir.create(recursive: true);
@@ -163,7 +166,9 @@ class StorageService {
       final dynamic decoded = jsonDecode(jsonString);
       if (decoded is List) {
         return decoded
-            .map((item) => TransactionItem.fromJson(item as Map<String, dynamic>))
+            .map(
+              (item) => TransactionItem.fromJson(item as Map<String, dynamic>),
+            )
             .toList();
       }
       return <TransactionItem>[];
@@ -214,7 +219,9 @@ class StorageService {
   Future<bool> saveBudgetPlan(BudgetPlan plan) async {
     try {
       final file = await _getBudgetPlanFile();
-      final jsonString = const JsonEncoder.withIndent('  ').convert(plan.toJson());
+      final jsonString = const JsonEncoder.withIndent(
+        '  ',
+      ).convert(plan.toJson());
       await file.writeAsString(jsonString, flush: true);
       await setInitialized();
       return true;
@@ -224,14 +231,64 @@ class StorageService {
   }
 
   // ==========================================
+  // SCHEDULED PAYMENTS
+  // ==========================================
+  Future<File> _getScheduledPaymentsFile() async {
+    final dir = await getStorageDirectory();
+    return File('${dir.path}/scheduled_payments.json');
+  }
+
+  Future<List<ScheduledPaymentItem>?> loadScheduledPayments() async {
+    try {
+      final file = await _getScheduledPaymentsFile();
+      if (!await file.exists()) return null;
+
+      final jsonString = await file.readAsString();
+      if (jsonString.trim().isEmpty) return <ScheduledPaymentItem>[];
+
+      final dynamic decoded = jsonDecode(jsonString);
+      if (decoded is List) {
+        return decoded
+            .map(
+              (item) =>
+                  ScheduledPaymentItem.fromJson(item as Map<String, dynamic>),
+            )
+            .toList();
+      }
+      return <ScheduledPaymentItem>[];
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<bool> saveScheduledPayments(List<ScheduledPaymentItem> items) async {
+    try {
+      final file = await _getScheduledPaymentsFile();
+      final jsonList = items.map((t) => t.toJson()).toList();
+      final jsonString = const JsonEncoder.withIndent('  ').convert(jsonList);
+      await file.writeAsString(jsonString, flush: true);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  // ==========================================
   // BACKUP / RESTORE / RESET & EXPORT FILES
   // ==========================================
-  Future<String> exportBackupJson(List<TransactionItem> transactions, BudgetPlan plan) async {
+  Future<String> exportBackupJson(
+    List<TransactionItem> transactions,
+    BudgetPlan plan, {
+    List<ScheduledPaymentItem>? scheduledPayments,
+  }) async {
     final backupData = {
       'version': '2.0.0',
       'exportedAt': DateTime.now().toIso8601String(),
       'budgetPlan': plan.toJson(),
       'transactions': transactions.map((t) => t.toJson()).toList(),
+      'scheduledPayments': (scheduledPayments ?? [])
+          .map((s) => s.toJson())
+          .toList(),
     };
     return const JsonEncoder.withIndent('  ').convert(backupData);
   }
@@ -270,22 +327,41 @@ class StorageService {
 
       BudgetPlan? plan;
       if (decoded['budgetPlan'] != null) {
-        plan = BudgetPlan.fromJson(decoded['budgetPlan'] as Map<String, dynamic>);
+        plan = BudgetPlan.fromJson(
+          decoded['budgetPlan'] as Map<String, dynamic>,
+        );
       }
 
       List<TransactionItem>? transactions;
       if (decoded['transactions'] is List) {
         transactions = (decoded['transactions'] as List)
-            .map((item) => TransactionItem.fromJson(item as Map<String, dynamic>))
+            .map(
+              (item) => TransactionItem.fromJson(item as Map<String, dynamic>),
+            )
+            .toList();
+      }
+
+      List<ScheduledPaymentItem>? scheduledPayments;
+      if (decoded['scheduledPayments'] is List) {
+        scheduledPayments = (decoded['scheduledPayments'] as List)
+            .map(
+              (item) => ScheduledPaymentItem.fromJson(
+                item as Map<String, dynamic>,
+              ),
+            )
             .toList();
       }
 
       if (plan != null) await saveBudgetPlan(plan);
       if (transactions != null) await saveTransactions(transactions);
+      if (scheduledPayments != null) {
+        await saveScheduledPayments(scheduledPayments);
+      }
 
       return {
         'budgetPlan': plan,
         'transactions': transactions,
+        'scheduledPayments': scheduledPayments,
       };
     } catch (_) {
       return null;
@@ -306,6 +382,15 @@ class StorageService {
       final bFile = await _getBudgetPlanFile();
       if (await bFile.exists() && !keepInitialized) {
         await bFile.delete();
+      }
+
+      final sFile = await _getScheduledPaymentsFile();
+      if (await sFile.exists()) {
+        if (keepInitialized) {
+          await sFile.writeAsString('[]', flush: true);
+        } else {
+          await sFile.delete();
+        }
       }
 
       if (!keepInitialized) {
@@ -340,7 +425,4 @@ class StorageService {
       await file.writeAsString(enabled ? 'true' : 'false', flush: true);
     } catch (_) {}
   }
-
 }
-
-

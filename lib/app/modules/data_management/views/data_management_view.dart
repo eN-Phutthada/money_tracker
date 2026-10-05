@@ -67,6 +67,7 @@ class _DataManagementViewState extends State<DataManagementView> {
     final jsonContent = await StorageService().exportBackupJson(
       transactions,
       plan,
+      scheduledPayments: controller.scheduledPayments,
     );
 
     Get.dialog(
@@ -108,23 +109,32 @@ class _DataManagementViewState extends State<DataManagementView> {
                 children: [
                   Row(
                     children: [
-                      const NothingLedIndicator(size: 6, color: AppColors.nothingRed),
+                      const NothingLedIndicator(
+                        size: 6,
+                        color: AppColors.nothingRed,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         title.toUpperCase(),
-                        style: GoogleFonts.spaceGrotesk(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 1.0,
-                          color: isDark ? Colors.white : Colors.black,
-                        ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+                        style:
+                            GoogleFonts.spaceGrotesk(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.0,
+                              color: isDark ? Colors.white : Colors.black,
+                            ).copyWith(
+                              fontFamilyFallback: ['Prompt', 'sans-serif'],
+                            ),
                       ),
                     ],
                   ),
                   NothingPill(
                     label: '$itemCount RECORDS',
                     isDotMatrix: true,
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
                     fontSize: 10,
                   ),
                 ],
@@ -135,10 +145,14 @@ class _DataManagementViewState extends State<DataManagementView> {
                 child: Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF0D0D0D) : const Color(0xFFEEEEEE),
+                    color: isDark
+                        ? const Color(0xFF0D0D0D)
+                        : const Color(0xFFEEEEEE),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                      color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                      color: isDark
+                          ? AppColors.nothingBorder
+                          : Colors.black.withValues(alpha: 0.08),
                       width: 0.8,
                     ),
                   ),
@@ -225,9 +239,13 @@ class _DataManagementViewState extends State<DataManagementView> {
           return Container(
             decoration: BoxDecoration(
               color: isDark ? const Color(0xFF101010) : Colors.white,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(28),
+              ),
               border: Border.all(
-                color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                color: isDark
+                    ? AppColors.nothingBorder
+                    : Colors.black.withValues(alpha: 0.08),
                 width: 0.8,
               ),
             ),
@@ -269,14 +287,20 @@ class _DataManagementViewState extends State<DataManagementView> {
                     hintText: 'import_data_hint'.tr,
                     hintStyle: GoogleFonts.spaceGrotesk(
                       fontSize: 11,
-                      color: isDark ? AppColors.nothingSubtext : const Color(0xFF777777),
+                      color: isDark
+                          ? AppColors.nothingSubtext
+                          : const Color(0xFF777777),
                     ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
                     filled: true,
-                    fillColor: isDark ? const Color(0xFF181818) : const Color(0xFFF4F4F4),
+                    fillColor: isDark
+                        ? const Color(0xFF181818)
+                        : const Color(0xFFF4F4F4),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
                       borderSide: BorderSide(
-                        color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                        color: isDark
+                            ? AppColors.nothingBorder
+                            : Colors.black.withValues(alpha: 0.08),
                       ),
                     ),
                   ),
@@ -291,10 +315,14 @@ class _DataManagementViewState extends State<DataManagementView> {
                 ),
                 const SizedBox(height: 14),
 
-                if (_parsedPreviewItems != null && _parsedPreviewItems!.isNotEmpty) ...[
+                if (_parsedPreviewItems != null &&
+                    _parsedPreviewItems!.isNotEmpty) ...[
                   Row(
                     children: [
-                      const NothingLedIndicator(size: 6, color: Color(0xFF10B981)),
+                      const NothingLedIndicator(
+                        size: 6,
+                        color: Color(0xFF10B981),
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         'found_valid_items'.trParams({
@@ -343,15 +371,28 @@ class _DataManagementViewState extends State<DataManagementView> {
                                 HapticFeedback.mediumImpact();
                                 final text = _importTextController.text.trim();
                                 if (text.startsWith('{')) {
-                                  final result = await StorageService().restoreBackupJson(text);
+                                  final result = await StorageService()
+                                      .restoreBackupJson(text);
                                   if (result != null) {
                                     if (result['transactions'] != null) {
                                       await controller.replaceAllTransactions(
-                                        result['transactions'] as List<TransactionItem>,
+                                        result['transactions']
+                                            as List<TransactionItem>,
                                       );
                                     }
                                     if (result['budgetPlan'] != null) {
-                                      controller.updateBudgetPlan(result['budgetPlan']);
+                                      controller.updateBudgetPlan(
+                                        result['budgetPlan'],
+                                      );
+                                    }
+                                    if (result['scheduledPayments'] != null) {
+                                      final saved =
+                                          await StorageService()
+                                              .loadScheduledPayments();
+                                      if (saved != null) {
+                                        controller.scheduledPayments
+                                            .assignAll(saved);
+                                      }
                                     }
                                     Get.back();
                                     AppFeedback.showSuccess(
@@ -361,12 +402,15 @@ class _DataManagementViewState extends State<DataManagementView> {
                                   }
                                 } else if (_parsedPreviewItems != null &&
                                     _parsedPreviewItems!.isNotEmpty) {
-                                  await controller.importTransactions(_parsedPreviewItems!);
+                                  await controller.importTransactions(
+                                    _parsedPreviewItems!,
+                                  );
                                   Get.back();
                                   AppFeedback.showSuccess(
                                     title: 'copied_title'.tr,
                                     message: 'import_success_msg'.trParams({
-                                      'count': _parsedPreviewItems!.length.toString(),
+                                      'count': _parsedPreviewItems!.length
+                                          .toString(),
                                     }),
                                   );
                                 }
@@ -403,7 +447,9 @@ class _DataManagementViewState extends State<DataManagementView> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF000000) : const Color(0xFFF7F7F7),
+      backgroundColor: isDark
+          ? const Color(0xFF000000)
+          : const Color(0xFFF7F7F7),
       appBar: ModernAppBar(
         title: 'data_management'.tr,
         badgeText: 'VAULT & BACKUP',
@@ -471,10 +517,14 @@ class _DataManagementViewState extends State<DataManagementView> {
               width: 50,
               height: 50,
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF161616) : const Color(0xFFEEEEEE),
+                color: isDark
+                    ? const Color(0xFF161616)
+                    : const Color(0xFFEEEEEE),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                  color: isDark
+                      ? AppColors.nothingBorder
+                      : Colors.black.withValues(alpha: 0.08),
                   width: 0.8,
                 ),
               ),
@@ -494,26 +544,36 @@ class _DataManagementViewState extends State<DataManagementView> {
                       Flexible(
                         child: Text(
                           'local_vault_title'.tr.toUpperCase(),
-                          style: GoogleFonts.spaceGrotesk(
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1.0,
-                            color: isDark ? Colors.white : Colors.black,
-                          ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+                          style:
+                              GoogleFonts.spaceGrotesk(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 1.0,
+                                color: isDark ? Colors.white : Colors.black,
+                              ).copyWith(
+                                fontFamilyFallback: ['Prompt', 'sans-serif'],
+                              ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       const SizedBox(width: 8),
-                      const NothingLedIndicator(size: 6, color: Color(0xFF10B981)),
+                      const NothingLedIndicator(
+                        size: 6,
+                        color: Color(0xFF10B981),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'stored_records_offline'.trParams({'count': count.toString()}),
+                    'stored_records_offline'.trParams({
+                      'count': count.toString(),
+                    }),
                     style: GoogleFonts.shareTechMono(
                       fontSize: 11.5,
-                      color: isDark ? AppColors.nothingSubtext : const Color(0xFF777777),
+                      color: isDark
+                          ? AppColors.nothingSubtext
+                          : const Color(0xFF777777),
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -545,7 +605,9 @@ class _DataManagementViewState extends State<DataManagementView> {
           ),
           Divider(
             height: 1,
-            color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+            color: isDark
+                ? AppColors.nothingBorder
+                : Colors.black.withValues(alpha: 0.08),
           ),
           _buildActionTile(
             icon: Icons.cloud_sync_rounded,
@@ -632,10 +694,14 @@ class _DataManagementViewState extends State<DataManagementView> {
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF181818) : const Color(0xFFEEEEEE),
+                  color: isDark
+                      ? const Color(0xFF181818)
+                      : const Color(0xFFEEEEEE),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.06),
+                    color: isDark
+                        ? AppColors.nothingBorder
+                        : Colors.black.withValues(alpha: 0.06),
                     width: 0.8,
                   ),
                 ),
@@ -655,11 +721,14 @@ class _DataManagementViewState extends State<DataManagementView> {
                         Flexible(
                           child: Text(
                             title,
-                            style: GoogleFonts.spaceGrotesk(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: isDark ? Colors.white : Colors.black,
-                            ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+                            style:
+                                GoogleFonts.spaceGrotesk(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: isDark ? Colors.white : Colors.black,
+                                ).copyWith(
+                                  fontFamilyFallback: ['Prompt', 'sans-serif'],
+                                ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -668,9 +737,16 @@ class _DataManagementViewState extends State<DataManagementView> {
                         NothingPill(
                           label: tag,
                           isDotMatrix: true,
-                          color: tagColor ?? (isDark ? Colors.white12 : Colors.black12),
-                          textColor: tagColor ?? (isDark ? Colors.white70 : Colors.black87),
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                          color:
+                              tagColor ??
+                              (isDark ? Colors.white12 : Colors.black12),
+                          textColor:
+                              tagColor ??
+                              (isDark ? Colors.white70 : Colors.black87),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 1.5,
+                          ),
                           fontSize: 9,
                         ),
                       ],
@@ -680,7 +756,9 @@ class _DataManagementViewState extends State<DataManagementView> {
                       subtitle,
                       style: GoogleFonts.spaceGrotesk(
                         fontSize: 11,
-                        color: isDark ? AppColors.nothingSubtext : const Color(0xFF777777),
+                        color: isDark
+                            ? AppColors.nothingSubtext
+                            : const Color(0xFF777777),
                       ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -791,10 +869,7 @@ class _SecureClearAllDialogState extends State<SecureClearAllDialog> {
       setState(() {
         _isExecuting = false;
       });
-      AppFeedback.showError(
-        title: 'error_title'.tr,
-        message: e.toString(),
-      );
+      AppFeedback.showError(title: 'error_title'.tr, message: e.toString());
     }
   }
 
@@ -815,7 +890,10 @@ class _SecureClearAllDialogState extends State<SecureClearAllDialog> {
             children: [
               Row(
                 children: [
-                  const NothingLedIndicator(size: 7, color: AppColors.nothingRed),
+                  const NothingLedIndicator(
+                    size: 7,
+                    color: AppColors.nothingRed,
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     'DANGER ZONE // PURGE'.toUpperCase(),
@@ -843,15 +921,22 @@ class _SecureClearAllDialogState extends State<SecureClearAllDialog> {
               TextField(
                 controller: _keywordController,
                 enabled: !_isExecuting,
-                style: GoogleFonts.spaceGrotesk(fontSize: 13, fontWeight: FontWeight.w700),
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
                 decoration: InputDecoration(
                   hintText: 'TYPE "$targetKeyword"',
                   hintStyle: GoogleFonts.spaceGrotesk(
                     fontSize: 12,
-                    color: isDark ? AppColors.nothingSubtext : const Color(0xFF888888),
+                    color: isDark
+                        ? AppColors.nothingSubtext
+                        : const Color(0xFF888888),
                   ),
                   filled: true,
-                  fillColor: isDark ? const Color(0xFF141414) : const Color(0xFFF3F3F3),
+                  fillColor: isDark
+                      ? const Color(0xFF141414)
+                      : const Color(0xFFF3F3F3),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(
@@ -874,15 +959,22 @@ class _SecureClearAllDialogState extends State<SecureClearAllDialog> {
                     FilteringTextInputFormatter.digitsOnly,
                     LengthLimitingTextInputFormatter(4),
                   ],
-                  style: GoogleFonts.shareTechMono(fontSize: 16, letterSpacing: 6),
+                  style: GoogleFonts.shareTechMono(
+                    fontSize: 16,
+                    letterSpacing: 6,
+                  ),
                   decoration: InputDecoration(
                     hintText: '••••',
                     filled: true,
-                    fillColor: isDark ? const Color(0xFF141414) : const Color(0xFFF3F3F3),
+                    fillColor: isDark
+                        ? const Color(0xFF141414)
+                        : const Color(0xFFF3F3F3),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(
-                        color: isDark ? AppColors.nothingBorder : Colors.black12,
+                        color: isDark
+                            ? AppColors.nothingBorder
+                            : Colors.black12,
                       ),
                     ),
                   ),
@@ -892,7 +984,10 @@ class _SecureClearAllDialogState extends State<SecureClearAllDialog> {
                   const SizedBox(height: 4),
                   Text(
                     _pinErrorMessage!,
-                    style: GoogleFonts.spaceGrotesk(fontSize: 11, color: AppColors.nothingRed),
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 11,
+                      color: AppColors.nothingRed,
+                    ),
                   ),
                 ],
                 const SizedBox(height: 10),
@@ -904,14 +999,17 @@ class _SecureClearAllDialogState extends State<SecureClearAllDialog> {
                   Checkbox(
                     value: _understandRisk,
                     activeColor: AppColors.nothingRed,
-                    onChanged: (v) => setState(() => _understandRisk = v ?? false),
+                    onChanged: (v) =>
+                        setState(() => _understandRisk = v ?? false),
                   ),
                   Expanded(
                     child: Text(
                       'understand_delete_risk'.tr,
                       style: GoogleFonts.spaceGrotesk(
                         fontSize: 11,
-                        color: isDark ? AppColors.nothingSubtext : const Color(0xFF777777),
+                        color: isDark
+                            ? AppColors.nothingSubtext
+                            : const Color(0xFF777777),
                       ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
                     ),
                   ),

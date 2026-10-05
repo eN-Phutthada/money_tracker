@@ -62,7 +62,8 @@ class WalletHealthResult {
   final int totalScore; // 0 - 100
   final WalletHealthTier tier;
   final double runwayDays; // จำนวนวันที่เงินอยู่รอดได้
-  final double burnRateMultiplier; // ความเร็วการใช้เงินเทียบกับเวลา (1.0 = พอดี)
+  final double
+  burnRateMultiplier; // ความเร็วการใช้เงินเทียบกับเวลา (1.0 = พอดี)
   final double suggestedDailyPace; // โควตารายวันที่แนะนำเพื่อความปลอดภัย
   final String headlineAdvice; // ข้อความสรุปสั้น 1 บรรทัดบนการ์ด
   final List<WalletHealthDimension> dimensions; // 4 มิติย่อย

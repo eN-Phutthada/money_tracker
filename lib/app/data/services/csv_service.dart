@@ -6,11 +6,14 @@ class CsvService {
     final buffer = StringBuffer();
     // UTF-8 Byte Order Mark เพื่อให้ Excel อ่านภาษาไทยได้สมบูรณ์
     buffer.write('\uFEFF');
-    buffer.writeln('รหัสรายการ,วันที่,ประเภท,ประเภทค่าใช้จ่าย,หมวดหมู่,ชื่อรายการ,จำนวนเงิน (บาท),บันทึกเพิ่มเติม');
+    buffer.writeln(
+      'รหัสรายการ,วันที่,ประเภท,ประเภทค่าใช้จ่าย,หมวดหมู่,ชื่อรายการ,จำนวนเงิน (บาท),บันทึกเพิ่มเติม',
+    );
 
     for (final item in transactions) {
       final id = _escapeCsv(item.id);
-      final date = '${item.date.year}-${item.date.month.toString().padLeft(2, '0')}-${item.date.day.toString().padLeft(2, '0')}';
+      final date =
+          '${item.date.year}-${item.date.month.toString().padLeft(2, '0')}-${item.date.day.toString().padLeft(2, '0')}';
 
       String typeStr = 'รายจ่าย';
       if (item.type == TransactionType.income) {
@@ -21,7 +24,9 @@ class CsvService {
 
       String costNatureStr = '-';
       if (item.type == TransactionType.expense) {
-        costNatureStr = item.costNature == CostNature.fixed ? 'คงที่' : 'จิปาถะ';
+        costNatureStr = item.costNature == CostNature.fixed
+            ? 'คงที่'
+            : 'จิปาถะ';
       }
 
       final category = _escapeCsv(item.categoryName);
@@ -29,7 +34,9 @@ class CsvService {
       final amount = item.amount.toStringAsFixed(2);
       final note = _escapeCsv(item.note ?? '');
 
-      buffer.writeln('$id,$date,$typeStr,$costNatureStr,$category,$title,$amount,$note');
+      buffer.writeln(
+        '$id,$date,$typeStr,$costNatureStr,$category,$title,$amount,$note',
+      );
     }
 
     return buffer.toString();
@@ -75,7 +82,9 @@ class CsvService {
           final typeVal = cols[2].toLowerCase();
           if (typeVal.contains('รับ') || typeVal.contains('income')) {
             type = TransactionType.income;
-          } else if (typeVal.contains('ออม') || typeVal.contains('ลงทุน') || typeVal.contains('saving')) {
+          } else if (typeVal.contains('ออม') ||
+              typeVal.contains('ลงทุน') ||
+              typeVal.contains('saving')) {
             type = TransactionType.savingsInvestment;
           }
         }
@@ -88,12 +97,19 @@ class CsvService {
           }
         }
 
-        final category = cols.length > 4 && cols[4].isNotEmpty ? cols[4] : 'ทั่วไป';
-        final title = cols.length > 5 && cols[5].isNotEmpty ? cols[5] : 'รายการนำเข้า';
+        final category = cols.length > 4 && cols[4].isNotEmpty
+            ? cols[4]
+            : 'ทั่วไป';
+        final title = cols.length > 5 && cols[5].isNotEmpty
+            ? cols[5]
+            : 'รายการนำเข้า';
 
         double amount = 0.0;
         if (cols.length > 6 && cols[6].isNotEmpty) {
-          final cleanAmount = cols[6].replaceAll(',', '').replaceAll('฿', '').trim();
+          final cleanAmount = cols[6]
+              .replaceAll(',', '')
+              .replaceAll('฿', '')
+              .trim();
           amount = double.tryParse(cleanAmount) ?? 0.0;
         }
 
@@ -120,7 +136,10 @@ class CsvService {
   }
 
   static String _escapeCsv(String value) {
-    if (value.contains(',') || value.contains('"') || value.contains('\n') || value.contains('\r')) {
+    if (value.contains(',') ||
+        value.contains('"') ||
+        value.contains('\n') ||
+        value.contains('\r')) {
       return '"${value.replaceAll('"', '""')}"';
     }
     return value;

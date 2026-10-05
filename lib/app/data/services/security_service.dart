@@ -6,11 +6,7 @@ import 'package:get/get.dart';
 import 'package:local_auth/local_auth.dart';
 import 'storage_service.dart';
 
-enum BiometricAvailabilityStatus {
-  available,
-  notSupported,
-  notEnrolled,
-}
+enum BiometricAvailabilityStatus { available, notSupported, notEnrolled }
 
 enum BiometricAuthFailureReason {
   notSupported,
@@ -81,7 +77,8 @@ class SecurityService {
           final dynamic data = jsonDecode(content);
           if (data is Map<String, dynamic>) {
             _isPinEnabled = data['isPinEnabled'] as bool? ?? false;
-            _isBiometricsEnabled = data['isBiometricsEnabled'] as bool? ?? false;
+            _isBiometricsEnabled =
+                data['isBiometricsEnabled'] as bool? ?? false;
             _pinHash = data['pinHash'] as String?;
 
             if (_isPinEnabled && _pinHash != null && _pinHash!.isNotEmpty) {
@@ -220,7 +217,8 @@ class SecurityService {
         );
       }
 
-      final promptReason = (localizedReason != null && localizedReason.isNotEmpty)
+      final promptReason =
+          (localizedReason != null && localizedReason.isNotEmpty)
           ? localizedReason
           : 'biometric_prompt_unlock'.tr;
 

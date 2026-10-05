@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import '../../../data/models/budget_plan_model.dart';
+import '../../../data/models/scheduled_payment_model.dart';
+import '../../../data/models/scheduled_payment_preset.dart';
 import '../../../data/models/transaction_model.dart';
 import '../../../data/models/wallet_health_model.dart';
 import '../../../data/services/storage_service.dart';
@@ -14,6 +17,8 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
 
   // Reactive State
   final RxList<TransactionItem> transactions = <TransactionItem>[].obs;
+  final RxList<ScheduledPaymentItem> scheduledPayments =
+      <ScheduledPaymentItem>[].obs;
   final Rx<BudgetPlan> budgetPlan = const BudgetPlan(
     plannedIncome: 45000.0,
     targetDailyAllowance: 350.0,
@@ -28,7 +33,8 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
   final RxString languageMode = 'system'.obs; // 'system', 'th', 'en'
   final RxString currentLanguage = 'th'.obs;
   final RxString userName = ''.obs;
-  final RxInt selectedChartIndex = 0.obs; // 0: Spline Area Chart, 1: Donut Chart
+  final RxInt selectedChartIndex =
+      0.obs; // 0: Spline Area Chart, 1: Donut Chart
   final RxBool isSidebarCollapsed = false.obs;
   final RxBool isBalanceHidden = false.obs;
   final FocusNode keyboardFocusNode = FocusNode();
@@ -69,7 +75,8 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
     super.didChangePlatformBrightness();
     if (themeMode.value == ThemeMode.system) {
       try {
-        final platformBrightness = WidgetsBinding.instance.platformDispatcher.platformBrightness;
+        final platformBrightness =
+            WidgetsBinding.instance.platformDispatcher.platformBrightness;
         isDarkMode.value = (platformBrightness == Brightness.dark);
       } catch (_) {}
     }
@@ -90,10 +97,19 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
         transactions.clear();
       }
 
+      final savedScheduled = await _storageService.loadScheduledPayments();
+      if (savedScheduled != null) {
+        scheduledPayments.assignAll(savedScheduled);
+      } else {
+        scheduledPayments.clear();
+      }
+      processDueAutoPayments();
+
       // Requirement: การเข้าแอพทุกครั้งระบบธีมจะตามระบบ (Default to System Theme on every launch)
       themeMode.value = ThemeMode.system;
       try {
-        final platformBrightness = WidgetsBinding.instance.platformDispatcher.platformBrightness;
+        final platformBrightness =
+            WidgetsBinding.instance.platformDispatcher.platformBrightness;
         isDarkMode.value = (platformBrightness == Brightness.dark);
       } catch (_) {
         isDarkMode.value = false;
@@ -105,7 +121,9 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
         final lang = savedLang!;
         languageMode.value = lang;
         currentLanguage.value = lang;
-        _safeUpdateLocale(lang == 'en' ? const Locale('en', 'US') : const Locale('th', 'TH'));
+        _safeUpdateLocale(
+          lang == 'en' ? const Locale('en', 'US') : const Locale('th', 'TH'),
+        );
       } else {
         languageMode.value = 'system';
         _applySystemLocale();
@@ -167,11 +185,6 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
       .where((t) => t.isSavingsWithdrawal)
       .fold(0.0, (sum, t) => sum + t.amount);
 
-  /// ยอดถอนเงินออมสะสมทั้งหมด (All-time)
-  double get allTimeSavingsWithdrawals => transactions
-      .where((t) => t.isSavingsWithdrawal)
-      .fold(0.0, (sum, t) => sum + t.amount);
-
   /// ยอดเงินออมสุทธิในรอบเวลาปัจจุบัน (ออมเข้า - ถอนออก)
   double get netSavings => actualSavings - actualSavingsWithdrawals;
 
@@ -228,10 +241,19 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
 
     if (currentPeriod.value == TimeFilterPeriod.yearly) {
       final isCurrentYear = date.year == now.year;
-      final monthsCount = isCurrentYear ? now.month : (date.isBefore(now) ? 12 : 1);
+      final monthsCount = isCurrentYear
+          ? now.month
+          : (date.isBefore(now) ? 12 : 1);
       final daysCount = isCurrentYear
           ? now.difference(DateTime(now.year, 1, 1)).inDays + 1
-          : (date.isBefore(now) ? (DateTime(date.year, 12, 31).difference(DateTime(date.year, 1, 1)).inDays + 1) : 1);
+          : (date.isBefore(now)
+                ? (DateTime(
+                        date.year,
+                        12,
+                        31,
+                      ).difference(DateTime(date.year, 1, 1)).inDays +
+                      1)
+                : 1);
 
       return (plan.plannedIncome * monthsCount) -
           (plan.plannedFixedCosts * monthsCount) -
@@ -241,7 +263,9 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
       if (transactions.isEmpty) return 0.0;
       final sorted = transactions.map((t) => t.date).toList()..sort();
       final earliest = sorted.first;
-      final monthsDiff = ((now.year - earliest.year) * 12 + now.month - earliest.month + 1).clamp(1, 120);
+      final monthsDiff =
+          ((now.year - earliest.year) * 12 + now.month - earliest.month + 1)
+              .clamp(1, 120);
       return (plan.plannedIncome * monthsDiff) -
           (plan.plannedFixedCosts * monthsDiff) -
           (plan.targetDailyAllowance * 30 * monthsDiff) -
@@ -295,18 +319,10 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
       (daysInCurrentMonth * budgetPlan.value.targetDailyAllowance) +
       budgetPlan.value.targetMonthlySavings;
 
-  /// ยอดเงินที่ควรเหลือสิ้นเดือนตามแผน (รายรับตามแผน - ค่าใช้จ่ายคงที่ - ค่ากินทั้งเดือนตามโควตา - เงินออม)
-  double get monthlyPlanEndingBalance =>
-      budgetPlan.value.plannedIncome - monthlyTotalPlannedExpenses;
-
   /// ภาระค่าใช้จ่ายที่ต้องสำรองจ่ายในเดือนนี้ (ค่าใช้จ่ายคงที่ที่ยังค้างจ่าย + ค่ากินวันที่เหลือตามโควตา)
   double get monthlyRemainingCommitments =>
-      remainingMonthlyFixedCosts + (remainingDaysInMonth * budgetPlan.value.targetDailyAllowance);
-
-  /// ยอดเงินที่คาดว่าจะเหลือเมื่อสิ้นเดือนคำนวณจากเงินในกระเป๋าปัจจุบัน
-  /// (เงินเหลือปัจจุบัน - ค่าใช้จ่ายคงที่ที่ยังค้างจ่าย - ค่ากินวันที่เหลือตามโควตา)
-  double get monthlyProjectedWalletBalance =>
-      totalCurrentBalance - monthlyRemainingCommitments;
+      remainingMonthlyFixedCosts +
+      (remainingDaysInMonth * budgetPlan.value.targetDailyAllowance);
 
   /// ตัวเลขยอดเงินหลักที่แสดงบนบัตรสถานะกระเป๋าเงินตามช่วงเวลาที่เลือก
   /// - รายเดือน: แสดง "เงินเหลือปัจจุบัน" (totalCurrentBalance)
@@ -319,11 +335,6 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
       return totalCurrentBalance;
     }
     return actualBalance;
-  }
-
-  /// ตัวเลขยอดที่ควรเหลือตามช่วงเวลาที่เลือกคำนวณสัมพันธ์กับวันปัจจุบัน (expectedBalance)
-  double get periodExpectedBalance {
-    return expectedBalance;
   }
 
   /// ส่วนต่าง (Surplus หรือ Deficit) คำนวณสัมพันธ์กับวันปัจจุบัน
@@ -370,12 +381,14 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
   /// ยอดค่าใช้จ่ายผันแปร (กินอยู่/ช้อปปิ้ง/รายวัน) เฉพาะของ "วันนี้"
   double get todayVariableExpenses {
     final now = DateTime.now();
-    return transactions.where((t) {
-      return t.isVariableCost &&
-          t.date.year == now.year &&
-          t.date.month == now.month &&
-          t.date.day == now.day;
-    }).fold(0.0, (sum, t) => sum + t.amount);
+    return transactions
+        .where((t) {
+          return t.isVariableCost &&
+              t.date.year == now.year &&
+              t.date.month == now.month &&
+              t.date.day == now.day;
+        })
+        .fold(0.0, (sum, t) => sum + t.amount);
   }
 
   /// โควตาคงเหลือเฉพาะของ "วันนี้" (เป้าหมายต่อวัน - ยอดกินใช้วันนี้)
@@ -401,8 +414,11 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
     final totalPlannedVariable = plan.plannedVariableBudget(totalDays);
 
     // หักค่าใช้จ่ายที่เกิดขึ้นแล้วทั้งหมด และกันโควตาคงเหลือของวันนี้ไว้ให้วันนี้ (ถ้าวันนี้ยังใช้ไม่หมด)
-    final reservedForToday = todayRemainingAllowance > 0 ? todayRemainingAllowance : 0.0;
-    final futureBudget = totalPlannedVariable - totalVariableExpenses - reservedForToday;
+    final reservedForToday = todayRemainingAllowance > 0
+        ? todayRemainingAllowance
+        : 0.0;
+    final futureBudget =
+        totalPlannedVariable - totalVariableExpenses - reservedForToday;
 
     if (futureBudget <= 0) return 0.0;
     return (futureBudget / remainingDays).clamp(0.0, 999999.0);
@@ -413,17 +429,21 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
   // =========================================================================
 
   /// รายจ่ายคงที่ที่ยังค้างจ่ายในรอบเดือนนี้ (ค่าใช้จ่ายคงที่ตามแผน - ที่จ่ายไปแล้วในเดือนนี้)
+  /// และคำนึงถึงภาระบิลคงที่ที่รอชำระในเดือนนี้ตามรายการตั้งเวลา
   double get remainingMonthlyFixedCosts {
     final planned = budgetPlan.value.plannedFixedCosts;
     final paid = totalFixedExpenses;
-    final remaining = planned - paid;
-    return remaining > 0 ? remaining : 0.0;
+    final remainingFromPlan = (planned - paid) > 0 ? (planned - paid) : 0.0;
+    final unpaidSchedules = upcomingUnpaidFixedScheduledCommitmentsThisMonth;
+    return remainingFromPlan > unpaidSchedules
+        ? remainingFromPlan
+        : unpaidSchedules;
   }
 
   /// งบเงินคงเหลือจริงสำหรับกินอยู่ในรอบเดือนนี้
-  /// คำนวณจาก: เงินปัจจุบัน (totalCurrentBalance) - เงินออมต่อเดือน (targetMonthlySavings) - รายจ่ายคงที่ที่ยังค้างจ่าย (remainingMonthlyFixedCosts)
+  /// คำนวณจาก: (เงินปัจจุบัน + เงินเดือนยังไม่ออก) - เงินออมต่อเดือน (targetMonthlySavings) - รายจ่ายคงที่ที่ยังค้างจ่าย (remainingMonthlyFixedCosts)
   double get dynamicAvailableMonthlyBudget {
-    final balance = totalCurrentBalance;
+    final balance = totalCurrentBalance + budgetPlan.value.pendingSalary;
     final savings = budgetPlan.value.targetMonthlySavings;
     final fixedCosts = remainingMonthlyFixedCosts;
     return balance - savings - fixedCosts;
@@ -436,16 +456,15 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
     if (available <= 0) return 0.0;
     final days = remainingDaysInMonth > 0 ? remainingDaysInMonth : 1;
     final quota = available / days;
-    return (quota / 10).round() * 10.0; // ปัดเศษลงตัวละ 10 บาทเพื่อการใช้งานจริงที่สะดวก
+    return (quota / 10).round() *
+        10.0; // ปัดเศษลงตัวละ 10 บาทเพื่อการใช้งานจริงที่สะดวก
   }
 
   /// นำโควตาที่คำนวณจากเงินจริงไปบันทึกเป็นเป้าหมายรายวันของแผน
   void applyDynamicCalculatedQuota() {
     final quota = dynamicCalculatedDailyQuota;
     if (quota <= 0) return;
-    final updatedPlan = budgetPlan.value.copyWith(
-      targetDailyAllowance: quota,
-    );
+    final updatedPlan = budgetPlan.value.copyWith(targetDailyAllowance: quota);
     updateBudgetPlan(updatedPlan);
   }
 
@@ -470,8 +489,12 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
     // -------------------------------------------------------------
     final plannedVar = plan.plannedVariableBudget(totalDays);
     final effectivePlannedVar = plannedVar > 0 ? plannedVar : 1.0;
-    final daysPassedRatio = (currentDay / (totalDays > 0 ? totalDays : 30)).clamp(0.01, 1.0);
-    final spendingRatio = (totalVariableExpenses / effectivePlannedVar).clamp(0.0, 3.0);
+    final daysPassedRatio = (currentDay / (totalDays > 0 ? totalDays : 30))
+        .clamp(0.01, 1.0);
+    final spendingRatio = (totalVariableExpenses / effectivePlannedVar).clamp(
+      0.0,
+      3.0,
+    );
 
     double burnMultiplier;
     double paceScore;
@@ -496,21 +519,30 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
         });
         isPaceHealthy = true;
       } else if (burnMultiplier <= 1.25) {
-        paceScore = (30.0 - ((burnMultiplier - 1.0) / 0.25) * 8.0).clamp(0.0, 30.0);
+        paceScore = (30.0 - ((burnMultiplier - 1.0) / 0.25) * 8.0).clamp(
+          0.0,
+          30.0,
+        );
         paceStatus = 'pace_slightly_fast'.tr;
         paceDetail = 'pace_slightly_fast_desc'.trParams({
           'speed': burnMultiplier.toStringAsFixed(1),
         });
         isPaceHealthy = false;
       } else if (burnMultiplier <= 1.75) {
-        paceScore = (22.0 - ((burnMultiplier - 1.25) / 0.5) * 12.0).clamp(0.0, 30.0);
+        paceScore = (22.0 - ((burnMultiplier - 1.25) / 0.5) * 12.0).clamp(
+          0.0,
+          30.0,
+        );
         paceStatus = 'pace_fast_warning'.tr;
         paceDetail = 'pace_fast_desc'.trParams({
           'speed': burnMultiplier.toStringAsFixed(1),
         });
         isPaceHealthy = false;
       } else {
-        paceScore = (10.0 - ((burnMultiplier - 1.75) / 1.0) * 10.0).clamp(0.0, 10.0);
+        paceScore = (10.0 - ((burnMultiplier - 1.75) / 1.0) * 10.0).clamp(
+          0.0,
+          10.0,
+        );
         paceStatus = 'pace_critical_fast'.tr;
         paceDetail = 'pace_critical_desc'.trParams({
           'speed': burnMultiplier.toStringAsFixed(1),
@@ -632,7 +664,9 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
     final double runwayDays = totalCurrentBalance > 0
         ? (totalCurrentBalance / safeDailySpend)
         : 0.0;
-    final double requiredDays = remainingDays > 0 ? remainingDays.toDouble() : 1.0;
+    final double requiredDays = remainingDays > 0
+        ? remainingDays.toDouble()
+        : 1.0;
 
     double runwayScore;
     String runwayStatus;
@@ -669,7 +703,10 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
     // -------------------------------------------------------------
     // Total Score & Tier
     // -------------------------------------------------------------
-    final int totalScore = (paceScore + commitmentScore + savingsScore + runwayScore).round().clamp(0, 100);
+    final int totalScore =
+        (paceScore + commitmentScore + savingsScore + runwayScore)
+            .round()
+            .clamp(0, 100);
     final WalletHealthTier tier;
     if (totalScore >= 90) {
       tier = WalletHealthTier.optimal;
@@ -684,7 +721,9 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
     // Suggested Daily Pace
     double suggestedPace = dynamicCalculatedDailyQuota;
     if (suggestedPace <= 0) {
-      suggestedPace = remainingDailyAllowance > 0 ? remainingDailyAllowance : plan.targetDailyAllowance;
+      suggestedPace = remainingDailyAllowance > 0
+          ? remainingDailyAllowance
+          : plan.targetDailyAllowance;
     }
 
     // Headline Advice
@@ -711,75 +750,89 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
 
     // Insight 1: Fixed Bills
     if (remainingFixed <= 0) {
-      insights.add(WalletHealthInsight(
-        icon: Icons.check_circle_outline_rounded,
-        iconColor: const Color(0xFF10B981),
-        title: 'insight_fixed_cleared_title'.tr,
-        description: 'insight_fixed_cleared_desc'.tr,
-      ));
+      insights.add(
+        WalletHealthInsight(
+          icon: Icons.check_circle_outline_rounded,
+          iconColor: const Color(0xFF10B981),
+          title: 'insight_fixed_cleared_title'.tr,
+          description: 'insight_fixed_cleared_desc'.tr,
+        ),
+      );
     } else if (isCommitmentHealthy) {
-      insights.add(WalletHealthInsight(
-        icon: Icons.verified_user_outlined,
-        iconColor: const Color(0xFF3B82F6),
-        title: 'insight_fixed_covered_title'.tr,
-        description: 'insight_fixed_covered_desc'.trParams({
-          'amount': remainingFixed.toStringAsFixed(0),
-        }),
-      ));
+      insights.add(
+        WalletHealthInsight(
+          icon: Icons.verified_user_outlined,
+          iconColor: const Color(0xFF3B82F6),
+          title: 'insight_fixed_covered_title'.tr,
+          description: 'insight_fixed_covered_desc'.trParams({
+            'amount': remainingFixed.toStringAsFixed(0),
+          }),
+        ),
+      );
     } else {
-      insights.add(WalletHealthInsight(
-        icon: Icons.warning_amber_rounded,
-        iconColor: const Color(0xFFEF4444),
-        title: 'insight_fixed_deficit_title'.tr,
-        description: 'insight_fixed_deficit_desc'.trParams({
-          'amount': remainingFixed.toStringAsFixed(0),
-        }),
-        actionLabel: 'action_view_budget'.tr,
-        onAction: () => Get.toNamed(Routes.BUDGET_SETTINGS),
-      ));
+      insights.add(
+        WalletHealthInsight(
+          icon: Icons.warning_amber_rounded,
+          iconColor: const Color(0xFFEF4444),
+          title: 'insight_fixed_deficit_title'.tr,
+          description: 'insight_fixed_deficit_desc'.trParams({
+            'amount': remainingFixed.toStringAsFixed(0),
+          }),
+          actionLabel: 'action_view_budget'.tr,
+          onAction: () => Get.toNamed(Routes.BUDGET_SETTINGS),
+        ),
+      );
     }
 
     // Insight 2: Daily Allowance / Pace
     if (!isPaceHealthy) {
-      insights.add(WalletHealthInsight(
-        icon: Icons.tune_rounded,
-        iconColor: const Color(0xFFF59E0B),
-        title: 'insight_pace_warning_title'.tr,
-        description: 'insight_pace_warning_desc'.trParams({
-          'pace': suggestedPace.toStringAsFixed(0),
-          'days': '$remainingDays',
-        }),
-        actionLabel: 'action_apply_dynamic_quota'.tr,
-        onAction: applyDynamicCalculatedQuota,
-      ));
+      insights.add(
+        WalletHealthInsight(
+          icon: Icons.tune_rounded,
+          iconColor: const Color(0xFFF59E0B),
+          title: 'insight_pace_warning_title'.tr,
+          description: 'insight_pace_warning_desc'.trParams({
+            'pace': suggestedPace.toStringAsFixed(0),
+            'days': '$remainingDays',
+          }),
+          actionLabel: 'action_apply_dynamic_quota'.tr,
+          onAction: applyDynamicCalculatedQuota,
+        ),
+      );
     } else {
-      insights.add(WalletHealthInsight(
-        icon: Icons.trending_up_rounded,
-        iconColor: const Color(0xFF10B981),
-        title: 'insight_pace_good_title'.tr,
-        description: 'insight_pace_good_desc'.trParams({
-          'quota': plan.targetDailyAllowance.toStringAsFixed(0),
-        }),
-      ));
+      insights.add(
+        WalletHealthInsight(
+          icon: Icons.trending_up_rounded,
+          iconColor: const Color(0xFF10B981),
+          title: 'insight_pace_good_title'.tr,
+          description: 'insight_pace_good_desc'.trParams({
+            'quota': plan.targetDailyAllowance.toStringAsFixed(0),
+          }),
+        ),
+      );
     }
 
     // Insight 3: Savings Leakage or Target
     if (actualSavingsWithdrawals > 0) {
-      insights.add(WalletHealthInsight(
-        icon: Icons.outbox_rounded,
-        iconColor: const Color(0xFFEF4444),
-        title: 'insight_savings_withdrawn_title'.tr,
-        description: 'insight_savings_withdrawn_desc'.trParams({
-          'amount': actualSavingsWithdrawals.toStringAsFixed(0),
-        }),
-      ));
+      insights.add(
+        WalletHealthInsight(
+          icon: Icons.outbox_rounded,
+          iconColor: const Color(0xFFEF4444),
+          title: 'insight_savings_withdrawn_title'.tr,
+          description: 'insight_savings_withdrawn_desc'.trParams({
+            'amount': actualSavingsWithdrawals.toStringAsFixed(0),
+          }),
+        ),
+      );
     } else if (actualSavings >= targetSavings && targetSavings > 0) {
-      insights.add(WalletHealthInsight(
-        icon: Icons.celebration_outlined,
-        iconColor: const Color(0xFF10B981),
-        title: 'insight_savings_target_hit_title'.tr,
-        description: 'insight_savings_target_hit_desc'.tr,
-      ));
+      insights.add(
+        WalletHealthInsight(
+          icon: Icons.celebration_outlined,
+          iconColor: const Color(0xFF10B981),
+          title: 'insight_savings_target_hit_title'.tr,
+          description: 'insight_savings_target_hit_desc'.tr,
+        ),
+      );
     }
 
     return WalletHealthResult(
@@ -810,13 +863,22 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
     for (int i = 5; i >= 0; i--) {
       final targetDate = DateTime(now.year, now.month - i, 1);
       final monthTransactions = transactions.where((t) {
-        return t.date.year == targetDate.year && t.date.month == targetDate.month;
+        return t.date.year == targetDate.year &&
+            t.date.month == targetDate.month;
       }).toList();
 
-      final income = monthTransactions.where((t) => t.isIncome).fold(0.0, (sum, t) => sum + t.amount);
-      final expense = monthTransactions.where((t) => t.isExpense).fold(0.0, (sum, t) => sum + t.amount);
-      final savingsDeposits = monthTransactions.where((t) => t.isSavings).fold(0.0, (sum, t) => sum + t.amount);
-      final savingsWithdrawals = monthTransactions.where((t) => t.isSavingsWithdrawal).fold(0.0, (sum, t) => sum + t.amount);
+      final income = monthTransactions
+          .where((t) => t.isIncome)
+          .fold(0.0, (sum, t) => sum + t.amount);
+      final expense = monthTransactions
+          .where((t) => t.isExpense)
+          .fold(0.0, (sum, t) => sum + t.amount);
+      final savingsDeposits = monthTransactions
+          .where((t) => t.isSavings)
+          .fold(0.0, (sum, t) => sum + t.amount);
+      final savingsWithdrawals = monthTransactions
+          .where((t) => t.isSavingsWithdrawal)
+          .fold(0.0, (sum, t) => sum + t.amount);
       final savings = savingsDeposits - savingsWithdrawals;
       final net = income - expense - savings;
 
@@ -870,6 +932,35 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
     transactions.add(item);
     _storageService.saveTransactions(transactions);
 
+    // If re-adding a transaction that was linked to a scheduled payment, advance it back
+    if (item.scheduledPaymentId != null) {
+      final schedIndex =
+          scheduledPayments.indexWhere((p) => p.id == item.scheduledPaymentId);
+      if (schedIndex != -1) {
+        final sched = scheduledPayments[schedIndex];
+        if (item.originalScheduledDueDate != null &&
+            sched.nextDueDate.year == item.originalScheduledDueDate!.year &&
+            sched.nextDueDate.month == item.originalScheduledDueDate!.month &&
+            sched.nextDueDate.day == item.originalScheduledDueDate!.day) {
+          if (sched.frequency == ScheduleFrequency.oneTime) {
+            scheduledPayments[schedIndex] = sched.copyWith(
+              status: ScheduledPaymentStatus.completed,
+              lastExecutedDate: item.date,
+              previousDueDate: item.originalScheduledDueDate,
+            );
+          } else {
+            scheduledPayments[schedIndex] = sched.copyWith(
+              nextDueDate: sched.calculateNextDueDate(item.date),
+              lastExecutedDate: item.date,
+              previousDueDate: item.originalScheduledDueDate,
+            );
+          }
+          _storageService.saveScheduledPayments(scheduledPayments);
+          _checkAutoSyncFixedCosts();
+        }
+      }
+    }
+
     if (notify && Get.context != null) {
       AppFeedback.showSuccess(
         title: 'save_success_title'.tr,
@@ -898,12 +989,53 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
   }
 
   void deleteTransaction(String id) {
-    transactions.removeWhere((item) => item.id == id);
+    final index = transactions.indexWhere((item) => item.id == id);
+    if (index == -1) return;
+    final tx = transactions[index];
+    transactions.removeAt(index);
     _storageService.saveTransactions(transactions);
+
+    // Rollback linked scheduled payment if this transaction originated from one
+    int schedIndex = -1;
+    if (tx.scheduledPaymentId != null) {
+      schedIndex =
+          scheduledPayments.indexWhere((p) => p.id == tx.scheduledPaymentId);
+    } else {
+      // Fallback matching in case of older transactions without scheduledPaymentId:
+      schedIndex = scheduledPayments.indexWhere((p) =>
+          p.title == tx.title &&
+          p.amount == tx.amount &&
+          p.type == tx.type &&
+          p.lastExecutedDate != null &&
+          p.lastExecutedDate!.difference(tx.date).inDays.abs() <= 2);
+    }
+
+    if (schedIndex != -1) {
+      final sched = scheduledPayments[schedIndex];
+      final restoredDueDate = tx.originalScheduledDueDate ??
+          sched.previousDueDate ??
+          sched.calculatePreviousDueDate();
+
+      final reverted = sched.copyWith(
+        nextDueDate: restoredDueDate,
+        status: ScheduledPaymentStatus.active,
+      );
+      scheduledPayments[schedIndex] = reverted;
+      _storageService.saveScheduledPayments(scheduledPayments);
+      _checkAutoSyncFixedCosts();
+
+      if (Get.context != null) {
+        AppFeedback.showInfo(
+          title: 'schedule_reverted_title'.tr,
+          message: 'schedule_reverted_msg'.trParams({'title': sched.title}),
+        );
+      }
+    }
   }
 
   Future<void> clearAllToEmpty() async {
     transactions.clear();
+    scheduledPayments.clear();
     await _storageService.clearAllData(keepInitialized: true);
     if (Get.context != null) {
       AppFeedback.showSuccess(
@@ -911,6 +1043,390 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
         message: 'clear_all_data_desc'.tr,
       );
     }
+  }
+
+  // ==========================================
+  // SCHEDULED PAYMENTS ACTIONS & GETTERS
+  // ==========================================
+
+  List<ScheduledPaymentItem> get activeScheduledPayments =>
+      scheduledPayments.where((item) => item.isActive).toList();
+
+  List<ScheduledPaymentItem> get upcomingScheduledPayments {
+    final list = scheduledPayments.where((item) => item.isActive).toList();
+    list.sort((a, b) => a.nextDueDate.compareTo(b.nextDueDate));
+    return list;
+  }
+
+  List<ScheduledPaymentItem> get dueOrOverdueScheduledPayments {
+    return scheduledPayments
+        .where((item) => item.isActive && item.isDue)
+        .toList();
+  }
+
+  double get upcomingMonthlyScheduledCommitments {
+    final targetMonth = selectedDate.value;
+    return scheduledPayments
+        .where(
+          (item) =>
+              item.isActive &&
+              item.nextDueDate.year == targetMonth.year &&
+              item.nextDueDate.month == targetMonth.month,
+        )
+        .fold(0.0, (sum, item) => sum + item.amount);
+  }
+
+  /// ยอดบิลคงที่ต่อเดือนที่คำนวณจากรายการตั้งเวลาจ่ายคงที่ทั้งหมดที่กำลังทำงานอยู่
+  double get totalMonthlyFixedScheduledCommitments {
+    return scheduledPayments
+        .where((item) => item.isFixedExpense)
+        .fold(0.0, (sum, item) => sum + item.monthlyEquivalentAmount);
+  }
+
+  /// รายการตั้งเวลาจ่ายคงที่ที่กำลังทำงานอยู่ทั้งหมด
+  List<ScheduledPaymentItem> get activeFixedScheduledPayments {
+    final list =
+        scheduledPayments.where((item) => item.isFixedExpense).toList();
+    list.sort((a, b) => a.nextDueDate.compareTo(b.nextDueDate));
+    return list;
+  }
+
+  /// ยอดบิลคงที่ที่รอชำระในรอบเดือนปัจจุบันตามรายการตั้งเวลา
+  double get upcomingUnpaidFixedScheduledCommitmentsThisMonth {
+    final targetMonth = selectedDate.value;
+    return scheduledPayments
+        .where(
+          (item) =>
+              item.isFixedExpense &&
+              item.nextDueDate.year == targetMonth.year &&
+              item.nextDueDate.month == targetMonth.month,
+        )
+        .fold(0.0, (sum, item) => sum + item.amount);
+  }
+
+  /// ส่วนต่างระหว่างงบประมาณคงที่ตามแผน กับผลรวมของรายการตั้งเวลาคงที่
+  /// เป็นบวก = มีงบสำรองคงเหลือ (Unallocated Buffer)
+  /// เป็นลบ = รายการตั้งเวลาเกินงบ (Exceeded)
+  double get fixedCostsSyncVariance =>
+      budgetPlan.value.plannedFixedCosts -
+      totalMonthlyFixedScheduledCommitments;
+
+  /// งบคงที่ตรงกับรายการตั้งเวลาหรือไม่ (ต่างกันไม่เกิน 1 บาท)
+  bool get isFixedCostsInSync => fixedCostsSyncVariance.abs() < 1.0;
+
+  /// ซิงค์ยอดงบค่าใช้จ่ายคงที่ตามผลรวมของรายการตั้งเวลาจ่ายคงที่
+  void syncPlannedFixedCostsWithSchedules({bool notify = true}) {
+    final total = totalMonthlyFixedScheduledCommitments;
+    final updated = budgetPlan.value.copyWith(plannedFixedCosts: total);
+    updateBudgetPlan(updated);
+
+    if (notify && Get.context != null) {
+      final currencyFmt = NumberFormat.currency(
+        locale: 'th_TH',
+        symbol: '฿',
+        decimalDigits: 0,
+      );
+      AppFeedback.showSuccess(
+        title: 'sync_success_title'.tr,
+        message: 'sync_success_desc'.trParams({
+          'amount': currencyFmt.format(total),
+        }),
+      );
+    }
+  }
+
+  /// สลับการซิงค์งบค่าใช้จ่ายคงที่แบบอัตโนมัติ
+  void toggleAutoSyncFixedCosts(bool enabled, {bool notify = true}) {
+    final updated = budgetPlan.value.copyWith(
+      autoSyncFixedWithSchedules: enabled,
+      plannedFixedCosts:
+          enabled ? totalMonthlyFixedScheduledCommitments : null,
+    );
+    updateBudgetPlan(updated);
+
+    if (notify && Get.context != null) {
+      AppFeedback.showInfo(
+        title: 'auto_sync_fixed_costs'.tr,
+        message: enabled
+            ? 'auto_sync_enabled_msg'.tr
+            : 'auto_sync_disabled_msg'.tr,
+      );
+    }
+  }
+
+  void _checkAutoSyncFixedCosts() {
+    if (budgetPlan.value.autoSyncFixedWithSchedules) {
+      final total = totalMonthlyFixedScheduledCommitments;
+      if ((budgetPlan.value.plannedFixedCosts - total).abs() >= 1.0) {
+        final updated = budgetPlan.value.copyWith(plannedFixedCosts: total);
+        updateBudgetPlan(updated);
+      }
+    }
+  }
+
+  void addScheduledPayment(ScheduledPaymentItem item, {bool notify = true}) {
+    scheduledPayments.add(item);
+    _storageService.saveScheduledPayments(scheduledPayments);
+    _checkAutoSyncFixedCosts();
+
+    if (notify && Get.context != null) {
+      AppFeedback.showSuccess(
+        title: 'scheduled_success_title'.tr,
+        message: 'scheduled_success_msg'.trParams({'title': item.title}),
+        amount: item.amount,
+        transactionType: item.type,
+      );
+    }
+  }
+
+  void updateScheduledPayment(ScheduledPaymentItem item, {bool notify = true}) {
+    final index = scheduledPayments.indexWhere((p) => p.id == item.id);
+    if (index != -1) {
+      scheduledPayments[index] = item;
+      _storageService.saveScheduledPayments(scheduledPayments);
+      _checkAutoSyncFixedCosts();
+
+      if (notify && Get.context != null) {
+        AppFeedback.showSuccess(
+          title: 'schedule_updated_title'.tr,
+          message: 'schedule_updated_msg'.trParams({'title': item.title}),
+          amount: item.amount,
+          transactionType: item.type,
+        );
+      }
+    }
+  }
+
+  void deleteScheduledPayment(String id) {
+    scheduledPayments.removeWhere((item) => item.id == id);
+    _storageService.saveScheduledPayments(scheduledPayments);
+    _checkAutoSyncFixedCosts();
+  }
+
+  void toggleScheduledPaymentStatus(String id) {
+    final index = scheduledPayments.indexWhere((p) => p.id == id);
+    if (index != -1) {
+      final current = scheduledPayments[index];
+      final newStatus = current.status == ScheduledPaymentStatus.active
+          ? ScheduledPaymentStatus.paused
+          : ScheduledPaymentStatus.active;
+      final updated = current.copyWith(status: newStatus);
+      scheduledPayments[index] = updated;
+      _storageService.saveScheduledPayments(scheduledPayments);
+      _checkAutoSyncFixedCosts();
+
+      if (Get.context != null) {
+        if (newStatus == ScheduledPaymentStatus.paused) {
+          AppFeedback.showInfo(
+            title: 'pause_schedule'.tr,
+            message: 'schedule_paused_msg'.trParams({'title': current.title}),
+          );
+        } else {
+          AppFeedback.showSuccess(
+            title: 'resume_schedule'.tr,
+            message: 'schedule_resumed_msg'.trParams({'title': current.title}),
+          );
+        }
+      }
+    }
+  }
+
+  void executeScheduledPayment(
+    ScheduledPaymentItem item, {
+    DateTime? executionDate,
+    bool notify = true,
+  }) {
+    final execDate =
+        executionDate ?? (item.isDue ? DateTime.now() : item.nextDueDate);
+    final transaction = TransactionItem(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      title: item.title,
+      amount: item.amount,
+      type: item.type,
+      costNature: item.costNature,
+      categoryName: item.categoryName,
+      date: execDate,
+      note: item.note,
+      scheduledPaymentId: item.id,
+      originalScheduledDueDate: item.nextDueDate,
+    );
+    addTransaction(transaction, notify: false);
+
+    if (item.frequency == ScheduleFrequency.oneTime) {
+      final updated = item.copyWith(
+        status: ScheduledPaymentStatus.completed,
+        lastExecutedDate: DateTime.now(),
+        previousDueDate: item.nextDueDate,
+      );
+      updateScheduledPayment(updated, notify: false);
+    } else {
+      final nextDue = item.calculateNextDueDate(execDate);
+      final updated = item.copyWith(
+        nextDueDate: nextDue,
+        lastExecutedDate: DateTime.now(),
+        previousDueDate: item.nextDueDate,
+      );
+      updateScheduledPayment(updated, notify: false);
+    }
+
+    if (notify && Get.context != null) {
+      AppFeedback.showSuccess(
+        title: 'schedule_paid_title'.tr,
+        message: 'schedule_paid_msg'.trParams({
+          'title': item.title,
+          'amount': '${item.amount.toStringAsFixed(2)} ฿',
+        }),
+        amount: item.amount,
+        transactionType: item.type,
+      );
+    }
+  }
+
+  void skipScheduledPayment(String id) {
+    final index = scheduledPayments.indexWhere((p) => p.id == id);
+    if (index != -1) {
+      final item = scheduledPayments[index];
+      if (item.frequency == ScheduleFrequency.oneTime) {
+        final updated = item.copyWith(
+          status: ScheduledPaymentStatus.completed,
+          previousDueDate: item.nextDueDate,
+        );
+        updateScheduledPayment(updated, notify: false);
+      } else {
+        final nextDue = item.calculateNextDueDate();
+        final updated = item.copyWith(
+          nextDueDate: nextDue,
+          previousDueDate: item.nextDueDate,
+        );
+        updateScheduledPayment(updated, notify: false);
+      }
+
+      if (Get.context != null) {
+        AppFeedback.showInfo(
+          title: 'schedule_skipped_title'.tr,
+          message: 'schedule_skipped_msg'.trParams({'title': item.title}),
+        );
+      }
+    }
+  }
+
+  void processDueAutoPayments() {
+    final autoDueItems = scheduledPayments
+        .where((item) => item.isActive && item.autoRecord && item.isDue)
+        .toList();
+    if (autoDueItems.isEmpty) return;
+
+    int count = 0;
+    for (final item in autoDueItems) {
+      executeScheduledPayment(
+        item,
+        executionDate: item.nextDueDate,
+        notify: false,
+      );
+      count++;
+    }
+
+    if (count > 0 && Get.context != null) {
+      AppFeedback.showSuccess(
+        title: 'auto_paid_notification_title'.tr,
+        message: 'auto_paid_notification_desc'.trParams({'count': '$count'}),
+      );
+    }
+  }
+
+  /// เทมเพลตบิลและภาระการเงินยอดนิยม (Curated Presets)
+  List<ScheduledPaymentPreset> get popularScheduledPresets =>
+      ScheduledPaymentPreset.curatedPresets;
+
+  /// ตรวจจับรายการที่ผู้ใช้เคยจ่ายซ้ำในอดีต (>= 2 ครั้ง) ที่ยังไม่ได้ตั้งเป็นรายการจ่ายล่วงหน้า
+  List<TransactionItem> get detectedRecurringTransactionSuggestions {
+    final Map<String, List<TransactionItem>> titleGroups = {};
+
+    for (final tx in transactions) {
+      if (tx.type == TransactionType.income) continue;
+      final cleanTitle = tx.title.trim().toLowerCase();
+      if (cleanTitle.isEmpty) continue;
+
+      titleGroups.putIfAbsent(cleanTitle, () => []).add(tx);
+    }
+
+    final List<TransactionItem> candidates = [];
+    final scheduledTitles = scheduledPayments
+        .map((s) => s.title.trim().toLowerCase())
+        .toSet();
+
+    titleGroups.forEach((normalizedTitle, txList) {
+      // หากตั้งเวลาไว้แล้ว ไม่แนะนำซ้ำ
+      if (scheduledTitles.contains(normalizedTitle)) return;
+
+      if (txList.length >= 2) {
+        txList.sort((a, b) => b.date.compareTo(a.date));
+        final latest = txList.first;
+        final older = txList[1];
+
+        final diffDays = latest.date.difference(older.date).inDays.abs();
+        if (diffDays >= 14) {
+          candidates.add(latest);
+        }
+      }
+    });
+
+    candidates.sort((a, b) => b.date.compareTo(a.date));
+    return candidates.take(5).toList();
+  }
+
+  /// สร้างรายการตั้งเวลาจาก Preset อัตโนมัติ 1-Tap
+  void createScheduledPaymentFromPreset(
+    ScheduledPaymentPreset preset, {
+    double? customAmount,
+    DateTime? firstDueDate,
+    bool notify = true,
+  }) {
+    final now = DateTime.now();
+    final dueDate = firstDueDate ?? DateTime(now.year, now.month, 25, 9, 0);
+    final newItem = ScheduledPaymentItem(
+      id: 'sched-${DateTime.now().millisecondsSinceEpoch}',
+      title: preset.titleKey.tr,
+      amount: customAmount ?? preset.suggestedAmount ?? 1000.0,
+      type: preset.type,
+      costNature: preset.costNature,
+      categoryName: preset.categoryName,
+      frequency: preset.frequency,
+      startDate: dueDate,
+      nextDueDate: dueDate,
+      autoRecord: false,
+      status: ScheduledPaymentStatus.active,
+    );
+    addScheduledPayment(newItem, notify: notify);
+  }
+
+  /// สร้างรายการตั้งเวลาจากธุรกรรมประวัติจริง 1-Tap
+  void createScheduledPaymentFromHistoricalTransaction(
+    TransactionItem tx, {
+    ScheduleFrequency frequency = ScheduleFrequency.monthly,
+    bool notify = true,
+  }) {
+    final now = DateTime.now();
+    final day = tx.date.day.clamp(1, 28);
+    var nextDue = DateTime(now.year, now.month, day, 9, 0);
+    if (nextDue.isBefore(now)) {
+      nextDue = DateTime(now.year, now.month + 1, day, 9, 0);
+    }
+
+    final newItem = ScheduledPaymentItem(
+      id: 'sched-${DateTime.now().millisecondsSinceEpoch}',
+      title: tx.title,
+      amount: tx.amount,
+      type: tx.type,
+      costNature: CostNature.fixed,
+      categoryName: tx.categoryName,
+      frequency: frequency,
+      startDate: nextDue,
+      nextDueDate: nextDue,
+      autoRecord: false,
+      status: ScheduledPaymentStatus.active,
+    );
+    addScheduledPayment(newItem, notify: notify);
   }
 
   void updateBudgetPlan(BudgetPlan plan) {
@@ -928,7 +1444,10 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
 
   void previousPeriod() {
     if (currentPeriod.value == TimeFilterPeriod.monthly) {
-      selectedDate.value = DateTime(selectedDate.value.year, selectedDate.value.month - 1);
+      selectedDate.value = DateTime(
+        selectedDate.value.year,
+        selectedDate.value.month - 1,
+      );
     } else if (currentPeriod.value == TimeFilterPeriod.yearly) {
       selectedDate.value = DateTime(selectedDate.value.year - 1);
     }
@@ -936,7 +1455,10 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
 
   void nextPeriod() {
     if (currentPeriod.value == TimeFilterPeriod.monthly) {
-      selectedDate.value = DateTime(selectedDate.value.year, selectedDate.value.month + 1);
+      selectedDate.value = DateTime(
+        selectedDate.value.year,
+        selectedDate.value.month + 1,
+      );
     } else if (currentPeriod.value == TimeFilterPeriod.yearly) {
       selectedDate.value = DateTime(selectedDate.value.year + 1);
     }
@@ -949,7 +1471,8 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
   bool get isCurrentPeriod {
     final now = DateTime.now();
     if (currentPeriod.value == TimeFilterPeriod.monthly) {
-      return selectedDate.value.year == now.year && selectedDate.value.month == now.month;
+      return selectedDate.value.year == now.year &&
+          selectedDate.value.month == now.month;
     } else if (currentPeriod.value == TimeFilterPeriod.yearly) {
       return selectedDate.value.year == now.year;
     }
@@ -967,8 +1490,10 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
   }
 
   void toggleTheme() {
-    final currentlyDark = (themeMode.value == ThemeMode.dark) ||
-        (themeMode.value == ThemeMode.system && (Get.isDarkMode || isDarkMode.value));
+    final currentlyDark =
+        (themeMode.value == ThemeMode.dark) ||
+        (themeMode.value == ThemeMode.system &&
+            (Get.isDarkMode || isDarkMode.value));
     if (currentlyDark) {
       setThemeMode(ThemeMode.light);
     } else {
@@ -977,29 +1502,75 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
   }
 
   String get themeModeName {
-    final currentlyDark = (themeMode.value == ThemeMode.dark) ||
-        (themeMode.value == ThemeMode.system && (Get.isDarkMode || isDarkMode.value));
+    final currentlyDark =
+        (themeMode.value == ThemeMode.dark) ||
+        (themeMode.value == ThemeMode.system &&
+            (Get.isDarkMode || isDarkMode.value));
     return currentlyDark ? 'theme_dark'.tr : 'theme_light'.tr;
   }
 
   static const List<String> thaiMonthNames = [
-    '', 'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
-    'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม',
+    '',
+    'มกราคม',
+    'กุมภาพันธ์',
+    'มีนาคม',
+    'เมษายน',
+    'พฤษภาคม',
+    'มิถุนายน',
+    'กรกฎาคม',
+    'สิงหาคม',
+    'กันยายน',
+    'ตุลาคม',
+    'พฤศจิกายน',
+    'ธันวาคม',
   ];
 
   static const List<String> englishMonthNames = [
-    '', 'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
+    '',
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
   ];
 
   static const List<String> thaiMonthShortNames = [
-    '', 'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
-    'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.',
+    '',
+    'ม.ค.',
+    'ก.พ.',
+    'มี.ค.',
+    'เม.ย.',
+    'พ.ค.',
+    'มิ.ย.',
+    'ก.ค.',
+    'ส.ค.',
+    'ก.ย.',
+    'ต.ค.',
+    'พ.ย.',
+    'ธ.ค.',
   ];
 
   static const List<String> englishMonthShortNames = [
-    '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    '',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ];
 
   String get formattedPeriodTitle {
@@ -1015,11 +1586,8 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
           return '${thaiMonthNames[date.month]} ${date.year + 543}';
         }
       case TimeFilterPeriod.yearly:
-        if (isEn) {
-          return 'Year ${date.year}';
-        } else {
-          return 'ปี พ.ศ. ${date.year + 543}';
-        }
+        final displayYear = isEn ? '${date.year}' : '${date.year + 543}';
+        return 'period_year_format'.trParams({'year': displayYear});
       case TimeFilterPeriod.allTime:
         return 'period_all_time'.tr;
     }
@@ -1027,7 +1595,9 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
 
   void _safeUpdateLocale(Locale locale) {
     Get.locale = locale;
-    final isTest = WidgetsBinding.instance.runtimeType.toString().contains('Test');
+    final isTest = WidgetsBinding.instance.runtimeType.toString().contains(
+      'Test',
+    );
     if (!isTest && Get.key.currentState != null) {
       try {
         Get.updateLocale(locale);
@@ -1037,10 +1607,19 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
 
   void _applySystemLocale() {
     try {
-      final sysLang = WidgetsBinding.instance.platformDispatcher.locale.languageCode.toLowerCase();
+      final sysLang = WidgetsBinding
+          .instance
+          .platformDispatcher
+          .locale
+          .languageCode
+          .toLowerCase();
       final activeLang = sysLang == 'th' ? 'th' : 'en';
       currentLanguage.value = activeLang;
-      _safeUpdateLocale(activeLang == 'en' ? const Locale('en', 'US') : const Locale('th', 'TH'));
+      _safeUpdateLocale(
+        activeLang == 'en'
+            ? const Locale('en', 'US')
+            : const Locale('th', 'TH'),
+      );
     } catch (_) {
       currentLanguage.value = 'th';
       _safeUpdateLocale(const Locale('th', 'TH'));
@@ -1051,7 +1630,9 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
     if (langCode != 'en' && langCode != 'th') return;
     languageMode.value = langCode;
     currentLanguage.value = langCode;
-    _safeUpdateLocale(langCode == 'en' ? const Locale('en', 'US') : const Locale('th', 'TH'));
+    _safeUpdateLocale(
+      langCode == 'en' ? const Locale('en', 'US') : const Locale('th', 'TH'),
+    );
     _storageService.saveLanguage(langCode);
   }
 
@@ -1059,7 +1640,8 @@ class DashboardController extends GetxController with WidgetsBindingObserver {
     setLanguage(currentLanguage.value == 'en' ? 'th' : 'en');
   }
 
-  String get currentLanguageName => currentLanguage.value == 'en' ? 'English' : 'ภาษาไทย';
+  String get currentLanguageName =>
+      currentLanguage.value == 'en' ? 'English' : 'ภาษาไทย';
 
   void toggleSidebar() {
     isSidebarCollapsed.value = !isSidebarCollapsed.value;

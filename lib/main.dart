@@ -19,7 +19,6 @@ Locale resolveInitialLocale(String? savedLang) {
   if (savedLang == 'th') {
     return const Locale('th', 'TH');
   }
-  // Default to system locale
   try {
     final deviceLocale = WidgetsBinding.instance.platformDispatcher.locale;
     if (deviceLocale.languageCode == 'th') {
@@ -34,7 +33,6 @@ void main() async {
   await SecurityService().init();
   await BankSlipService().init();
 
-  // Pre-warm Prompt (Krungthai Smart Style) and Nothing Typography in background
   GoogleFonts.pendingFonts([
     GoogleFonts.prompt(fontWeight: FontWeight.w400),
     GoogleFonts.prompt(fontWeight: FontWeight.w500),
@@ -62,7 +60,7 @@ class MoneyTrackerApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
-      title: 'Money Tracker - FinTech 2026',
+      title: 'Money Tracker',
       debugShowCheckedModeBanner: false,
       translations: AppTranslations(),
       locale: _effectiveLocale,

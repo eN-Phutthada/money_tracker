@@ -56,14 +56,17 @@ class PinSettingsView extends GetView<SecurityController> {
                     if (confirmPin == firstPin) {
                       isSuccess = true;
                       HapticFeedback.mediumImpact();
-                      Future.delayed(const Duration(milliseconds: 300), () async {
-                        await controller.setPin(firstPin);
-                        Get.back();
-                        AppFeedback.showSuccess(
-                          title: 'pin_set_success_title'.tr,
-                          message: 'pin_set_success_desc'.tr,
-                        );
-                      });
+                      Future.delayed(
+                        const Duration(milliseconds: 300),
+                        () async {
+                          await controller.setPin(firstPin);
+                          Get.back();
+                          AppFeedback.showSuccess(
+                            title: 'pin_set_success_title'.tr,
+                            message: 'pin_set_success_desc'.tr,
+                          );
+                        },
+                      );
                     } else {
                       HapticFeedback.heavyImpact();
                       dialogError = 'pin_not_match'.tr;
@@ -103,13 +106,17 @@ class PinSettingsView extends GetView<SecurityController> {
                           children: [
                             NothingLedIndicator(
                               size: 6,
-                              color: isSuccess ? const Color(0xFF10B981) : AppColors.nothingRed,
+                              color: isSuccess
+                                  ? const Color(0xFF10B981)
+                                  : AppColors.nothingRed,
                             ),
                             const SizedBox(width: 8),
                             NothingDotText(
                               isSuccess
                                   ? 'AUTHENTICATED'
-                                  : (isConfirmStep ? 'CONFIRM // STEP 2' : 'NEW PIN // STEP 1'),
+                                  : (isConfirmStep
+                                        ? 'CONFIRM // STEP 2'
+                                        : 'NEW PIN // STEP 1'),
                               fontSize: 12,
                               letterSpacing: 1.2,
                             ),
@@ -132,8 +139,12 @@ class PinSettingsView extends GetView<SecurityController> {
                         fontSize: 12,
                         color: dialogError != null
                             ? AppColors.nothingRed
-                            : (isDark ? AppColors.nothingSubtext : const Color(0xFF777777)),
-                        fontWeight: dialogError != null ? FontWeight.w700 : FontWeight.w500,
+                            : (isDark
+                                  ? AppColors.nothingSubtext
+                                  : const Color(0xFF777777)),
+                        fontWeight: dialogError != null
+                            ? FontWeight.w700
+                            : FontWeight.w500,
                       ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
                       textAlign: TextAlign.center,
                     ),
@@ -141,14 +152,21 @@ class PinSettingsView extends GetView<SecurityController> {
 
                     // 4 LED Pips
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
                       decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF141414) : const Color(0xFFEEEEEE),
+                        color: isDark
+                            ? const Color(0xFF141414)
+                            : const Color(0xFFEEEEEE),
                         borderRadius: BorderRadius.circular(18),
                         border: Border.all(
                           color: dialogError != null
                               ? AppColors.nothingRed
-                              : (isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08)),
+                              : (isDark
+                                    ? AppColors.nothingBorder
+                                    : Colors.black.withValues(alpha: 0.08)),
                           width: 0.8,
                         ),
                       ),
@@ -159,8 +177,8 @@ class PinSettingsView extends GetView<SecurityController> {
                           final Color pipColor = isSuccess
                               ? const Color(0xFF10B981)
                               : (dialogError != null
-                                  ? AppColors.nothingRed
-                                  : (isDark ? Colors.white : Colors.black));
+                                    ? AppColors.nothingRed
+                                    : (isDark ? Colors.white : Colors.black));
 
                           return Container(
                             margin: const EdgeInsets.symmetric(horizontal: 8),
@@ -172,7 +190,9 @@ class PinSettingsView extends GetView<SecurityController> {
                               border: Border.all(
                                 color: isFilled
                                     ? pipColor
-                                    : (isDark ? Colors.white38 : Colors.black26),
+                                    : (isDark
+                                          ? Colors.white38
+                                          : Colors.black26),
                                 width: 1.0,
                               ),
                               boxShadow: isFilled
@@ -192,60 +212,78 @@ class PinSettingsView extends GetView<SecurityController> {
 
                     // Mini Industrial Numpad
                     Column(
-                      children: [
-                        ['1', '2', '3'],
-                        ['4', '5', '6'],
-                        ['7', '8', '9'],
-                        ['', '0', '⌫'],
-                      ].map((row) {
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: row.map((key) {
-                              if (key.isEmpty) {
-                                return const SizedBox(width: 58, height: 46);
-                              }
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 6),
-                                child: Material(
-                                  color: isDark ? const Color(0xFF141414) : const Color(0xFFF3F3F3),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    side: BorderSide(
-                                      color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
-                                      width: 0.8,
-                                    ),
-                                  ),
-                                  child: InkWell(
-                                    onTap: () => onKey(key),
-                                    borderRadius: BorderRadius.circular(12),
-                                    child: Container(
+                      children:
+                          [
+                            ['1', '2', '3'],
+                            ['4', '5', '6'],
+                            ['7', '8', '9'],
+                            ['', '0', '⌫'],
+                          ].map((row) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: row.map((key) {
+                                  if (key.isEmpty) {
+                                    return const SizedBox(
                                       width: 58,
                                       height: 46,
-                                      alignment: Alignment.center,
-                                      child: key == '⌫'
-                                          ? Icon(
-                                              Icons.backspace_outlined,
-                                              size: 18,
-                                              color: isDark ? Colors.white : Colors.black,
-                                            )
-                                          : Text(
-                                              key,
-                                              style: GoogleFonts.shareTechMono(
-                                                fontSize: 20,
-                                                fontWeight: FontWeight.w700,
-                                                color: isDark ? Colors.white : Colors.black,
-                                              ),
-                                            ),
+                                    );
+                                  }
+                                  return Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
                                     ),
-                                  ),
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                        );
-                      }).toList(),
+                                    child: Material(
+                                      color: isDark
+                                          ? const Color(0xFF141414)
+                                          : const Color(0xFFF3F3F3),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        side: BorderSide(
+                                          color: isDark
+                                              ? AppColors.nothingBorder
+                                              : Colors.black.withValues(
+                                                  alpha: 0.08,
+                                                ),
+                                          width: 0.8,
+                                        ),
+                                      ),
+                                      child: InkWell(
+                                        onTap: () => onKey(key),
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: Container(
+                                          width: 58,
+                                          height: 46,
+                                          alignment: Alignment.center,
+                                          child: key == '⌫'
+                                              ? Icon(
+                                                  Icons.backspace_outlined,
+                                                  size: 18,
+                                                  color: isDark
+                                                      ? Colors.white
+                                                      : Colors.black,
+                                                )
+                                              : Text(
+                                                  key,
+                                                  style:
+                                                      GoogleFonts.shareTechMono(
+                                                        fontSize: 20,
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                        color: isDark
+                                                            ? Colors.white
+                                                            : Colors.black,
+                                                      ),
+                                                ),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                            );
+                          }).toList(),
                     ),
                   ],
                 ),
@@ -257,7 +295,10 @@ class PinSettingsView extends GetView<SecurityController> {
     );
   }
 
-  Future<void> _handleToggleBiometrics(BuildContext context, bool enabled) async {
+  Future<void> _handleToggleBiometrics(
+    BuildContext context,
+    bool enabled,
+  ) async {
     HapticFeedback.selectionClick();
     if (enabled) {
       final availability = await controller.checkBiometricAvailability();
@@ -301,7 +342,9 @@ class PinSettingsView extends GetView<SecurityController> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF000000) : const Color(0xFFF7F7F7),
+      backgroundColor: isDark
+          ? const Color(0xFF000000)
+          : const Color(0xFFF7F7F7),
       appBar: ModernAppBar(
         title: 'pin_security'.tr,
         subtitle: 'pin_subtitle'.tr,
@@ -311,11 +354,15 @@ class PinSettingsView extends GetView<SecurityController> {
             label: isEnabled ? 'SECURED' : 'OFF',
             isDotMatrix: true,
             showDot: true,
-            dotColor: isEnabled ? const Color(0xFF10B981) : AppColors.nothingRed,
+            dotColor: isEnabled
+                ? const Color(0xFF10B981)
+                : AppColors.nothingRed,
             color: isEnabled
                 ? const Color(0xFF10B981).withValues(alpha: 0.12)
                 : AppColors.nothingRed.withValues(alpha: 0.12),
-            textColor: isEnabled ? const Color(0xFF10B981) : AppColors.nothingRed,
+            textColor: isEnabled
+                ? const Color(0xFF10B981)
+                : AppColors.nothingRed,
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             fontSize: 10,
           );
@@ -342,16 +389,22 @@ class PinSettingsView extends GetView<SecurityController> {
                           height: 52,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: isDark ? const Color(0xFF161616) : const Color(0xFFEEEEEE),
+                            color: isDark
+                                ? const Color(0xFF161616)
+                                : const Color(0xFFEEEEEE),
                             border: Border.all(
                               color: enabled
                                   ? const Color(0xFF10B981)
-                                  : (isDark ? AppColors.nothingBorder : Colors.black12),
+                                  : (isDark
+                                        ? AppColors.nothingBorder
+                                        : Colors.black12),
                               width: 1.2,
                             ),
                           ),
                           child: Icon(
-                            enabled ? Icons.verified_user_rounded : Icons.lock_open_rounded,
+                            enabled
+                                ? Icons.verified_user_rounded
+                                : Icons.lock_open_rounded,
                             color: enabled
                                 ? const Color(0xFF10B981)
                                 : (isDark ? Colors.white70 : Colors.black54),
@@ -371,29 +424,49 @@ class PinSettingsView extends GetView<SecurityController> {
                                               ? 'pin_security_active'.tr
                                               : 'pin_security_disabled'.tr)
                                           .toUpperCase(),
-                                      style: GoogleFonts.spaceGrotesk(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w800,
-                                        letterSpacing: 1.0,
-                                        color: isDark ? Colors.white : Colors.black,
-                                      ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+                                      style:
+                                          GoogleFonts.spaceGrotesk(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w800,
+                                            letterSpacing: 1.0,
+                                            color: isDark
+                                                ? Colors.white
+                                                : Colors.black,
+                                          ).copyWith(
+                                            fontFamilyFallback: [
+                                              'Prompt',
+                                              'sans-serif',
+                                            ],
+                                          ),
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
                                   const SizedBox(width: 8),
                                   NothingLedIndicator(
                                     size: 6,
-                                    color: enabled ? const Color(0xFF10B981) : AppColors.nothingRed,
+                                    color: enabled
+                                        ? const Color(0xFF10B981)
+                                        : AppColors.nothingRed,
                                   ),
                                 ],
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                enabled ? 'pin_active_desc'.tr : 'pin_disabled_desc'.tr,
-                                style: GoogleFonts.spaceGrotesk(
-                                  fontSize: 11.5,
-                                  color: isDark ? AppColors.nothingSubtext : const Color(0xFF777777),
-                                ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+                                enabled
+                                    ? 'pin_active_desc'.tr
+                                    : 'pin_disabled_desc'.tr,
+                                style:
+                                    GoogleFonts.spaceGrotesk(
+                                      fontSize: 11.5,
+                                      color: isDark
+                                          ? AppColors.nothingSubtext
+                                          : const Color(0xFF777777),
+                                    ).copyWith(
+                                      fontFamilyFallback: [
+                                        'Prompt',
+                                        'sans-serif',
+                                      ],
+                                    ),
                               ),
                             ],
                           ),
@@ -413,18 +486,26 @@ class PinSettingsView extends GetView<SecurityController> {
                         return SwitchListTile(
                           title: Text(
                             'lock_app_with_pin'.tr,
-                            style: GoogleFonts.spaceGrotesk(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: isDark ? Colors.white : Colors.black,
-                            ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+                            style:
+                                GoogleFonts.spaceGrotesk(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: isDark ? Colors.white : Colors.black,
+                                ).copyWith(
+                                  fontFamilyFallback: ['Prompt', 'sans-serif'],
+                                ),
                           ),
                           subtitle: Text(
                             'lock_app_with_pin_desc'.tr,
-                            style: GoogleFonts.spaceGrotesk(
-                              fontSize: 11,
-                              color: isDark ? AppColors.nothingSubtext : const Color(0xFF777777),
-                            ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+                            style:
+                                GoogleFonts.spaceGrotesk(
+                                  fontSize: 11,
+                                  color: isDark
+                                      ? AppColors.nothingSubtext
+                                      : const Color(0xFF777777),
+                                ).copyWith(
+                                  fontFamilyFallback: ['Prompt', 'sans-serif'],
+                                ),
                           ),
                           value: controller.isPinEnabled.value,
                           activeThumbColor: AppColors.nothingRed,
@@ -447,7 +528,9 @@ class PinSettingsView extends GetView<SecurityController> {
                           children: [
                             Divider(
                               height: 16,
-                              color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                              color: isDark
+                                  ? AppColors.nothingBorder
+                                  : Colors.black.withValues(alpha: 0.08),
                             ),
                             ListTile(
                               contentPadding: EdgeInsets.zero,
@@ -455,10 +538,14 @@ class PinSettingsView extends GetView<SecurityController> {
                                 width: 38,
                                 height: 38,
                                 decoration: BoxDecoration(
-                                  color: isDark ? const Color(0xFF161616) : const Color(0xFFEEEEEE),
+                                  color: isDark
+                                      ? const Color(0xFF161616)
+                                      : const Color(0xFFEEEEEE),
                                   borderRadius: BorderRadius.circular(10),
                                   border: Border.all(
-                                    color: isDark ? AppColors.nothingBorder : Colors.black12,
+                                    color: isDark
+                                        ? AppColors.nothingBorder
+                                        : Colors.black12,
                                     width: 0.8,
                                   ),
                                 ),
@@ -470,33 +557,56 @@ class PinSettingsView extends GetView<SecurityController> {
                               ),
                               title: Text(
                                 'change_pin'.tr,
-                                style: GoogleFonts.spaceGrotesk(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                  color: isDark ? Colors.white : Colors.black,
-                                ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+                                style:
+                                    GoogleFonts.spaceGrotesk(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                      color: isDark
+                                          ? Colors.white
+                                          : Colors.black,
+                                    ).copyWith(
+                                      fontFamilyFallback: [
+                                        'Prompt',
+                                        'sans-serif',
+                                      ],
+                                    ),
                               ),
                               subtitle: Text(
                                 'change_pin_desc'.tr,
-                                style: GoogleFonts.spaceGrotesk(
-                                  fontSize: 11,
-                                  color: isDark ? AppColors.nothingSubtext : const Color(0xFF777777),
-                                ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+                                style:
+                                    GoogleFonts.spaceGrotesk(
+                                      fontSize: 11,
+                                      color: isDark
+                                          ? AppColors.nothingSubtext
+                                          : const Color(0xFF777777),
+                                    ).copyWith(
+                                      fontFamilyFallback: [
+                                        'Prompt',
+                                        'sans-serif',
+                                      ],
+                                    ),
                               ),
                               trailing: Icon(
                                 Icons.arrow_forward_ios_rounded,
                                 size: 13,
-                                color: isDark ? AppColors.nothingSubtext : Colors.black45,
+                                color: isDark
+                                    ? AppColors.nothingSubtext
+                                    : Colors.black45,
                               ),
                               onTap: () => _showSetPinDialog(context),
                             ),
                             Divider(
                               height: 16,
-                              color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                              color: isDark
+                                  ? AppColors.nothingBorder
+                                  : Colors.black.withValues(alpha: 0.08),
                             ),
                             Obx(() {
-                              final availability = controller.biometricAvailability.value;
-                              final isNotAvailable = availability != null && !availability.isAvailable;
+                              final availability =
+                                  controller.biometricAvailability.value;
+                              final isNotAvailable =
+                                  availability != null &&
+                                  !availability.isAvailable;
 
                               return SwitchListTile(
                                 title: Row(
@@ -504,11 +614,19 @@ class PinSettingsView extends GetView<SecurityController> {
                                     Flexible(
                                       child: Text(
                                         'biometric_unlock_title'.tr,
-                                        style: GoogleFonts.spaceGrotesk(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w700,
-                                          color: isDark ? Colors.white : Colors.black,
-                                        ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+                                        style:
+                                            GoogleFonts.spaceGrotesk(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w700,
+                                              color: isDark
+                                                  ? Colors.white
+                                                  : Colors.black,
+                                            ).copyWith(
+                                              fontFamilyFallback: [
+                                                'Prompt',
+                                                'sans-serif',
+                                              ],
+                                            ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                       ),
@@ -516,11 +634,18 @@ class PinSettingsView extends GetView<SecurityController> {
                                     if (isNotAvailable) ...[
                                       const SizedBox(width: 8),
                                       NothingPill(
-                                        label: availability.status == BiometricAvailabilityStatus.notEnrolled
+                                        label:
+                                            availability.status ==
+                                                BiometricAvailabilityStatus
+                                                    .notEnrolled
                                             ? 'biometric_not_enrolled_badge'.tr
-                                            : 'biometric_not_supported_badge'.tr,
+                                            : 'biometric_not_supported_badge'
+                                                  .tr,
                                         color: AppColors.nothingRed,
-                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                          vertical: 2,
+                                        ),
                                         fontSize: 9,
                                       ),
                                     ],
@@ -530,16 +655,27 @@ class PinSettingsView extends GetView<SecurityController> {
                                   padding: const EdgeInsets.only(top: 2),
                                   child: Text(
                                     controller.biometricStatusSubtitle,
-                                    style: GoogleFonts.spaceGrotesk(
-                                      fontSize: 11,
-                                      color: isNotAvailable ? AppColors.nothingRed : (isDark ? AppColors.nothingSubtext : const Color(0xFF777777)),
-                                    ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+                                    style:
+                                        GoogleFonts.spaceGrotesk(
+                                          fontSize: 11,
+                                          color: isNotAvailable
+                                              ? AppColors.nothingRed
+                                              : (isDark
+                                                    ? AppColors.nothingSubtext
+                                                    : const Color(0xFF777777)),
+                                        ).copyWith(
+                                          fontFamilyFallback: [
+                                            'Prompt',
+                                            'sans-serif',
+                                          ],
+                                        ),
                                   ),
                                 ),
                                 value: controller.isBiometricsEnabled.value,
                                 activeThumbColor: AppColors.nothingRed,
                                 contentPadding: EdgeInsets.zero,
-                                onChanged: (val) => _handleToggleBiometrics(context, val),
+                                onChanged: (val) =>
+                                    _handleToggleBiometrics(context, val),
                               );
                             }),
                           ],
@@ -568,21 +704,35 @@ class PinSettingsView extends GetView<SecurityController> {
                           children: [
                             Text(
                               'hardware_security_title'.tr.toUpperCase(),
-                              style: GoogleFonts.spaceGrotesk(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.8,
-                                color: isDark ? Colors.white : Colors.black,
-                              ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+                              style:
+                                  GoogleFonts.spaceGrotesk(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.8,
+                                    color: isDark ? Colors.white : Colors.black,
+                                  ).copyWith(
+                                    fontFamilyFallback: [
+                                      'Prompt',
+                                      'sans-serif',
+                                    ],
+                                  ),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               'hardware_security_desc'.tr,
-                              style: GoogleFonts.spaceGrotesk(
-                                fontSize: 11,
-                                color: isDark ? AppColors.nothingSubtext : const Color(0xFF777777),
-                                height: 1.4,
-                              ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+                              style:
+                                  GoogleFonts.spaceGrotesk(
+                                    fontSize: 11,
+                                    color: isDark
+                                        ? AppColors.nothingSubtext
+                                        : const Color(0xFF777777),
+                                    height: 1.4,
+                                  ).copyWith(
+                                    fontFamilyFallback: [
+                                      'Prompt',
+                                      'sans-serif',
+                                    ],
+                                  ),
                             ),
                           ],
                         ),
@@ -598,7 +748,10 @@ class PinSettingsView extends GetView<SecurityController> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const NothingLedIndicator(size: 6, color: AppColors.nothingRed),
+                      const NothingLedIndicator(
+                        size: 6,
+                        color: AppColors.nothingRed,
+                      ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
@@ -606,21 +759,35 @@ class PinSettingsView extends GetView<SecurityController> {
                           children: [
                             Text(
                               'forgot_pin_faq_title'.tr.toUpperCase(),
-                              style: GoogleFonts.spaceGrotesk(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.8,
-                                color: isDark ? Colors.white : Colors.black,
-                              ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+                              style:
+                                  GoogleFonts.spaceGrotesk(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.8,
+                                    color: isDark ? Colors.white : Colors.black,
+                                  ).copyWith(
+                                    fontFamilyFallback: [
+                                      'Prompt',
+                                      'sans-serif',
+                                    ],
+                                  ),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               'forgot_pin_faq_desc'.tr,
-                              style: GoogleFonts.spaceGrotesk(
-                                fontSize: 11,
-                                color: isDark ? AppColors.nothingSubtext : const Color(0xFF777777),
-                                height: 1.4,
-                              ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
+                              style:
+                                  GoogleFonts.spaceGrotesk(
+                                    fontSize: 11,
+                                    color: isDark
+                                        ? AppColors.nothingSubtext
+                                        : const Color(0xFF777777),
+                                    height: 1.4,
+                                  ).copyWith(
+                                    fontFamilyFallback: [
+                                      'Prompt',
+                                      'sans-serif',
+                                    ],
+                                  ),
                             ),
                           ],
                         ),

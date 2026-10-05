@@ -1,24 +1,27 @@
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import '../../../data/models/budget_plan_model.dart';
+import '../../../data/models/scheduled_payment_model.dart';
+import '../../../data/models/transaction_model.dart';
 import '../../../widgets/app_feedback.dart';
 import '../../dashboard/controllers/dashboard_controller.dart';
+import '../../transactions/views/quick_add_bottom_sheet.dart';
 
-enum BudgetPresetType {
-  rule50_30_20,
-  rule60_20_20,
-  rule40_30_30,
-}
+enum BudgetPresetType { rule50_30_20, rule60_20_20, rule40_30_30 }
 
 /// GetX Controller สำหรับหน้าจอตั้งค่างบประมาณ
 class BudgetController extends GetxController {
-  final DashboardController dashboardController = Get.find<DashboardController>();
+  final DashboardController dashboardController =
+      Get.find<DashboardController>();
 
   late final RxDouble plannedIncome;
   late final RxDouble targetDailyAllowance;
   late final RxDouble targetMonthlySavings;
   late final RxDouble plannedFixedCosts;
+  late final RxDouble pendingSalary;
+  late final RxBool autoSyncFixedWithSchedules;
   final RxBool isSaving = false.obs;
   final RxBool isSaveSuccess = false.obs;
 
@@ -30,12 +33,29 @@ class BudgetController extends GetxController {
     targetDailyAllowance = plan.targetDailyAllowance.obs;
     targetMonthlySavings = plan.targetMonthlySavings.obs;
     plannedFixedCosts = plan.plannedFixedCosts.obs;
+    pendingSalary = plan.pendingSalary.obs;
+    autoSyncFixedWithSchedules = plan.autoSyncFixedWithSchedules.obs;
 
     // Auto-save changes immediately upon any parameter edit
     ever(plannedIncome, (_) => _autoSave());
     ever(targetDailyAllowance, (_) => _autoSave());
     ever(targetMonthlySavings, (_) => _autoSave());
     ever(plannedFixedCosts, (_) => _autoSave());
+    ever(pendingSalary, (_) => _autoSave());
+    ever(autoSyncFixedWithSchedules, (_) => _autoSave());
+
+    // Listen to changes in dashboard budget plan from other sources
+    ever(dashboardController.budgetPlan, (BudgetPlan updatedPlan) {
+      if ((plannedFixedCosts.value - updatedPlan.plannedFixedCosts).abs() >=
+          0.01) {
+        plannedFixedCosts.value = updatedPlan.plannedFixedCosts;
+      }
+      if (autoSyncFixedWithSchedules.value !=
+          updatedPlan.autoSyncFixedWithSchedules) {
+        autoSyncFixedWithSchedules.value =
+            updatedPlan.autoSyncFixedWithSchedules;
+      }
+    });
   }
 
   void _autoSave() {
@@ -44,6 +64,8 @@ class BudgetController extends GetxController {
       targetDailyAllowance: targetDailyAllowance.value,
       targetMonthlySavings: targetMonthlySavings.value,
       plannedFixedCosts: plannedFixedCosts.value,
+      pendingSalary: pendingSalary.value,
+      autoSyncFixedWithSchedules: autoSyncFixedWithSchedules.value,
     );
     dashboardController.updateBudgetPlan(newPlan);
   }
@@ -65,10 +87,17 @@ class BudgetController extends GetxController {
       targetMonthlySavings.value;
 
   // Percentage Ratios (relative to planned income)
-  double get fixedCostsRatio => plannedIncome.value > 0 ? (plannedFixedCosts.value / plannedIncome.value).clamp(0.0, 2.0) : 0.0;
-  double get variableCostsRatio => plannedIncome.value > 0 ? (plannedVariableBudget / plannedIncome.value).clamp(0.0, 2.0) : 0.0;
-  double get savingsRatio => plannedIncome.value > 0 ? (targetMonthlySavings.value / plannedIncome.value).clamp(0.0, 2.0) : 0.0;
-  double get totalCommittedRatio => fixedCostsRatio + variableCostsRatio + savingsRatio;
+  double get fixedCostsRatio => plannedIncome.value > 0
+      ? (plannedFixedCosts.value / plannedIncome.value).clamp(0.0, 2.0)
+      : 0.0;
+  double get variableCostsRatio => plannedIncome.value > 0
+      ? (plannedVariableBudget / plannedIncome.value).clamp(0.0, 2.0)
+      : 0.0;
+  double get savingsRatio => plannedIncome.value > 0
+      ? (targetMonthlySavings.value / plannedIncome.value).clamp(0.0, 2.0)
+      : 0.0;
+  double get totalCommittedRatio =>
+      fixedCostsRatio + variableCostsRatio + savingsRatio;
 
   String get healthStatusMessage {
     if (expectedEndingBalance < 0) {
@@ -165,9 +194,15 @@ class BudgetController extends GetxController {
     targetDailyAllowance.value = daily.clamp(50.0, 10000.0);
 
     if (Get.context != null) {
-      final currencyFmt = NumberFormat.currency(locale: 'th_TH', symbol: '฿', decimalDigits: 0);
+      final currencyFmt = NumberFormat.currency(
+        locale: 'th_TH',
+        symbol: '฿',
+        decimalDigits: 0,
+      );
       AppFeedback.showSuccess(
-        title: 'applied_template_success'.trParams({'template': templateName.tr}),
+        title: 'applied_template_success'.trParams({
+          'template': templateName.tr,
+        }),
         message: 'applied_template_desc'.trParams({
           'income': currencyFmt.format(income),
           'fixed': '${(fixedPct * 100).toInt()}',
@@ -179,19 +214,38 @@ class BudgetController extends GetxController {
   }
 
   // =========================================================================
-  // คำนวณโควตารายวันจาก เงินปัจจุบัน - เงินออมต่อเดือน - รายจ่ายคงที่ต่อเดือน
+  // คำนวณโควตารายวันจาก (เงินปัจจุบัน + เงินเดือนยังไม่ออก) - เงินออม - รายจ่ายคงที่
   // =========================================================================
 
   double get currentWalletBalance => dashboardController.totalCurrentBalance;
   int get remainingDaysInMonth => dashboardController.remainingDaysInMonth;
-  double get remainingMonthlyFixedCosts => dashboardController.remainingMonthlyFixedCosts;
+  double get remainingMonthlyFixedCosts =>
+      dashboardController.remainingMonthlyFixedCosts;
 
-  /// ยอดงบกินอยู่คงเหลือจริง = เงินปัจจุบัน - เงินออมต่อเดือนที่กำลังตั้งค่า - รายจ่ายคงที่ที่ยังค้างจ่าย
+  /// ยอดงบกินอยู่คงเหลือจริง = (เงินปัจจุบัน + เงินเดือนที่ยังไม่ออก) - เงินออมต่อเดือนที่กำลังตั้งค่า - รายจ่ายคงที่ที่ยังค้างจ่าย
   double get dynamicAvailableBudget {
-    final balance = currentWalletBalance;
+    final balance = currentWalletBalance + pendingSalary.value;
     final savings = targetMonthlySavings.value;
     final fixedCosts = remainingMonthlyFixedCosts;
     return balance - savings - fixedCosts;
+  }
+
+  void setPendingSalary(double value) {
+    pendingSalary.value = value.clamp(0.0, 10000000.0);
+  }
+
+  void usePlannedIncomeAsPendingSalary() {
+    try {
+      HapticFeedback.selectionClick();
+    } catch (_) {}
+    pendingSalary.value = plannedIncome.value;
+  }
+
+  void clearPendingSalary() {
+    try {
+      HapticFeedback.selectionClick();
+    } catch (_) {}
+    pendingSalary.value = 0.0;
   }
 
   /// โควตาต่อวันคำนวณจากยอดจริง
@@ -212,12 +266,80 @@ class BudgetController extends GetxController {
       HapticFeedback.mediumImpact();
     } catch (_) {}
     if (Get.context != null) {
-      final currencyFmt = NumberFormat.currency(locale: 'th_TH', symbol: '฿', decimalDigits: 0);
+      final currencyFmt = NumberFormat.currency(
+        locale: 'th_TH',
+        symbol: '฿',
+        decimalDigits: 0,
+      );
       AppFeedback.showSuccess(
         title: 'dynamic_calculator_title'.tr,
-        message: 'quota_applied_success'.trParams({'amount': currencyFmt.format(quota)}),
+        message: 'quota_applied_success'.trParams({
+          'amount': currencyFmt.format(quota),
+        }),
       );
     }
+  }
+
+  // =========================================================================
+  // Fixed Costs & Scheduled Commitments Synchronization Hub
+  // =========================================================================
+
+  double get totalMonthlyFixedScheduledCommitments =>
+      dashboardController.totalMonthlyFixedScheduledCommitments;
+
+  List<ScheduledPaymentItem> get activeFixedScheduledPayments =>
+      dashboardController.activeFixedScheduledPayments;
+
+  double get fixedCostsSyncVariance =>
+      dashboardController.fixedCostsSyncVariance;
+
+  bool get isFixedCostsInSync => dashboardController.isFixedCostsInSync;
+
+  double get unallocatedFixedBudget =>
+      (plannedFixedCosts.value - totalMonthlyFixedScheduledCommitments)
+          .clamp(0.0, 10000000.0);
+
+  double get overAllocatedFixedBudget =>
+      (totalMonthlyFixedScheduledCommitments - plannedFixedCosts.value)
+          .clamp(0.0, 10000000.0);
+
+  void syncFromScheduledPayments() {
+    try {
+      HapticFeedback.mediumImpact();
+    } catch (_) {}
+    dashboardController.syncPlannedFixedCostsWithSchedules();
+    plannedFixedCosts.value =
+        dashboardController.budgetPlan.value.plannedFixedCosts;
+  }
+
+  void toggleAutoSync(bool val) {
+    try {
+      HapticFeedback.selectionClick();
+    } catch (_) {}
+    autoSyncFixedWithSchedules.value = val;
+    dashboardController.toggleAutoSyncFixedCosts(val);
+    if (val) {
+      plannedFixedCosts.value =
+          dashboardController.totalMonthlyFixedScheduledCommitments;
+    }
+  }
+
+  void openCreateFixedScheduleWithAmount(
+    BuildContext context, [
+    double? amount,
+    String? category,
+  ]) {
+    try {
+      HapticFeedback.selectionClick();
+    } catch (_) {}
+    QuickAddBottomSheet.show(
+      context,
+      initialIsScheduled: true,
+      initialAmount: amount ??
+          (unallocatedFixedBudget > 0 ? unallocatedFixedBudget : null),
+      initialCategory: category ?? 'สาธารณูปโภค',
+      initialCostNature: CostNature.fixed,
+    );
   }
 
   void save() {
@@ -226,6 +348,8 @@ class BudgetController extends GetxController {
       targetDailyAllowance: targetDailyAllowance.value,
       targetMonthlySavings: targetMonthlySavings.value,
       plannedFixedCosts: plannedFixedCosts.value,
+      pendingSalary: pendingSalary.value,
+      autoSyncFixedWithSchedules: autoSyncFixedWithSchedules.value,
     );
 
     dashboardController.updateBudgetPlan(newPlan);

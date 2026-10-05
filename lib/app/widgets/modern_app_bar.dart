@@ -71,7 +71,9 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
             side: BorderSide(
-              color: isDark ? Colors.white.withValues(alpha: 0.10) : Colors.black.withValues(alpha: 0.08),
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.10)
+                  : Colors.black.withValues(alpha: 0.08),
               width: 0.8,
             ),
           ),
@@ -122,7 +124,10 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
                       style: NothingTypography.grotesk(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
-                        letterSpacing: NothingTypography.safeSpacing(title, 0.8),
+                        letterSpacing: NothingTypography.safeSpacing(
+                          title,
+                          0.8,
+                        ),
                         color: isDark ? Colors.white : Colors.black,
                       ),
                       maxLines: 1,
@@ -136,7 +141,9 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
                 const SizedBox(width: 8),
                 NothingPill(
                   label: badgeText!,
-                  color: (badgeColor ?? AppColors.nothingRed).withValues(alpha: isDark ? 0.18 : 0.12),
+                  color: (badgeColor ?? AppColors.nothingRed).withValues(
+                    alpha: isDark ? 0.18 : 0.12,
+                  ),
                   textColor: badgeColor ?? AppColors.nothingRed,
                   showDot: true,
                   dotColor: badgeColor ?? AppColors.nothingRed,
@@ -158,7 +165,9 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
               subtitle!,
               style: NothingTypography.grotesk(
                 fontSize: 10.5,
-                color: isDark ? const Color(0xFFAAAAAA) : const Color(0xFF666666),
+                color: isDark
+                    ? const Color(0xFFAAAAAA)
+                    : const Color(0xFF666666),
                 fontWeight: FontWeight.w500,
                 letterSpacing: 0.1,
               ),
@@ -222,7 +231,9 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
             if (showBottomBorder)
               Container(
                 height: 0.8,
-                color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.07),
+                color: isDark
+                    ? AppColors.nothingBorder
+                    : Colors.black.withValues(alpha: 0.07),
               ),
           ],
         ),
@@ -243,7 +254,8 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
       builder: (context) {
         final isMobile = MediaQuery.sizeOf(context).width < 500;
         final resolvedLabel = isMobile
-            ? (compactLabel ?? (label.contains(' ') ? label.split(' ').first : label))
+            ? (compactLabel ??
+                  (label.contains(' ') ? label.split(' ').first : label))
             : label;
 
         return Padding(
@@ -280,7 +292,10 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
-                        letterSpacing: NothingTypography.safeSpacing(resolvedLabel, 0.6),
+                        letterSpacing: NothingTypography.safeSpacing(
+                          resolvedLabel,
+                          0.6,
+                        ),
                       ),
                     ),
                   ],
@@ -306,12 +321,15 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
     final btn = Padding(
       padding: const EdgeInsets.only(right: 8),
       child: Material(
-        color: backgroundColor ??
+        color:
+            backgroundColor ??
             (isDark ? const Color(0xFF141414) : const Color(0xFFF4F4F4)),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
           side: BorderSide(
-            color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+            color: isDark
+                ? AppColors.nothingBorder
+                : Colors.black.withValues(alpha: 0.08),
             width: 0.8,
           ),
         ),
@@ -349,7 +367,8 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
   }) {
     return Obx(() {
       final hasSec = Get.isRegistered<SecurityController>();
-      final isPinOn = hasSec && Get.find<SecurityController>().isPinEnabled.value;
+      final isPinOn =
+          hasSec && Get.find<SecurityController>().isPinEnabled.value;
       final statusColor = isPinOn
           ? const Color(0xFF10B981)
           : (isDark ? AppColors.nothingRedLight : AppColors.nothingRed);
@@ -361,7 +380,8 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              onTap: onTap ??
+              onTap:
+                  onTap ??
                   () {
                     HapticFeedback.selectionClick();
                     if (Get.currentRoute != Routes.PIN_SETTINGS) {
@@ -377,7 +397,9 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
                       : const Color(0xFFF4F4F4),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                    color: isDark
+                        ? AppColors.nothingBorder
+                        : Colors.black.withValues(alpha: 0.08),
                     width: 0.8,
                   ),
                 ),
@@ -424,8 +446,8 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
       if (!hasController) return const SizedBox.shrink();
       final controller = Get.find<DashboardController>();
       final mode = controller.themeMode.value;
-      final currentlyDark = (mode == ThemeMode.dark) ||
-          (mode == ThemeMode.system && isDark);
+      final currentlyDark =
+          (mode == ThemeMode.dark) || (mode == ThemeMode.system && isDark);
 
       final IconData themeIcon = currentlyDark
           ? Icons.light_mode_rounded

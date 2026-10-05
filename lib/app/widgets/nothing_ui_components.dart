@@ -14,7 +14,9 @@ import '../theme/app_colors.dart';
 class NothingTypography {
   /// คืนค่า List ของ Font Family Fallback สำหรับภาษาไทยสไตล์ Krungthai Smart (Prompt โดย Cadson Demak)
   static List<String> thaiFallback([FontWeight? weight]) {
-    final promptStyle = GoogleFonts.prompt(fontWeight: weight ?? FontWeight.w400);
+    final promptStyle = GoogleFonts.prompt(
+      fontWeight: weight ?? FontWeight.w400,
+    );
     return [
       if (promptStyle.fontFamily != null) promptStyle.fontFamily!,
       'Prompt',
@@ -74,9 +76,7 @@ class NothingTypography {
       height: height,
       decoration: decoration,
       fontStyle: fontStyle,
-    ).copyWith(
-      fontFamilyFallback: thaiFallback(fontWeight),
-    );
+    ).copyWith(fontFamilyFallback: thaiFallback(fontWeight));
   }
 
   /// ฟอนต์ Share Tech Mono สำหรับตัวเลข, จำนวนเงิน, สถิติ, วันที่เวลา, มาตรวัด
@@ -96,9 +96,7 @@ class NothingTypography {
       letterSpacing: letterSpacing,
       height: height,
       fontStyle: fontStyle,
-    ).copyWith(
-      fontFamilyFallback: thaiFallback(fontWeight),
-    );
+    ).copyWith(fontFamilyFallback: thaiFallback(fontWeight));
   }
 }
 
@@ -132,30 +130,34 @@ class NothingDotText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final defaultColor = isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
+    final defaultColor = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.textPrimary;
     final effectiveSpacing = NothingTypography.safeSpacing(text, letterSpacing);
     final isThaiText = NothingTypography.hasThai(text);
 
-    final baseStyle = style ?? (isMono
-        ? NothingTypography.mono(
-            fontSize: fontSize,
-            fontWeight: fontWeight,
-            color: color ?? defaultColor,
-            letterSpacing: effectiveSpacing,
-          )
-        : (isThaiText
-            ? NothingTypography.prompt(
+    final baseStyle =
+        style ??
+        (isMono
+            ? NothingTypography.mono(
                 fontSize: fontSize,
                 fontWeight: fontWeight,
                 color: color ?? defaultColor,
                 letterSpacing: effectiveSpacing,
               )
-            : NothingTypography.grotesk(
-                fontSize: fontSize,
-                fontWeight: fontWeight,
-                color: color ?? defaultColor,
-                letterSpacing: effectiveSpacing,
-              )));
+            : (isThaiText
+                  ? NothingTypography.prompt(
+                      fontSize: fontSize,
+                      fontWeight: fontWeight,
+                      color: color ?? defaultColor,
+                      letterSpacing: effectiveSpacing,
+                    )
+                  : NothingTypography.grotesk(
+                      fontSize: fontSize,
+                      fontWeight: fontWeight,
+                      color: color ?? defaultColor,
+                      letterSpacing: effectiveSpacing,
+                    )));
 
     return Text(
       text,
@@ -235,10 +237,7 @@ class NothingCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(borderRadius),
         border: isGlass
             ? null
-            : Border.all(
-                color: borderColor ?? defaultBorder,
-                width: 1.0,
-              ),
+            : Border.all(color: borderColor ?? defaultBorder, width: 1.0),
       ),
       child: child,
     );
@@ -287,7 +286,9 @@ class NothingCard extends StatelessWidget {
         ),
       );
 
-      final adaptiveTextColor = isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
+      final adaptiveTextColor = isDark
+          ? AppColors.darkTextPrimary
+          : AppColors.textPrimary;
 
       return Container(
         decoration: BoxDecoration(
@@ -320,7 +321,8 @@ class NothingCard extends StatelessWidget {
                       ],
               ),
               border: Border.all(
-                color: borderColor ??
+                color:
+                    borderColor ??
                     (isDark
                         ? Colors.white.withValues(alpha: 0.14)
                         : Colors.black.withValues(alpha: 0.10)),
@@ -397,8 +399,8 @@ class NothingSegmentedBar extends StatelessWidget {
         : Colors.black.withValues(alpha: 0.08);
 
     final int count = totalSegments > 0 ? totalSegments : 16;
-    final int filled = filledSegments ??
-        ((progress ?? 0.0).clamp(0.0, 1.0) * count).round();
+    final int filled =
+        filledSegments ?? ((progress ?? 0.0).clamp(0.0, 1.0) * count).round();
 
     return Row(
       children: List.generate(count, (index) {
@@ -485,21 +487,29 @@ class NothingPill extends StatelessWidget {
     final Color bg = isSelected
         ? (effectiveAccent ?? (isDark ? Colors.white : Colors.black))
         : (effectiveAccent != null
-            ? effectiveAccent.withValues(alpha: isDark ? 0.16 : 0.10)
-            : (isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary));
+              ? effectiveAccent.withValues(alpha: isDark ? 0.16 : 0.10)
+              : (isDark
+                    ? AppColors.darkSurfaceSecondary
+                    : AppColors.surfaceSecondary));
 
-    final Color fg = textColor ??
+    final Color fg =
+        textColor ??
         (isSelected
             ? (effectiveAccent != null
-                ? (effectiveAccent.computeLuminance() > 0.5 ? Colors.black : Colors.white)
-                : (isDark ? Colors.black : Colors.white))
-            : (effectiveAccent ?? (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary)));
+                  ? (effectiveAccent.computeLuminance() > 0.5
+                        ? Colors.black
+                        : Colors.white)
+                  : (isDark ? Colors.black : Colors.white))
+            : (effectiveAccent ??
+                  (isDark
+                      ? AppColors.darkTextPrimary
+                      : AppColors.textPrimary)));
 
     final Color border = isSelected
         ? (effectiveAccent ?? (isDark ? Colors.white : Colors.black))
         : (effectiveAccent != null
-            ? effectiveAccent.withValues(alpha: isDark ? 0.40 : 0.30)
-            : (isDark ? AppColors.darkBorder : AppColors.border));
+              ? effectiveAccent.withValues(alpha: isDark ? 0.40 : 0.30)
+              : (isDark ? AppColors.darkBorder : AppColors.border));
 
     return Material(
       color: bg,
@@ -519,10 +529,13 @@ class NothingPill extends StatelessWidget {
               if (showDot) ...[
                 Builder(
                   builder: (context) {
-                    final activeDot = dotColor ??
+                    final activeDot =
+                        dotColor ??
                         (isSelected
                             ? Colors.white
-                            : (isDark ? AppColors.nothingRedLight : AppColors.nothingRed));
+                            : (isDark
+                                  ? AppColors.nothingRedLight
+                                  : AppColors.nothingRed));
                     return Container(
                       width: 5,
                       height: 5,
@@ -553,13 +566,19 @@ class NothingPill extends StatelessWidget {
                           fontSize: fontSize ?? 12,
                           fontWeight: FontWeight.w700,
                           color: fg,
-                          letterSpacing: NothingTypography.safeSpacing(label, 0.6),
+                          letterSpacing: NothingTypography.safeSpacing(
+                            label,
+                            0.6,
+                          ),
                         )
                       : NothingTypography.grotesk(
                           fontSize: fontSize ?? 12,
                           fontWeight: FontWeight.w700,
                           color: fg,
-                          letterSpacing: NothingTypography.safeSpacing(label, 0.3),
+                          letterSpacing: NothingTypography.safeSpacing(
+                            label,
+                            0.3,
+                          ),
                         ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -603,7 +622,9 @@ class NothingSectionHeader extends StatelessWidget {
               fontSize: 11,
               fontWeight: FontWeight.w700,
               letterSpacing: NothingTypography.safeSpacing(title, 1.8),
-              color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+              color: isDark
+                  ? AppColors.darkTextSecondary
+                  : AppColors.textSecondary,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -620,10 +641,7 @@ class _NothingDotGridPainter extends CustomPainter {
   final Color dotColor;
   final double spacing;
 
-  _NothingDotGridPainter({
-    required this.dotColor,
-    required this.spacing,
-  });
+  _NothingDotGridPainter({required this.dotColor, required this.spacing});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -671,7 +689,9 @@ class NothingAppLogo extends StatelessWidget {
         borderRadius: BorderRadius.circular(radius),
         border: showBorder
             ? Border.all(
-                color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.15),
+                color: isDark
+                    ? AppColors.nothingBorder
+                    : Colors.black.withValues(alpha: 0.15),
                 width: 0.8,
               )
             : null,
@@ -688,4 +708,3 @@ class NothingAppLogo extends StatelessWidget {
     );
   }
 }
-

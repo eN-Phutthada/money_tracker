@@ -63,7 +63,9 @@ class DashboardHeader extends GetView<DashboardController> {
                     width: 38,
                     height: 38,
                     decoration: BoxDecoration(
-                      color: isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary,
+                      color: isDark
+                          ? AppColors.darkSurfaceSecondary
+                          : AppColors.surfaceSecondary,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: isDark ? AppColors.darkBorder : AppColors.border,
@@ -86,8 +88,13 @@ class DashboardHeader extends GetView<DashboardController> {
                           style: NothingTypography.grotesk(
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
-                            letterSpacing: NothingTypography.safeSpacing('select_period'.tr, 1.2),
-                            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                            letterSpacing: NothingTypography.safeSpacing(
+                              'select_period'.tr,
+                              1.2,
+                            ),
+                            color: isDark
+                                ? AppColors.darkTextPrimary
+                                : AppColors.textPrimary,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -97,7 +104,9 @@ class DashboardHeader extends GetView<DashboardController> {
                           style: NothingTypography.grotesk(
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
-                            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                            color: isDark
+                                ? AppColors.darkTextSecondary
+                                : AppColors.textSecondary,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -106,7 +115,9 @@ class DashboardHeader extends GetView<DashboardController> {
                     ),
                   ),
                   Material(
-                    color: isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary,
+                    color: isDark
+                        ? AppColors.darkSurfaceSecondary
+                        : AppColors.surfaceSecondary,
                     borderRadius: BorderRadius.circular(12),
                     child: InkWell(
                       onTap: () {
@@ -119,14 +130,18 @@ class DashboardHeader extends GetView<DashboardController> {
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: isDark ? AppColors.darkBorder : AppColors.border,
+                            color: isDark
+                                ? AppColors.darkBorder
+                                : AppColors.border,
                             width: 0.8,
                           ),
                         ),
                         child: Icon(
                           Icons.close_rounded,
                           size: 18,
-                          color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                          color: isDark
+                              ? AppColors.darkTextPrimary
+                              : AppColors.textPrimary,
                         ),
                       ),
                     ),
@@ -139,9 +154,14 @@ class DashboardHeader extends GetView<DashboardController> {
               Obx(() {
                 final year = rxYear.value;
                 return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary,
+                    color: isDark
+                        ? AppColors.darkSurfaceSecondary
+                        : AppColors.surfaceSecondary,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: isDark ? AppColors.darkBorder : AppColors.border,
@@ -157,9 +177,14 @@ class DashboardHeader extends GetView<DashboardController> {
                           HapticFeedback.selectionClick();
                           rxYear.value--;
                         },
-                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                        color: isDark
+                            ? AppColors.darkTextPrimary
+                            : AppColors.textPrimary,
                         padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                        constraints: const BoxConstraints(
+                          minWidth: 32,
+                          minHeight: 32,
+                        ),
                       ),
                       Text(
                         '${year + 543} ($year)',
@@ -167,7 +192,9 @@ class DashboardHeader extends GetView<DashboardController> {
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
                           letterSpacing: 1.0,
-                          color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                          color: isDark
+                              ? AppColors.darkTextPrimary
+                              : AppColors.textPrimary,
                         ),
                       ),
                       IconButton(
@@ -176,9 +203,14 @@ class DashboardHeader extends GetView<DashboardController> {
                           HapticFeedback.selectionClick();
                           rxYear.value++;
                         },
-                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                        color: isDark
+                            ? AppColors.darkTextPrimary
+                            : AppColors.textPrimary,
                         padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                        constraints: const BoxConstraints(
+                          minWidth: 32,
+                          minHeight: 32,
+                        ),
                       ),
                     ],
                   ),
@@ -203,20 +235,26 @@ class DashboardHeader extends GetView<DashboardController> {
                   itemCount: 12,
                   itemBuilder: (context, index) {
                     final monthIndex = index + 1;
-                    final isSelected = selected.year == year && selected.month == monthIndex;
-                    final isCurrentMonth = now.year == year && now.month == monthIndex;
+                    final isSelected =
+                        selected.year == year && selected.month == monthIndex;
+                    final isCurrentMonth =
+                        now.year == year && now.month == monthIndex;
 
                     final monthName = 'month_short_$monthIndex'.tr;
 
                     return Material(
                       color: isSelected
                           ? (isDark ? Colors.white : Colors.black)
-                          : (isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary),
+                          : (isDark
+                                ? AppColors.darkSurfaceSecondary
+                                : AppColors.surfaceSecondary),
                       borderRadius: BorderRadius.circular(14),
                       child: InkWell(
                         onTap: () {
                           HapticFeedback.selectionClick();
-                          controller.setSelectedDate(DateTime(year, monthIndex, 1));
+                          controller.setSelectedDate(
+                            DateTime(year, monthIndex, 1),
+                          );
                           Navigator.of(ctx).pop();
                         },
                         borderRadius: BorderRadius.circular(14),
@@ -227,8 +265,10 @@ class DashboardHeader extends GetView<DashboardController> {
                               color: isSelected
                                   ? (isDark ? Colors.white : Colors.black)
                                   : (isCurrentMonth
-                                      ? AppColors.nothingRed
-                                      : (isDark ? AppColors.darkBorder : AppColors.border)),
+                                        ? AppColors.nothingRed
+                                        : (isDark
+                                              ? AppColors.darkBorder
+                                              : AppColors.border)),
                               width: isCurrentMonth || isSelected ? 1.2 : 0.8,
                             ),
                           ),
@@ -237,17 +277,24 @@ class DashboardHeader extends GetView<DashboardController> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               if (isCurrentMonth) ...[
-                                const NothingLedIndicator(size: 4.5, color: AppColors.nothingRed),
+                                const NothingLedIndicator(
+                                  size: 4.5,
+                                  color: AppColors.nothingRed,
+                                ),
                                 const SizedBox(width: 5),
                               ],
                               Text(
                                 monthName,
                                 style: NothingTypography.grotesk(
                                   fontSize: 12,
-                                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w800
+                                      : FontWeight.w600,
                                   color: isSelected
                                       ? (isDark ? Colors.black : Colors.white)
-                                      : (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
+                                      : (isDark
+                                            ? AppColors.darkTextPrimary
+                                            : AppColors.textPrimary),
                                 ),
                               ),
                             ],
@@ -262,7 +309,9 @@ class DashboardHeader extends GetView<DashboardController> {
 
               // 5. Jump to Current Month Button
               Material(
-                color: isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary,
+                color: isDark
+                    ? AppColors.darkSurfaceSecondary
+                    : AppColors.surfaceSecondary,
                 borderRadius: BorderRadius.circular(14),
                 child: InkWell(
                   onTap: () {
@@ -284,15 +333,23 @@ class DashboardHeader extends GetView<DashboardController> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const NothingLedIndicator(size: 6, color: AppColors.nothingRed),
+                        const NothingLedIndicator(
+                          size: 6,
+                          color: AppColors.nothingRed,
+                        ),
                         const SizedBox(width: 8),
                         Text(
                           'jump_to_current_month'.tr.toUpperCase(),
                           style: NothingTypography.grotesk(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            letterSpacing: NothingTypography.safeSpacing('jump_to_current_month'.tr, 1.0),
-                            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                            letterSpacing: NothingTypography.safeSpacing(
+                              'jump_to_current_month'.tr,
+                              1.0,
+                            ),
+                            color: isDark
+                                ? AppColors.darkTextPrimary
+                                : AppColors.textPrimary,
                           ),
                         ),
                       ],
@@ -443,7 +500,9 @@ class DashboardHeader extends GetView<DashboardController> {
             // Left Navigator Button
             if (!isAllTime) ...[
               Material(
-                color: isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary,
+                color: isDark
+                    ? AppColors.darkSurfaceSecondary
+                    : AppColors.surfaceSecondary,
                 borderRadius: BorderRadius.circular(12),
                 child: InkWell(
                   onTap: () {
@@ -464,7 +523,9 @@ class DashboardHeader extends GetView<DashboardController> {
                     child: Icon(
                       Icons.chevron_left_rounded,
                       size: 20,
-                      color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                      color: isDark
+                          ? AppColors.darkTextPrimary
+                          : AppColors.textPrimary,
                     ),
                   ),
                 ),
@@ -479,10 +540,15 @@ class DashboardHeader extends GetView<DashboardController> {
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: isMonthly ? () => _showMonthPickerSheet(context) : null,
+                  onTap: isMonthly
+                      ? () => _showMonthPickerSheet(context)
+                      : null,
                   borderRadius: BorderRadius.circular(12),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 4,
+                    ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -490,10 +556,14 @@ class DashboardHeader extends GetView<DashboardController> {
                           width: 28,
                           height: 28,
                           decoration: BoxDecoration(
-                            color: isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary,
+                            color: isDark
+                                ? AppColors.darkSurfaceSecondary
+                                : AppColors.surfaceSecondary,
                             borderRadius: BorderRadius.circular(9),
                             border: Border.all(
-                              color: isDark ? AppColors.darkBorder : AppColors.border,
+                              color: isDark
+                                  ? AppColors.darkBorder
+                                  : AppColors.border,
                               width: 0.8,
                             ),
                           ),
@@ -501,8 +571,8 @@ class DashboardHeader extends GetView<DashboardController> {
                             isMonthly
                                 ? Icons.calendar_month_outlined
                                 : (period == TimeFilterPeriod.yearly
-                                    ? Icons.event_note_outlined
-                                    : Icons.all_inclusive_rounded),
+                                      ? Icons.event_note_outlined
+                                      : Icons.all_inclusive_rounded),
                             color: isDark ? Colors.white : Colors.black,
                             size: 15,
                           ),
@@ -521,8 +591,14 @@ class DashboardHeader extends GetView<DashboardController> {
                                   style: NothingTypography.grotesk(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w700,
-                                    letterSpacing: NothingTypography.safeSpacing(controller.formattedPeriodTitle, 1.0),
-                                    color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                                    letterSpacing:
+                                        NothingTypography.safeSpacing(
+                                          controller.formattedPeriodTitle,
+                                          1.0,
+                                        ),
+                                    color: isDark
+                                        ? AppColors.darkTextPrimary
+                                        : AppColors.textPrimary,
                                   ),
                                 ),
                                 if (isMonthly) ...[
@@ -530,7 +606,9 @@ class DashboardHeader extends GetView<DashboardController> {
                                   Icon(
                                     Icons.keyboard_arrow_down_rounded,
                                     size: 16,
-                                    color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                                    color: isDark
+                                        ? AppColors.darkTextSecondary
+                                        : AppColors.textSecondary,
                                   ),
                                 ],
                               ],
@@ -549,7 +627,9 @@ class DashboardHeader extends GetView<DashboardController> {
               if (!isCurrent) ...[
                 // Jump to Current Month/Year Pill
                 Material(
-                  color: isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary,
+                  color: isDark
+                      ? AppColors.darkSurfaceSecondary
+                      : AppColors.surfaceSecondary,
                   borderRadius: BorderRadius.circular(10),
                   child: InkWell(
                     onTap: () {
@@ -558,7 +638,10 @@ class DashboardHeader extends GetView<DashboardController> {
                     },
                     borderRadius: BorderRadius.circular(10),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 5,
+                      ),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
@@ -569,16 +652,23 @@ class DashboardHeader extends GetView<DashboardController> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const NothingLedIndicator(size: 4.5, color: AppColors.nothingRed),
+                          const NothingLedIndicator(
+                            size: 4.5,
+                            color: AppColors.nothingRed,
+                          ),
                           const SizedBox(width: 4),
                           FittedBox(
                             fit: BoxFit.scaleDown,
                             child: Text(
-                              isMonthly ? 'current_month'.tr : 'current_year'.tr,
+                              isMonthly
+                                  ? 'current_month'.tr
+                                  : 'current_year'.tr,
                               style: NothingTypography.grotesk(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700,
-                                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                                color: isDark
+                                    ? AppColors.darkTextPrimary
+                                    : AppColors.textPrimary,
                               ),
                             ),
                           ),
@@ -591,9 +681,14 @@ class DashboardHeader extends GetView<DashboardController> {
               ] else ...[
                 // Active Period LED Dot Indicator
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary,
+                    color: isDark
+                        ? AppColors.darkSurfaceSecondary
+                        : AppColors.surfaceSecondary,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
                       color: isDark ? AppColors.darkBorder : AppColors.border,
@@ -603,15 +698,23 @@ class DashboardHeader extends GetView<DashboardController> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const NothingLedIndicator(size: 4.5, color: AppColors.nothingRed),
+                      const NothingLedIndicator(
+                        size: 4.5,
+                        color: AppColors.nothingRed,
+                      ),
                       const SizedBox(width: 5),
                       Text(
                         'active_period'.tr.toUpperCase(),
                         style: NothingTypography.grotesk(
                           fontSize: 9,
                           fontWeight: FontWeight.w700,
-                          letterSpacing: NothingTypography.safeSpacing('active_period'.tr, 0.8),
-                          color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                          letterSpacing: NothingTypography.safeSpacing(
+                            'active_period'.tr,
+                            0.8,
+                          ),
+                          color: isDark
+                              ? AppColors.darkTextPrimary
+                              : AppColors.textPrimary,
                         ),
                       ),
                     ],
@@ -622,7 +725,9 @@ class DashboardHeader extends GetView<DashboardController> {
 
               // Right Navigator Button
               Material(
-                color: isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary,
+                color: isDark
+                    ? AppColors.darkSurfaceSecondary
+                    : AppColors.surfaceSecondary,
                 borderRadius: BorderRadius.circular(12),
                 child: InkWell(
                   onTap: () {
@@ -643,7 +748,9 @@ class DashboardHeader extends GetView<DashboardController> {
                     child: Icon(
                       Icons.chevron_right_rounded,
                       size: 20,
-                      color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                      color: isDark
+                          ? AppColors.darkTextPrimary
+                          : AppColors.textPrimary,
                     ),
                   ),
                 ),
@@ -653,7 +760,9 @@ class DashboardHeader extends GetView<DashboardController> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                 decoration: BoxDecoration(
-                  color: isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary,
+                  color: isDark
+                      ? AppColors.darkSurfaceSecondary
+                      : AppColors.surfaceSecondary,
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
                     color: isDark ? AppColors.darkBorder : AppColors.border,
@@ -663,14 +772,21 @@ class DashboardHeader extends GetView<DashboardController> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const NothingLedIndicator(size: 4.5, color: AppColors.nothingRed),
+                    const NothingLedIndicator(
+                      size: 4.5,
+                      color: AppColors.nothingRed,
+                    ),
                     const SizedBox(width: 4),
                     Text(
-                      'items_count_badge'.trParams({'count': '${controller.transactions.length}'}),
+                      'items_count_badge'.trParams({
+                        'count': '${controller.transactions.length}',
+                      }),
                       style: NothingTypography.grotesk(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
-                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                        color: isDark
+                            ? AppColors.darkTextPrimary
+                            : AppColors.textPrimary,
                       ),
                     ),
                   ],

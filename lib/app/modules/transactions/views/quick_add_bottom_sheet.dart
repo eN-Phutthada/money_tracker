@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import '../../../data/models/scheduled_payment_model.dart';
 import '../../../data/models/transaction_model.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_popup_decorations.dart';
@@ -14,10 +15,31 @@ import 'bank_slip_sheet.dart';
 /// Quick Add & Edit BottomSheet พร้อม Ergonomic Numpad และระบบเลือกวันที่ (FinTech 2026 Edition)
 class QuickAddBottomSheet extends StatefulWidget {
   final TransactionItem? existingItem;
+  final ScheduledPaymentItem? existingScheduledItem;
+  final bool initialIsScheduled;
+  final double? initialAmount;
+  final String? initialCategory;
+  final CostNature? initialCostNature;
 
-  const QuickAddBottomSheet({super.key, this.existingItem});
+  const QuickAddBottomSheet({
+    super.key,
+    this.existingItem,
+    this.existingScheduledItem,
+    this.initialIsScheduled = false,
+    this.initialAmount,
+    this.initialCategory,
+    this.initialCostNature,
+  });
 
-  static void show(BuildContext context, {TransactionItem? existingItem}) {
+  static void show(
+    BuildContext context, {
+    TransactionItem? existingItem,
+    ScheduledPaymentItem? existingScheduledItem,
+    bool initialIsScheduled = false,
+    double? initialAmount,
+    String? initialCategory,
+    CostNature? initialCostNature,
+  }) {
     final isDesktop = MediaQuery.sizeOf(context).width >= 800;
 
     if (isDesktop) {
@@ -25,12 +47,26 @@ class QuickAddBottomSheet extends StatefulWidget {
         AppGlassDialog(
           maxWidth: 480,
           padding: const EdgeInsets.all(22),
-          child: QuickAddBottomSheet(existingItem: existingItem),
+          child: QuickAddBottomSheet(
+            existingItem: existingItem,
+            existingScheduledItem: existingScheduledItem,
+            initialIsScheduled: initialIsScheduled,
+            initialAmount: initialAmount,
+            initialCategory: initialCategory,
+            initialCostNature: initialCostNature,
+          ),
         ),
       );
     } else {
       Get.bottomSheet(
-        QuickAddBottomSheet(existingItem: existingItem),
+        QuickAddBottomSheet(
+          existingItem: existingItem,
+          existingScheduledItem: existingScheduledItem,
+          initialIsScheduled: initialIsScheduled,
+          initialAmount: initialAmount,
+          initialCategory: initialCategory,
+          initialCostNature: initialCostNature,
+        ),
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
       );
@@ -58,14 +94,34 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
   bool _isWithdrawal = false;
   bool _isSaving = false;
   bool _isSuccess = false;
+  late bool _isScheduled;
+  late ScheduleFrequency _scheduleFrequency;
+  late bool _autoRecord;
 
-  bool get isEditMode => widget.existingItem != null;
+  bool get isEditMode =>
+      widget.existingItem != null || widget.existingScheduledItem != null;
 
   @override
   void initState() {
     super.initState();
+    final scheduledItem = widget.existingScheduledItem;
     final item = widget.existingItem;
-    if (item != null) {
+
+    if (scheduledItem != null) {
+      _amountBuffer = scheduledItem.amount % 1 == 0
+          ? scheduledItem.amount.toInt().toString()
+          : scheduledItem.amount.toStringAsFixed(2);
+      _titleController = TextEditingController(text: scheduledItem.title);
+      _noteController = TextEditingController(text: scheduledItem.note ?? '');
+      _isWithdrawal = false;
+      _selectedType = scheduledItem.type;
+      _selectedCostNature = scheduledItem.costNature;
+      _selectedCategory = scheduledItem.categoryName;
+      _selectedDate = scheduledItem.nextDueDate;
+      _isScheduled = true;
+      _scheduleFrequency = scheduledItem.frequency;
+      _autoRecord = scheduledItem.autoRecord;
+    } else if (item != null) {
       _amountBuffer = item.amount % 1 == 0
           ? item.amount.toInt().toString()
           : item.amount.toStringAsFixed(2);
@@ -76,15 +132,28 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
       _selectedCostNature = item.costNature;
       _selectedCategory = item.categoryName;
       _selectedDate = item.date;
+      _isScheduled = false;
+      _scheduleFrequency = ScheduleFrequency.monthly;
+      _autoRecord = false;
     } else {
-      _amountBuffer = '';
+      if (widget.initialAmount != null && widget.initialAmount! > 0) {
+        _amountBuffer = widget.initialAmount! % 1 == 0
+            ? widget.initialAmount!.toInt().toString()
+            : widget.initialAmount!.toStringAsFixed(2);
+      } else {
+        _amountBuffer = '';
+      }
       _titleController = TextEditingController();
       _noteController = TextEditingController();
       _isWithdrawal = false;
       _selectedType = TransactionType.expense;
-      _selectedCostNature = CostNature.variable;
-      _selectedCategory = 'อาหาร/ของกิน';
+      _selectedCostNature = widget.initialCostNature ??
+          (widget.initialIsScheduled ? CostNature.fixed : CostNature.variable);
+      _selectedCategory = widget.initialCategory ?? 'อาหาร/ของกิน';
       _selectedDate = DateTime.now();
+      _isScheduled = widget.initialIsScheduled;
+      _scheduleFrequency = ScheduleFrequency.monthly;
+      _autoRecord = false;
     }
 
     // เมื่อ keyboard เปิด ให้ scroll ลงมาล่างสุดเพื่อให้เห็น text fields
@@ -168,269 +237,237 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
     }
   }
 
-  List<String> _getCategorySuggestions(String category) {
-    final isEn = controller.isEnglish;
-    if (_isWithdrawal) {
-      if (isEn) {
-        return const [
-          'Emergency Fund',
-          'Living Expenses',
-          'Debt Payoff',
-          'Medical Bills',
-          'Travel / Leisure',
-          'Major Purchase',
-        ];
-      }
-      return const [
-        'สำรองฉุกเฉิน',
-        'ค่าใช้จ่ายจำเป็น',
-        'ปิดหนี้สิน',
-        'ค่ารักษาพยาบาล',
-        'ท่องเที่ยวพักผ่อน',
-        'ซื้อของชิ้นใหญ่',
-      ];
-    }
-    if (isEn) {
-      switch (category) {
-        case 'อาหาร/ของกิน':
-          return const [
-            'Breakfast',
-            'Lunch',
-            'Dinner',
-            'Snacks',
-            '7-Eleven',
-            'Food Delivery',
-          ];
-        case 'กาแฟ/เครื่องดื่ม':
-          return const [
-            'Americano',
-            'Latte',
-            'Matcha Green Tea',
-            'Thai Tea',
-            'Boba / Milk Tea',
-            'Water',
-          ];
-        case 'การเดินทาง':
-          return const [
-            'BTS / MRT',
-            'Gas / Fuel',
-            'Grab / Taxi',
-            'Bus Fare',
-            'Expressway Toll',
-            'Motorbike',
-          ];
-        case 'ช้อปปิ้ง':
-          return const [
-            'Clothing',
-            'Online Shopping',
-            'Home Decor',
-            'Gadgets & Tech',
-          ];
-        case 'ของใช้ส่วนตัว':
-          return const [
-            'Toiletries',
-            'Laundry Detergent',
-            'Tissues',
-            'Haircut',
-            'Skincare',
-          ];
-        case 'ที่อยู่อาศัย':
-          return const [
-            'Rent / Condo',
-            'Mortgage',
-            'Common Fee',
-            'Home Repairs',
-          ];
-        case 'สาธารณูปโภค':
-          return const [
-            'Electricity',
-            'Water Bill',
-            'Home WiFi',
-            'Mobile Bill',
-            'Subscriptions',
-          ];
-        case 'บันเทิง/พักผ่อน':
-          return const [
-            'Movie Tickets',
-            'Gaming',
-            'Concert',
-            'Travel / Hotel',
-            'Party & Drinks',
-          ];
-        case 'สุขภาพ/ยา':
-          return const [
-            'Clinic / Doctor',
-            'Medicine & Vitamins',
-            'Dental',
-            'Health Checkup',
-            'Insurance',
-          ];
-        case 'การศึกษา':
-          return const ['Online Course', 'Books', 'Tuition Fee', 'Stationery'];
-        case 'เงินเดือน':
-          return const [
-            'Monthly Salary',
-            'Performance Bonus',
-            'Back Pay',
-            'Overtime (OT)',
-          ];
-        case 'ฟรีแลนซ์/งานเสริม':
-          return const [
-            'Freelance Gig',
-            'Side Project',
-            'Online Sales',
-            'Commission',
-          ];
-        case 'โบนัส':
-          return const ['Annual Bonus', 'Performance Bonus', 'Special Reward'];
-        case 'เงินปันผล/ดอกเบี้ย':
-          return const ['Stock Dividend', 'Bank Interest', 'Fund Dividend'];
-        case 'ขายของ':
-          return const ['Retail Sales', 'Online Store', 'Secondhand Goods'];
-        case 'รายรับอื่นๆ':
-          return const [
-            'Cash Gift',
-            'Refund / Cashback',
-            'Lottery Prize',
-            'Other Income',
-          ];
-        case 'เงินออม/DCA':
-          return const [
-            'Stock DCA',
-            'Fund DCA',
-            'Fixed Deposit',
-            'Gold Savings',
-          ];
-        case 'กองทุนรวม':
-          return const ['Index Fund', 'Tax Saving Fund', 'Retirement Fund'];
-        case 'หุ้น/ตราสาร':
-          return const ['Common Stock', 'Corporate Bonds', 'Treasury Bills'];
-        case 'เงินสำรองฉุกเฉิน':
-          return const ['Emergency Fund', 'High-Yield Savings'];
-        case 'สินทรัพย์อื่นๆ':
-          return const ['Real Estate', 'Crypto DCA', 'Precious Metals'];
-        default:
-          return const ['General Expense', 'Essential', 'Other'];
-      }
-    }
+  static const Map<String, List<String>> _withdrawalSuggestions = {
+    'en': [
+      'Emergency Fund',
+      'Living Expenses',
+      'Debt Payoff',
+      'Medical Bills',
+      'Travel / Leisure',
+      'Major Purchase',
+    ],
+    'th': [
+      'สำรองฉุกเฉิน',
+      'ค่าใช้จ่ายจำเป็น',
+      'ปิดหนี้สิน',
+      'ค่ารักษาพยาบาล',
+      'ท่องเที่ยวพักผ่อน',
+      'ซื้อของชิ้นใหญ่',
+    ],
+  };
 
-    switch (category) {
-      case 'อาหาร/ของกิน':
-        return const [
-          'ข้าวแกง/ตามสั่ง',
-          'ก๋วยเตี๋ยว',
-          'เซเว่น 7-11',
-          'Grab/Lineman',
-          'มื้อเย็น/สังสรรค์',
-          'ขนม/ของว่าง',
-        ];
-      case 'กาแฟ/เครื่องดื่ม':
-        return const [
-          'อเมริกาโน่',
-          'ลาเต้',
-          'ชาเขียวมัทฉะ',
-          'ชาไทย',
-          'ชานมไข่มุก',
-          'น้ำดื่ม',
-        ];
-      case 'การเดินทาง':
-        return const [
-          'BTS / MRT',
-          'เติมน้ำมัน',
-          'Grab/แท็กซี่',
-          'รถเมล์/สองแถว',
-          'ทางด่วน',
-          'วินมอเตอร์ไซค์',
-        ];
-      case 'ช้อปปิ้ง':
-        return const [
-          'ของใช้ส่วนตัว',
-          'เสื้อผ้า',
-          'Shopee/Lazada',
-          'ของแต่งบ้าน',
-          'เครื่องใช้ไฟฟ้า',
-        ];
-      case 'ของใช้ส่วนตัว':
-        return const [
-          'สบู่/ยาสระผม',
-          'ผงซักฟอก',
-          'กระดาษทิชชู่',
-          'ตัดผม',
-          'เครื่องสำอาง',
-        ];
-      case 'ที่อยู่อาศัย':
-        return const [
-          'ค่าเช่าห้อง/คอนโด',
-          'ค่างวดบ้าน',
-          'ค่าส่วนกลาง',
-          'ซ่อมแซมบ้าน',
-        ];
-      case 'สาธารณูปโภค':
-        return const [
-          'ค่าไฟ',
-          'ค่าน้ำประปา',
-          'เน็ตบ้าน/WiFi',
-          'ค่าโทรศัพท์',
-          'Netflix/Spotify',
-        ];
-      case 'บันเทิง/พักผ่อน':
-        return const [
-          'ตั๋วหนัง',
-          'เติมเกม',
-          'คอนเสิร์ต',
-          'ท่องเที่ยว/ที่พัก',
-          'สังสรรค์',
-        ];
-      case 'สุขภาพ/ยา':
-        return const [
-          'หาหมอ/คลินิก',
-          'ค่ายา/วิตามิน',
-          'ทำฟัน',
-          'ตรวจสุขภาพ',
-          'ประกันสุขภาพ',
-        ];
-      case 'การศึกษา':
-        return const ['คอร์สเรียน', 'หนังสือ', 'ค่าเทอม', 'เครื่องเขียน'];
-      case 'เงินเดือน':
-        return const [
-          'เงินเดือนประจำ',
-          'โบนัสพิเศษ',
-          'เงินตกเบิก',
-          'ค่าทำงานล่วงเวลา',
-        ];
-      case 'ฟรีแลนซ์/งานเสริม':
-        return const [
-          'งานฟรีแลนซ์',
-          'รับจ้างทั่วไป',
-          'ขายของออนไลน์',
-          'ค่าคอมมิชชั่น',
-        ];
-      case 'โบนัส':
-        return const ['โบนัสประจำปี', 'โบนัสผลงาน', 'รางวัลพิเศษ'];
-      case 'เงินปันผล/ดอกเบี้ย':
-        return const ['เงินปันผลหุ้น', 'ดอกเบี้ยเงินฝาก', 'ปันผลกองทุน'];
-      case 'ขายของ':
-        return const ['ขายของหน้าร้าน', 'ขายของออนไลน์', 'ของมือสอง'];
-      case 'เงินออม/DCA':
-        return const [
-          'DCA หุ้นประจำงวด',
-          'DCA กองทุนรวม',
-          'เงินฝากประจำ',
-          'ซื้อทองคำแท่ง',
-        ];
-      case 'กองทุนรวม':
-        return const [
-          'SSF ลดหย่อนภาษี',
-          'RMF เพื่อการเกษียณ',
-          'กองทุนรวมดัชนี',
-        ];
-      case 'หุ้น/ตราสาร':
-        return const ['ซื้อหุ้นสามัญ', 'หุ้นกู้เอกชน', 'พันธบัตรรัฐบาล'];
-      case 'เงินสำรองฉุกเฉิน':
-        return const ['ฝากสำรองฉุกเฉิน', 'บัญชีดิจิทัลดอกเบี้ยสูง'];
-      default:
-        return const ['ค่าใช้จ่ายทั่วไป', 'จำเป็น', 'อื่นๆ'];
+  static const Map<String, List<String>> _defaultSuggestions = {
+    'en': ['General Expense', 'Essential', 'Other'],
+    'th': ['ค่าใช้จ่ายทั่วไป', 'จำเป็น', 'อื่นๆ'],
+  };
+
+  static const Map<String, Map<String, List<String>>>
+  _categorySuggestionsMap = {
+    'อาหาร/ของกิน': {
+      'en': [
+        'Breakfast',
+        'Lunch',
+        'Dinner',
+        'Snacks',
+        '7-Eleven',
+        'Food Delivery',
+      ],
+      'th': [
+        'ข้าวแกง/ตามสั่ง',
+        'ก๋วยเตี๋ยว',
+        'เซเว่น 7-11',
+        'Grab/Lineman',
+        'มื้อเย็น/สังสรรค์',
+        'ขนม/ของว่าง',
+      ],
+    },
+    'กาแฟ/เครื่องดื่ม': {
+      'en': [
+        'Americano',
+        'Latte',
+        'Matcha Green Tea',
+        'Thai Tea',
+        'Boba / Milk Tea',
+        'Water',
+      ],
+      'th': [
+        'อเมริกาโน่',
+        'ลาเต้',
+        'ชาเขียวมัทฉะ',
+        'ชาไทย',
+        'ชานมไข่มุก',
+        'น้ำดื่ม',
+      ],
+    },
+    'การเดินทาง': {
+      'en': [
+        'BTS / MRT',
+        'Gas / Fuel',
+        'Grab / Taxi',
+        'Bus Fare',
+        'Expressway Toll',
+        'Motorbike',
+      ],
+      'th': [
+        'BTS / MRT',
+        'เติมน้ำมัน',
+        'Grab/แท็กซี่',
+        'รถเมล์/สองแถว',
+        'ทางด่วน',
+        'วินมอเตอร์ไซค์',
+      ],
+    },
+    'ช้อปปิ้ง': {
+      'en': ['Clothing', 'Online Shopping', 'Home Decor', 'Gadgets & Tech'],
+      'th': [
+        'ของใช้ส่วนตัว',
+        'เสื้อผ้า',
+        'Shopee/Lazada',
+        'ของแต่งบ้าน',
+        'เครื่องใช้ไฟฟ้า',
+      ],
+    },
+    'ของใช้ส่วนตัว': {
+      'en': [
+        'Toiletries',
+        'Laundry Detergent',
+        'Tissues',
+        'Haircut',
+        'Skincare',
+      ],
+      'th': [
+        'สบู่/ยาสระผม',
+        'ผงซักฟอก',
+        'กระดาษทิชชู่',
+        'ตัดผม',
+        'เครื่องสำอาง',
+      ],
+    },
+    'ที่อยู่อาศัย': {
+      'en': ['Rent / Condo', 'Mortgage', 'Common Fee', 'Home Repairs'],
+      'th': ['ค่าเช่าห้อง/คอนโด', 'ค่างวดบ้าน', 'ค่าส่วนกลาง', 'ซ่อมแซมบ้าน'],
+    },
+    'สาธารณูปโภค': {
+      'en': [
+        'Electricity',
+        'Water Bill',
+        'Home WiFi',
+        'Mobile Bill',
+        'Subscriptions',
+      ],
+      'th': [
+        'ค่าไฟ',
+        'ค่าน้ำประปา',
+        'เน็ตบ้าน/WiFi',
+        'ค่าโทรศัพท์',
+        'Netflix/Spotify',
+      ],
+    },
+    'บันเทิง/พักผ่อน': {
+      'en': [
+        'Movie Tickets',
+        'Gaming',
+        'Concert',
+        'Travel / Hotel',
+        'Party & Drinks',
+      ],
+      'th': [
+        'ตั๋วหนัง',
+        'เติมเกม',
+        'คอนเสิร์ต',
+        'ท่องเที่ยว/ที่พัก',
+        'สังสรรค์',
+      ],
+    },
+    'สุขภาพ/ยา': {
+      'en': [
+        'Clinic / Doctor',
+        'Medicine & Vitamins',
+        'Dental',
+        'Health Checkup',
+        'Insurance',
+      ],
+      'th': [
+        'หาหมอ/คลินิก',
+        'ค่ายา/วิตามิน',
+        'ทำฟัน',
+        'ตรวจสุขภาพ',
+        'ประกันสุขภาพ',
+      ],
+    },
+    'การศึกษา': {
+      'en': ['Online Course', 'Books', 'Tuition Fee', 'Stationery'],
+      'th': ['คอร์สเรียน', 'หนังสือ', 'ค่าเทอม', 'เครื่องเขียน'],
+    },
+    'เงินเดือน': {
+      'en': [
+        'Monthly Salary',
+        'Performance Bonus',
+        'Back Pay',
+        'Overtime (OT)',
+      ],
+      'th': ['เงินเดือนประจำ', 'โบนัสพิเศษ', 'เงินตกเบิก', 'ค่าทำงานล่วงเวลา'],
+    },
+    'ฟรีแลนซ์/งานเสริม': {
+      'en': ['Freelance Gig', 'Side Project', 'Online Sales', 'Commission'],
+      'th': ['งานฟรีแลนซ์', 'รับจ้างทั่วไป', 'ขายของออนไลน์', 'ค่าคอมมิชชั่น'],
+    },
+    'โบนัส': {
+      'en': ['Annual Bonus', 'Performance Bonus', 'Special Reward'],
+      'th': ['โบนัสประจำปี', 'โบนัสผลงาน', 'รางวัลพิเศษ'],
+    },
+    'เงินปันผล/ดอกเบี้ย': {
+      'en': ['Stock Dividend', 'Bank Interest', 'Fund Dividend'],
+      'th': ['เงินปันผลหุ้น', 'ดอกเบี้ยเงินฝาก', 'ปันผลกองทุน'],
+    },
+    'ขายของ': {
+      'en': ['Retail Sales', 'Online Store', 'Secondhand Goods'],
+      'th': ['ขายของหน้าร้าน', 'ขายของออนไลน์', 'ของมือสอง'],
+    },
+    'รายรับอื่นๆ': {
+      'en': ['Cash Gift', 'Refund / Cashback', 'Lottery Prize', 'Other Income'],
+      'th': [
+        'เงินให้เปล่า/ของขวัญ',
+        'เงินคืน/Cashback',
+        'ถูกรางวัลสลาก',
+        'รายรับอื่นๆ',
+      ],
+    },
+    'เงินออม/DCA': {
+      'en': ['Stock DCA', 'Fund DCA', 'Fixed Deposit', 'Gold Savings'],
+      'th': [
+        'DCA หุ้นประจำงวด',
+        'DCA กองทุนรวม',
+        'เงินฝากประจำ',
+        'ซื้อทองคำแท่ง',
+      ],
+    },
+    'กองทุนรวม': {
+      'en': ['Index Fund', 'Tax Saving Fund', 'Retirement Fund'],
+      'th': ['SSF ลดหย่อนภาษี', 'RMF เพื่อการเกษียณ', 'กองทุนรวมดัชนี'],
+    },
+    'หุ้น/ตราสาร': {
+      'en': ['Common Stock', 'Corporate Bonds', 'Treasury Bills'],
+      'th': ['ซื้อหุ้นสามัญ', 'หุ้นกู้เอกชน', 'พันธบัตรรัฐบาล'],
+    },
+    'เงินสำรองฉุกเฉิน': {
+      'en': ['Emergency Fund', 'High-Yield Savings'],
+      'th': ['ฝากสำรองฉุกเฉิน', 'บัญชีดิจิทัลดอกเบี้ยสูง'],
+    },
+    'สินทรัพย์อื่นๆ': {
+      'en': ['Real Estate', 'Crypto DCA', 'Precious Metals'],
+      'th': ['อสังหาริมทรัพย์', 'Crypto DCA', 'ทองคำ/โลหะมีค่า'],
+    },
+  };
+
+  List<String> _getCategorySuggestions(String category) {
+    final langKey = controller.isEnglish ? 'en' : 'th';
+    if (_isWithdrawal) {
+      return _withdrawalSuggestions[langKey] ?? const [];
     }
+    return _categorySuggestionsMap[category]?[langKey] ??
+        _defaultSuggestions[langKey] ??
+        const [];
   }
 
   void _handleHardwareKey(KeyEvent event) {
@@ -592,7 +629,78 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
       HapticFeedback.mediumImpact();
     } catch (_) {}
 
-    if (isEditMode) {
+    if (widget.existingScheduledItem != null) {
+      final updated = widget.existingScheduledItem!.copyWith(
+        title: finalTitle,
+        amount: amount,
+        type: _selectedType,
+        costNature: _selectedType == TransactionType.expense
+            ? _selectedCostNature
+            : CostNature.notApplicable,
+        categoryName: _selectedCategory,
+        frequency: _scheduleFrequency,
+        nextDueDate: _selectedDate,
+        autoRecord: _autoRecord,
+        note: customNote.isNotEmpty ? customNote : null,
+      );
+      controller.updateScheduledPayment(updated, notify: false);
+
+      await Future.delayed(const Duration(milliseconds: 320));
+      if (!mounted) return;
+
+      Get.back();
+
+      AppFeedback.showSuccess(
+        title: 'schedule_updated_title'.tr,
+        message: 'schedule_updated_msg'.trParams({'title': finalTitle.tr}),
+        amount: amount,
+        transactionType: _selectedType,
+      );
+      return;
+    }
+
+    if (_isScheduled) {
+      final scheduledItem = ScheduledPaymentItem(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        title: finalTitle,
+        amount: amount,
+        type: _selectedType,
+        costNature: _selectedType == TransactionType.expense
+            ? _selectedCostNature
+            : CostNature.notApplicable,
+        categoryName: _selectedCategory,
+        frequency: _scheduleFrequency,
+        startDate: _selectedDate,
+        nextDueDate: _selectedDate,
+        autoRecord: _autoRecord,
+        status: ScheduledPaymentStatus.active,
+        note: customNote.isNotEmpty ? customNote : null,
+      );
+      controller.addScheduledPayment(scheduledItem, notify: false);
+
+      if (_autoRecord && scheduledItem.isDue) {
+        controller.executeScheduledPayment(
+          scheduledItem,
+          executionDate: _selectedDate,
+          notify: false,
+        );
+      }
+
+      await Future.delayed(const Duration(milliseconds: 320));
+      if (!mounted) return;
+
+      Get.back();
+
+      AppFeedback.showSuccess(
+        title: 'scheduled_success_title'.tr,
+        message: 'scheduled_success_msg'.trParams({'title': finalTitle.tr}),
+        amount: amount,
+        transactionType: _selectedType,
+      );
+      return;
+    }
+
+    if (isEditMode && widget.existingItem != null) {
       final updated = widget.existingItem!.copyWith(
         title: finalTitle,
         amount: amount,
@@ -641,6 +749,16 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
   }
 
   void _delete() {
+    if (widget.existingScheduledItem != null) {
+      final title = widget.existingScheduledItem!.title;
+      controller.deleteScheduledPayment(widget.existingScheduledItem!.id);
+      Get.back();
+      AppFeedback.showInfo(
+        title: 'delete_success_title'.tr,
+        message: 'delete_success_msg'.trParams({'title': title.tr}),
+      );
+      return;
+    }
     if (widget.existingItem != null) {
       final title = widget.existingItem!.title;
       controller.deleteTransaction(widget.existingItem!.id);
@@ -1506,6 +1624,487 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
                           ),
                         ),
                       ),
+                      const SizedBox(height: 10),
+
+                      // ==========================================
+                      // Schedule / Recurring Payment Toggle & Controls
+                      // ==========================================
+                      Container(
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? const Color(0xFF141414)
+                              : const Color(0xFFF2F2F2),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: _isScheduled
+                                ? AppColors.nothingRed.withValues(alpha: 0.6)
+                                : (isDark
+                                      ? AppColors.nothingBorder
+                                      : Colors.black.withValues(alpha: 0.08)),
+                            width: 0.8,
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            InkWell(
+                              onTap: () {
+                                HapticFeedback.selectionClick();
+                                setState(() {
+                                  _isScheduled = !_isScheduled;
+                                  if (_isScheduled &&
+                                      _selectedType == TransactionType.expense &&
+                                      _selectedCostNature == CostNature.variable) {
+                                    _selectedCostNature = CostNature.fixed;
+                                  }
+                                });
+                              },
+                              borderRadius: BorderRadius.circular(16),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 10,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: _isScheduled
+                                            ? AppColors.nothingRed.withValues(
+                                                alpha: 0.15,
+                                              )
+                                            : (isDark
+                                                  ? Colors.white.withValues(
+                                                      alpha: 0.06,
+                                                    )
+                                                  : Colors.black.withValues(
+                                                      alpha: 0.05,
+                                                    )),
+                                      ),
+                                      child: Icon(
+                                        Icons.alarm_on_rounded,
+                                        size: 16,
+                                        color: _isScheduled
+                                            ? AppColors.nothingRed
+                                            : (isDark
+                                                  ? AppColors.nothingMuted
+                                                  : AppColors.textSecondary),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'schedule_mode_toggle'.tr,
+                                            style: NothingTypography.grotesk(
+                                              fontSize: 12.5,
+                                              fontWeight: FontWeight.w700,
+                                              color: isDark
+                                                  ? Colors.white
+                                                  : Colors.black,
+                                            ),
+                                          ),
+                                          Text(
+                                            'schedule_payment_desc'.tr,
+                                            style: NothingTypography.grotesk(
+                                              fontSize: 10.5,
+                                              color: isDark
+                                                  ? AppColors.nothingSubtext
+                                                  : AppColors.textSecondary,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Switch.adaptive(
+                                      value: _isScheduled,
+                                      activeTrackColor: AppColors.nothingRed,
+                                      activeThumbColor: Colors.white,
+                                      onChanged: (val) {
+                                        HapticFeedback.selectionClick();
+                                        setState(() {
+                                          _isScheduled = val;
+                                          if (_isScheduled &&
+                                              _selectedType == TransactionType.expense &&
+                                              _selectedCostNature == CostNature.variable) {
+                                            _selectedCostNature = CostNature.fixed;
+                                          }
+                                        });
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            if (_isScheduled) ...[
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  12,
+                                  0,
+                                  12,
+                                  12,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    Divider(
+                                      height: 1,
+                                      thickness: 0.8,
+                                      color: isDark
+                                          ? AppColors.nothingBorder
+                                          : Colors.black.withValues(alpha: 0.08),
+                                    ),
+                                    const SizedBox(height: 10),
+
+                                    // Popular Preset Suggestions Strip
+                                    Text(
+                                      'preset_bills_header'.tr.toUpperCase(),
+                                      style: NothingTypography.grotesk(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                        color: isDark
+                                            ? AppColors.nothingSubtext
+                                            : AppColors.textSecondary,
+                                        letterSpacing: 0.6,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    SingleChildScrollView(
+                                      scrollDirection: Axis.horizontal,
+                                      physics: const BouncingScrollPhysics(),
+                                      child: Row(
+                                        children: controller.popularScheduledPresets.map((preset) {
+                                          final isSelected = _titleController.text == preset.titleKey.tr;
+                                          return Padding(
+                                            padding: const EdgeInsets.only(right: 6),
+                                            child: InkWell(
+                                              onTap: () {
+                                                HapticFeedback.selectionClick();
+                                                setState(() {
+                                                  _titleController.text = preset.titleKey.tr;
+                                                  _selectedCategory = preset.categoryName;
+                                                  _selectedCostNature = preset.costNature;
+                                                  _selectedType = preset.type;
+                                                  _scheduleFrequency = preset.frequency;
+                                                  if (_amountBuffer.isEmpty && preset.suggestedAmount != null) {
+                                                    final amt = preset.suggestedAmount!;
+                                                    _amountBuffer = amt % 1 == 0
+                                                        ? amt.toInt().toString()
+                                                        : amt.toStringAsFixed(2);
+                                                  }
+                                                });
+                                              },
+                                              borderRadius: BorderRadius.circular(10),
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(
+                                                  horizontal: 9,
+                                                  vertical: 6,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: isSelected
+                                                      ? AppColors.nothingRed.withValues(alpha: 0.15)
+                                                      : (isDark
+                                                          ? const Color(0xFF1E1E1E)
+                                                          : const Color(0xFFE8E8E8)),
+                                                  borderRadius: BorderRadius.circular(10),
+                                                  border: Border.all(
+                                                    color: isSelected
+                                                        ? AppColors.nothingRed.withValues(alpha: 0.5)
+                                                        : (isDark
+                                                            ? AppColors.nothingBorder
+                                                            : Colors.black.withValues(alpha: 0.08)),
+                                                    width: 0.8,
+                                                  ),
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Icon(
+                                                      preset.icon,
+                                                      size: 13,
+                                                      color: isSelected
+                                                          ? AppColors.nothingRed
+                                                          : (isDark
+                                                              ? Colors.white70
+                                                              : Colors.black87),
+                                                    ),
+                                                    const SizedBox(width: 5),
+                                                    Text(
+                                                      preset.titleKey.tr,
+                                                      style: NothingTypography.grotesk(
+                                                        fontSize: 10.5,
+                                                        fontWeight: isSelected
+                                                            ? FontWeight.w700
+                                                            : FontWeight.w500,
+                                                        color: isSelected
+                                                            ? AppColors.nothingRed
+                                                            : (isDark
+                                                                ? Colors.white
+                                                                : Colors.black),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                        }).toList(),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+
+                                    Text(
+                                      'schedule_frequency'.tr.toUpperCase(),
+                                      style: NothingTypography.grotesk(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                        color: isDark
+                                            ? AppColors.nothingSubtext
+                                            : AppColors.textSecondary,
+                                        letterSpacing: 0.6,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Wrap(
+                                      spacing: 6,
+                                      runSpacing: 6,
+                                      children: [
+                                        _buildFrequencyChip(
+                                          ScheduleFrequency.oneTime,
+                                          'frequency_one_time'.tr,
+                                          isDark,
+                                        ),
+                                        _buildFrequencyChip(
+                                          ScheduleFrequency.monthly,
+                                          'frequency_monthly'.tr,
+                                          isDark,
+                                        ),
+                                        _buildFrequencyChip(
+                                          ScheduleFrequency.weekly,
+                                          'frequency_weekly'.tr,
+                                          isDark,
+                                        ),
+                                        _buildFrequencyChip(
+                                          ScheduleFrequency.daily,
+                                          'frequency_daily'.tr,
+                                          isDark,
+                                        ),
+                                        _buildFrequencyChip(
+                                          ScheduleFrequency.yearly,
+                                          'frequency_yearly'.tr,
+                                          isDark,
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      'execution_mode'.tr.toUpperCase(),
+                                      style: NothingTypography.grotesk(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                        color: isDark
+                                            ? AppColors.nothingSubtext
+                                            : AppColors.textSecondary,
+                                        letterSpacing: 0.6,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: _buildExecutionModeTile(
+                                            title: 'manual_confirm'.tr,
+                                            subtitle: 'manual_confirm_desc'.tr,
+                                            icon: Icons
+                                                .notifications_active_outlined,
+                                            isSelected: !_autoRecord,
+                                            isDark: isDark,
+                                            onTap: () => setState(
+                                              () => _autoRecord = false,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: _buildExecutionModeTile(
+                                            title: 'auto_record'.tr,
+                                            subtitle: 'auto_record_desc'.tr,
+                                            icon: Icons.bolt_rounded,
+                                            isSelected: _autoRecord,
+                                            isDark: isDark,
+                                            onTap: () => setState(
+                                              () => _autoRecord = true,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    if (_scheduleFrequency ==
+                                        ScheduleFrequency.monthly) ...[
+                                      const SizedBox(height: 10),
+                                      SingleChildScrollView(
+                                        scrollDirection: Axis.horizontal,
+                                        child: Row(
+                                          children: [
+                                            _buildQuickDuePreset(
+                                              label:
+                                                  'quick_due_end_of_month'.tr,
+                                              onTap: () {
+                                                final now = DateTime.now();
+                                                final endDay = DateTime(
+                                                  now.year,
+                                                  now.month + 1,
+                                                  0,
+                                                ).day;
+                                                setState(() {
+                                                  _selectedDate = DateTime(
+                                                    now.year,
+                                                    now.month,
+                                                    endDay,
+                                                    _selectedDate.hour,
+                                                    _selectedDate.minute,
+                                                  );
+                                                });
+                                              },
+                                              isDark: isDark,
+                                            ),
+                                            const SizedBox(width: 6),
+                                            _buildQuickDuePreset(
+                                              label:
+                                                  'quick_due_next_month_1st'.tr,
+                                              onTap: () {
+                                                final now = DateTime.now();
+                                                final nextMonth = now.month ==
+                                                        12
+                                                    ? 1
+                                                    : now.month + 1;
+                                                final nextYear = now.month == 12
+                                                    ? now.year + 1
+                                                    : now.year;
+                                                setState(() {
+                                                  _selectedDate = DateTime(
+                                                    nextYear,
+                                                    nextMonth,
+                                                    1,
+                                                    _selectedDate.hour,
+                                                    _selectedDate.minute,
+                                                  );
+                                                });
+                                              },
+                                              isDark: isDark,
+                                            ),
+                                            const SizedBox(width: 6),
+                                            _buildQuickDuePreset(
+                                              label:
+                                                  'quick_due_next_month_25th'.tr,
+                                              onTap: () {
+                                                final now = DateTime.now();
+                                                final nextMonth = now.month ==
+                                                        12
+                                                    ? 1
+                                                    : now.month + 1;
+                                                final nextYear = now.month == 12
+                                                    ? now.year + 1
+                                                    : now.year;
+                                                setState(() {
+                                                  _selectedDate = DateTime(
+                                                    nextYear,
+                                                    nextMonth,
+                                                    25,
+                                                    _selectedDate.hour,
+                                                    _selectedDate.minute,
+                                                  );
+                                                });
+                                              },
+                                              isDark: isDark,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                    if (_selectedType == TransactionType.expense &&
+                                        _selectedCostNature == CostNature.fixed &&
+                                        (double.tryParse(_amountBuffer) ?? 0.0) > 0) ...[
+                                      const SizedBox(height: 10),
+                                      Builder(
+                                        builder: (context) {
+                                          final amt = double.tryParse(_amountBuffer) ?? 0.0;
+                                          double monthlyBurn = amt;
+                                          switch (_scheduleFrequency) {
+                                            case ScheduleFrequency.monthly:
+                                              monthlyBurn = amt;
+                                              break;
+                                            case ScheduleFrequency.yearly:
+                                              monthlyBurn = amt / 12.0;
+                                              break;
+                                            case ScheduleFrequency.weekly:
+                                              monthlyBurn = (amt * 52.0) / 12.0;
+                                              break;
+                                            case ScheduleFrequency.daily:
+                                              monthlyBurn = amt * 30.0;
+                                              break;
+                                            case ScheduleFrequency.oneTime:
+                                              monthlyBurn = amt;
+                                              break;
+                                          }
+                                          return Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 10,
+                                              vertical: 7,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFF3B82F6).withValues(alpha: 0.08),
+                                              borderRadius: BorderRadius.circular(8),
+                                              border: Border.all(
+                                                color: const Color(0xFF3B82F6).withValues(alpha: 0.25),
+                                                width: 0.8,
+                                              ),
+                                            ),
+                                            child: Row(
+                                              children: [
+                                                const Icon(
+                                                  Icons.auto_graph_rounded,
+                                                  size: 13,
+                                                  color: Color(0xFF3B82F6),
+                                                ),
+                                                const SizedBox(width: 7),
+                                                Expanded(
+                                                  child: Text(
+                                                    'fixed_budget_impact'.trParams({
+                                                      'amount': NumberFormat('#,##0.##').format(monthlyBurn),
+                                                    }),
+                                                    style: NothingTypography.grotesk(
+                                                      fontSize: 10.5,
+                                                      fontWeight: FontWeight.w600,
+                                                      color: isDark
+                                                          ? const Color(0xFF93C5FD)
+                                                          : const Color(0xFF1D4ED8),
+                                                    ),
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
                       const SizedBox(height: 12),
 
                       // Submit Button in Nothing OS Signature Red
@@ -1555,9 +2154,11 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
                                   ],
                                 )
                               : Text(
-                                  (isEditMode
-                                          ? 'save_changes'.tr
-                                          : 'add_transaction'.tr)
+                                  (_isScheduled
+                                          ? 'schedule_payment'.tr
+                                          : (isEditMode
+                                                ? 'save_changes'.tr
+                                                : 'add_transaction'.tr))
                                       .toUpperCase(),
                                   key: const ValueKey('submit_idle'),
                                   style: NothingTypography.grotesk(
@@ -1849,6 +2450,163 @@ class _QuickAddBottomSheetState extends State<QuickAddBottomSheet> {
           ),
         );
       }).toList(),
+    );
+  }
+
+  Widget _buildFrequencyChip(
+    ScheduleFrequency frequency,
+    String label,
+    bool isDark,
+  ) {
+    final isSelected = _scheduleFrequency == frequency;
+    return InkWell(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        setState(() => _scheduleFrequency = frequency);
+      },
+      borderRadius: BorderRadius.circular(10),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? (isDark ? Colors.white : Colors.black)
+              : (isDark ? const Color(0xFF1E1E1E) : const Color(0xFFE5E5E5)),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isSelected
+                ? AppColors.nothingRed
+                : (isDark
+                      ? AppColors.nothingBorder
+                      : Colors.black.withValues(alpha: 0.08)),
+            width: 0.8,
+          ),
+        ),
+        child: Text(
+          label,
+          style: NothingTypography.grotesk(
+            fontSize: 11,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            color: isSelected
+                ? (isDark ? Colors.black : Colors.white)
+                : (isDark ? Colors.white70 : Colors.black87),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExecutionModeTile({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required bool isSelected,
+    required bool isDark,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? (isDark
+                    ? const Color(0xFF222222)
+                    : Colors.black.withValues(alpha: 0.06))
+              : (isDark ? const Color(0xFF161616) : const Color(0xFFEBEBEB)),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected
+                ? AppColors.nothingRed
+                : (isDark
+                      ? AppColors.nothingBorder
+                      : Colors.black.withValues(alpha: 0.08)),
+            width: 0.8,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  icon,
+                  size: 15,
+                  color: isSelected
+                      ? AppColors.nothingRed
+                      : (isDark ? Colors.white70 : Colors.black54),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: NothingTypography.grotesk(
+                      fontSize: 11.5,
+                      fontWeight: isSelected
+                          ? FontWeight.w700
+                          : FontWeight.w600,
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 3),
+            Text(
+              subtitle,
+              style: NothingTypography.grotesk(
+                fontSize: 9.5,
+                color: isDark
+                    ? AppColors.nothingSubtext
+                    : AppColors.textSecondary,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickDuePreset({
+    required String label,
+    required VoidCallback onTap,
+    required bool isDark,
+  }) {
+    return InkWell(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E1E1E) : const Color(0xFFE5E5E5),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isDark
+                ? AppColors.nothingBorder
+                : Colors.black.withValues(alpha: 0.06),
+            width: 0.8,
+          ),
+        ),
+        child: Text(
+          label,
+          style: NothingTypography.grotesk(
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            color: isDark ? Colors.white70 : Colors.black87,
+          ),
+        ),
+      ),
     );
   }
 }

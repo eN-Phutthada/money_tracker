@@ -9,7 +9,9 @@ import '../../../theme/app_popup_decorations.dart';
 import '../../../widgets/liquid_glass_nav_dock.dart';
 import '../../../widgets/modern_app_bar.dart';
 import '../../../widgets/nothing_ui_components.dart';
+import '../../../data/models/scheduled_payment_model.dart';
 import '../../../routes/app_routes.dart';
+import '../../transactions/views/scheduled_payments_sheet.dart';
 import '../controllers/budget_controller.dart';
 
 class BudgetSettingsView extends GetView<BudgetController> {
@@ -976,12 +978,14 @@ class BudgetSettingsView extends GetView<BudgetController> {
   ) {
     return Obx(() {
       final currentBalance = controller.currentWalletBalance;
+      final pendingSalary = controller.pendingSalary.value;
       final savings = controller.targetMonthlySavings.value;
       final fixedCosts = controller.remainingMonthlyFixedCosts;
       final availableBudget = controller.dynamicAvailableBudget;
       final quota = controller.dynamicCalculatedQuota;
       final remainingDays = controller.remainingDaysInMonth;
       final isPositive = availableBudget > 0;
+      final hasPendingSalary = pendingSalary > 0;
 
       final Color accentColor = isPositive
           ? (isDark ? Colors.white : Colors.black)
@@ -1036,7 +1040,9 @@ class BudgetSettingsView extends GetView<BudgetController> {
                         overflow: TextOverflow.ellipsis,
                       ),
                       Text(
-                        'dynamic_calculator_desc'.tr,
+                        hasPendingSalary
+                            ? 'dynamic_calculator_desc_with_salary'.tr
+                            : 'dynamic_calculator_desc'.tr,
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w500,
@@ -1052,7 +1058,7 @@ class BudgetSettingsView extends GetView<BudgetController> {
             ),
             const SizedBox(height: 12),
 
-            // 3-Step Deduction Formula Breakdown (Current - Savings - Fixed)
+            // 4-Step Deduction Formula Breakdown (Current + Pending Salary - Savings - Fixed)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
@@ -1074,7 +1080,14 @@ class BudgetSettingsView extends GetView<BudgetController> {
                     isDark: isDark,
                     prefix: '',
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 8),
+                  _buildPendingSalaryDeductionRow(
+                    context: context,
+                    pendingSalary: pendingSalary,
+                    currencyFmt: currencyFmt,
+                    isDark: isDark,
+                  ),
+                  const SizedBox(height: 8),
                   _buildFormulaDeductionRow(
                     label: 'deduct_savings_target'.tr,
                     amount: currencyFmt.format(savings),
@@ -1260,6 +1273,170 @@ class BudgetSettingsView extends GetView<BudgetController> {
     );
   }
 
+  Widget _buildPendingSalaryDeductionRow({
+    required BuildContext context,
+    required double pendingSalary,
+    required NumberFormat currencyFmt,
+    required bool isDark,
+  }) {
+    final hasPendingSalary = pendingSalary > 0;
+    const accentGreen = Color(0xFF10B981);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              _showEditNumberDialog(
+                context,
+                'pending_salary_input_title'.tr,
+                controller.pendingSalary,
+                accentGreen,
+              );
+            },
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            'pending_salary_label'.tr,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: isDark
+                                  ? AppColors.darkTextPrimary
+                                  : AppColors.textPrimary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(
+                          Icons.edit_note_rounded,
+                          size: 15,
+                          color: hasPendingSalary
+                              ? accentGreen
+                              : (isDark
+                                    ? AppColors.darkTextTertiary
+                                    : AppColors.textTertiary),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '+ ${currencyFmt.format(pendingSalary)}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: hasPendingSalary
+                          ? accentGreen
+                          : (isDark
+                                ? AppColors.darkTextTertiary
+                                : AppColors.textTertiary),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Wrap(
+          spacing: 6,
+          runSpacing: 4,
+          children: [
+            Material(
+              color: isDark ? const Color(0xFF1A1A1E) : const Color(0xFFEBEBF0),
+              borderRadius: BorderRadius.circular(6),
+              child: InkWell(
+                onTap: controller.usePlannedIncomeAsPendingSalary,
+                borderRadius: BorderRadius.circular(6),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2.5,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.bolt_rounded,
+                        size: 12,
+                        color: accentGreen,
+                      ),
+                      const SizedBox(width: 3),
+                      Text(
+                        '${'use_planned_income'.tr} (${currencyFmt.format(controller.plannedIncome.value)})',
+                        style: TextStyle(
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w600,
+                          color: isDark
+                              ? AppColors.darkTextSecondary
+                              : AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            if (hasPendingSalary)
+              Material(
+                color: isDark
+                    ? const Color(0xFF1A1A1E)
+                    : const Color(0xFFEBEBF0),
+                borderRadius: BorderRadius.circular(6),
+                child: InkWell(
+                  onTap: controller.clearPendingSalary,
+                  borderRadius: BorderRadius.circular(6),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2.5,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.restart_alt_rounded,
+                          size: 11,
+                          color: isDark
+                              ? AppColors.darkTextTertiary
+                              : AppColors.textTertiary,
+                        ),
+                        const SizedBox(width: 3),
+                        Text(
+                          'clear_pending_salary'.tr,
+                          style: TextStyle(
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w600,
+                            color: isDark
+                                ? AppColors.darkTextTertiary
+                                : AppColors.textTertiary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+
   Widget _buildStepperButton({
     required String label,
     required VoidCallback onTap,
@@ -1345,22 +1522,713 @@ class BudgetSettingsView extends GetView<BudgetController> {
         ),
         const SizedBox(height: 12),
 
-        _buildPillarBentoCard(
-          context,
-          title: 'planned_fixed_costs_title'.tr,
-          subtitle: 'planned_fixed_costs_desc'.tr,
-          value: controller.plannedFixedCosts,
-          color: isDark ? const Color(0xFFFBBF24) : const Color(0xFFD97706),
-          icon: Icons.home_work_rounded,
-          currencyFmt: currencyFmt,
-          isDark: isDark,
-          ratioTextBuilder: () => 'percent_of_income'.trParams({
-            'percent': '${(controller.fixedCostsRatio * 100).toInt()}%',
-          }),
-          onQuickAdjust: (delta) => controller.adjustPlannedFixedCosts(delta),
-          quickSteps: [500, 1000],
-        ),
+        _buildFixedCostsBentoCard(context, currencyFmt, isDark),
       ],
+    );
+  }
+
+  Widget _buildSyncStatusBadge({
+    required bool isInSync,
+    required double unallocated,
+    required double overAllocated,
+    required NumberFormat currencyFmt,
+    required bool isDark,
+  }) {
+    if (isInSync) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+        decoration: BoxDecoration(
+          color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.16 : 0.10),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: const Color(0xFF10B981).withValues(alpha: 0.3),
+            width: 0.8,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const NothingLedIndicator(color: Color(0xFF10B981), size: 5),
+            const SizedBox(width: 5),
+            Text(
+              'fixed_costs_in_sync'.tr,
+              style: const TextStyle(
+                fontSize: 9.5,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF10B981),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (unallocated > 0) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF59E0B).withValues(alpha: isDark ? 0.16 : 0.10),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: const Color(0xFFF59E0B).withValues(alpha: 0.3),
+            width: 0.8,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const NothingLedIndicator(color: Color(0xFFF59E0B), size: 5),
+            const SizedBox(width: 5),
+            Text(
+              'fixed_sync_buffer_badge'.trParams({
+                'amount': currencyFmt.format(unallocated),
+              }),
+              style: const TextStyle(
+                fontSize: 9.5,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFFF59E0B),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+      decoration: BoxDecoration(
+        color: AppColors.nothingRed.withValues(alpha: isDark ? 0.16 : 0.10),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: AppColors.nothingRed.withValues(alpha: 0.3),
+          width: 0.8,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const NothingLedIndicator(
+            color: AppColors.nothingRed,
+            size: 5,
+            isPulsing: true,
+          ),
+          const SizedBox(width: 5),
+          Text(
+            'fixed_sync_exceed_badge'.trParams({
+              'amount': currencyFmt.format(overAllocated),
+            }),
+            style: const TextStyle(
+              fontSize: 9.5,
+              fontWeight: FontWeight.w700,
+              color: AppColors.nothingRed,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFixedCostsBentoCard(
+    BuildContext context,
+    NumberFormat currencyFmt,
+    bool isDark,
+  ) {
+    final activeColor =
+        isDark ? const Color(0xFFFBBF24) : const Color(0xFFD97706);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkSurface : AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: activeColor.withValues(alpha: isDark ? 0.35 : 0.22),
+          width: 0.8,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: activeColor.withValues(alpha: isDark ? 0.1 : 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Obx(() {
+        final plannedFixed = controller.plannedFixedCosts.value;
+        final totalScheduled =
+            controller.totalMonthlyFixedScheduledCommitments;
+        final count = controller.activeFixedScheduledPayments.length;
+        final isInSync = controller.isFixedCostsInSync;
+        final unallocated = controller.unallocatedFixedBudget;
+        final overAllocated = controller.overAllocatedFixedBudget;
+        final autoSync = controller.autoSyncFixedWithSchedules.value;
+        final fixedList = controller.activeFixedScheduledPayments;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 1. Header Row (Icon, Title, Amount & Edit)
+            Row(
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: activeColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.home_work_rounded,
+                    color: activeColor,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'planned_fixed_costs_title'.tr,
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                      color: isDark
+                          ? AppColors.darkTextPrimary
+                          : AppColors.textPrimary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => _showEditNumberDialog(
+                      context,
+                      'planned_fixed_costs_title'.tr,
+                      controller.plannedFixedCosts,
+                      activeColor,
+                    ),
+                    borderRadius: BorderRadius.circular(10),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 4,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerRight,
+                            child: Text(
+                              currencyFmt.format(plannedFixed),
+                              style: TextStyle(
+                                fontSize: 16.5,
+                                fontWeight: FontWeight.w800,
+                                color: activeColor,
+                                letterSpacing: -0.4,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(Icons.edit_rounded, size: 13, color: activeColor),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+
+            // Subtitle Description
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 2),
+              child: Text(
+                'planned_fixed_costs_desc'.tr,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: isDark
+                      ? AppColors.darkTextSecondary
+                      : AppColors.textSecondary,
+                  height: 1.35,
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            // Quick Adjust Steps & Ratio Tag
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 7,
+                    vertical: 2.5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: activeColor.withValues(alpha: isDark ? 0.15 : 0.08),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: activeColor.withValues(alpha: 0.25),
+                      width: 0.8,
+                    ),
+                  ),
+                  child: Text(
+                    'percent_of_income'.trParams({
+                      'percent':
+                          '${(controller.fixedCostsRatio * 100).toInt()}%',
+                    }),
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: activeColor,
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                ...[500, 1000].map((step) {
+                  return Padding(
+                    padding: const EdgeInsets.only(left: 6),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          controller.adjustPlannedFixedCosts(step.toDouble());
+                        },
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: activeColor.withValues(
+                              alpha: isDark ? 0.1 : 0.06,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: activeColor.withValues(alpha: 0.25),
+                              width: 0.8,
+                            ),
+                          ),
+                          child: Text(
+                            '+$step',
+                            style: TextStyle(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w700,
+                              color: activeColor,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // Hairline separator inside the card
+            Container(
+              margin: const EdgeInsets.symmetric(vertical: 2),
+              height: 0.8,
+              color: isDark
+                  ? AppColors.nothingBorder
+                  : Colors.black.withValues(alpha: 0.07),
+            ),
+            const SizedBox(height: 10),
+
+            // Telemetry & Synchronization Hub
+            // Row 1: Left has icon + 'Fixed Costs Sync' & stats (count & monthly total)
+            //        Right has Live Sync Status Badge
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: activeColor.withValues(alpha: isDark ? 0.15 : 0.08),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.sync_alt_rounded,
+                    size: 15,
+                    color: activeColor,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'fixed_costs_scheduled_sync'.tr,
+                        style: NothingTypography.grotesk(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: isDark ? Colors.white : Colors.black,
+                        ),
+                      ),
+                      const SizedBox(height: 1),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          count > 0
+                              ? '${'fixed_bills_count_label'.trParams({'count': '$count'})} • ${currencyFmt.format(totalScheduled)}/mo'
+                              : 'no_fixed_schedules_yet'.tr,
+                          style: GoogleFonts.shareTechMono(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w600,
+                            color: isDark
+                                ? AppColors.nothingSubtext
+                                : const Color(0xFF777777),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                _buildSyncStatusBadge(
+                  isInSync: isInSync,
+                  unallocated: unallocated,
+                  overAllocated: overAllocated,
+                  currencyFmt: currencyFmt,
+                  isDark: isDark,
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+
+            // Row 2: Action Controls (Auto-Sync Toggle Pill, 1-Tap Sync if needed, and Manage Fixed Bills Link)
+            Row(
+              children: [
+                // Minimal Auto-Sync Pill with subtle micro-switch
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? const Color(0xFF141414)
+                        : const Color(0xFFEFEFEF),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: autoSync
+                          ? AppColors.nothingRed.withValues(alpha: 0.35)
+                          : (isDark
+                              ? AppColors.nothingBorder
+                              : Colors.black.withValues(alpha: 0.08)),
+                      width: 0.8,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.sync_rounded,
+                        size: 13,
+                        color: autoSync
+                            ? AppColors.nothingRed
+                            : (isDark ? Colors.white54 : Colors.black45),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'auto_sync_fixed_costs'.tr,
+                        style: NothingTypography.grotesk(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: autoSync
+                              ? AppColors.nothingRed
+                              : (isDark ? Colors.white70 : Colors.black87),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Transform.scale(
+                        scale: 0.65,
+                        child: Switch.adaptive(
+                          value: autoSync,
+                          activeTrackColor: AppColors.nothingRed,
+                          activeThumbColor: Colors.white,
+                          onChanged: (val) => controller.toggleAutoSync(val),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // 1-Tap Sync button (Only appears if out of sync and not auto-synced)
+                if (!isInSync && !autoSync) ...[
+                  const SizedBox(width: 8),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => controller.syncFromScheduledPayments(),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? const Color(0xFF222222)
+                              : const Color(0xFFE5E5E5),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: isDark
+                                ? AppColors.nothingBorder
+                                : Colors.black12,
+                            width: 0.8,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.download_rounded,
+                              size: 12,
+                              color: AppColors.nothingRed,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'sync_from_schedules'.tr,
+                              style: NothingTypography.grotesk(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: isDark ? Colors.white : Colors.black,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+
+                const Spacer(),
+
+                // Manage Fixed Bills Link
+                InkWell(
+                  onTap: () => ScheduledPaymentsSheet.show(context),
+                  borderRadius: BorderRadius.circular(6),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 4,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'manage_fixed_bills'.tr,
+                          style: NothingTypography.grotesk(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                            color: activeColor,
+                          ),
+                        ),
+                        const SizedBox(width: 3),
+                        Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          size: 9.5,
+                          color: activeColor,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            // Row 3: Active Fixed Bills Micro-Preview / Allocation CTA
+            if (count > 0) ...[
+              const SizedBox(height: 8),
+              InkWell(
+                onTap: () => ScheduledPaymentsSheet.show(context),
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 7,
+                  ),
+                  decoration: BoxDecoration(
+                    color: (isDark ? Colors.white : Colors.black)
+                        .withValues(alpha: 0.03),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: isDark
+                          ? AppColors.nothingBorder
+                          : Colors.black.withValues(alpha: 0.06),
+                      width: 0.8,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.receipt_long_outlined,
+                        size: 13,
+                        color: activeColor,
+                      ),
+                      const SizedBox(width: 7),
+                      Expanded(
+                        child: Text(
+                          count == 1
+                              ? fixedList.first.title
+                              : '${fixedList.first.title} +${count - 1}',
+                          style: NothingTypography.grotesk(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? Colors.white : Colors.black,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 5,
+                          vertical: 1.5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: (isDark ? Colors.white : Colors.black)
+                              .withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          fixedList.first.frequency.labelKey.tr,
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? Colors.white70 : Colors.black87,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        currencyFmt.format(
+                            fixedList.first.monthlyEquivalentAmount),
+                        style: GoogleFonts.shareTechMono(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                          color: isDark ? Colors.white : Colors.black,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+
+            // If unallocated buffer exists, show sleek 1-tap smart allocation chip
+            if (unallocated > 0) ...[
+              const SizedBox(height: 7),
+              InkWell(
+                onTap: () => controller.openCreateFixedScheduleWithAmount(
+                  context,
+                  unallocated,
+                ),
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF10B981)
+                        .withValues(alpha: isDark ? 0.12 : 0.08),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: const Color(0xFF10B981)
+                          .withValues(alpha: 0.28),
+                      width: 0.8,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.add_circle_outline_rounded,
+                        size: 13,
+                        color: Color(0xFF10B981),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'allocate_remaining_fixed_desc'.trParams({
+                            'amount': currencyFmt.format(unallocated),
+                          }),
+                          style: NothingTypography.grotesk(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: isDark
+                                ? const Color(0xFFA7F3D0)
+                                : const Color(0xFF065F46),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 9,
+                        color: Color(0xFF10B981),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+
+            // If count == 0 and unallocated == 0, show sleek link to create first schedule
+            if (count == 0) ...[
+              const SizedBox(height: 8),
+              InkWell(
+                onTap: () => ScheduledPaymentsSheet.show(context),
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: (isDark ? Colors.white : Colors.black)
+                        .withValues(alpha: 0.02),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: isDark
+                          ? AppColors.nothingBorder
+                          : Colors.black.withValues(alpha: 0.05),
+                      width: 0.8,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.add_rounded, size: 14, color: activeColor),
+                      const SizedBox(width: 4),
+                      Text(
+                        'create_first_fixed_schedule'.tr,
+                        style: NothingTypography.grotesk(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w600,
+                          color: activeColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ],
+        );
+      }),
     );
   }
 

@@ -117,12 +117,7 @@ class DashboardView extends GetView<DashboardController> {
       toolbarHeight: 66.0,
       leading: const Padding(
         padding: EdgeInsets.only(left: 16, top: 12, bottom: 12, right: 0),
-        child: Center(
-          child: NothingAppLogo(
-            size: 42,
-            borderRadius: 14,
-          ),
-        ),
+        child: Center(child: NothingAppLogo(size: 42, borderRadius: 14)),
       ),
       titleWidget: Row(
         mainAxisSize: MainAxisSize.min,
@@ -150,12 +145,19 @@ class DashboardView extends GetView<DashboardController> {
                 onTap: () => _showEditUserNameDialog(context, isDark),
                 borderRadius: BorderRadius.circular(20),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2.5,
+                  ),
                   decoration: BoxDecoration(
-                    color: (isDark ? Colors.white : Colors.black).withValues(alpha: isDark ? 0.16 : 0.08),
+                    color: (isDark ? Colors.white : Colors.black).withValues(
+                      alpha: isDark ? 0.16 : 0.08,
+                    ),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: (isDark ? Colors.white : Colors.black).withValues(alpha: isDark ? 0.35 : 0.20),
+                      color: (isDark ? Colors.white : Colors.black).withValues(
+                        alpha: isDark ? 0.35 : 0.20,
+                      ),
                       width: 0.8,
                     ),
                   ),
@@ -242,7 +244,9 @@ class DashboardView extends GetView<DashboardController> {
                   dateStr,
                   style: NothingTypography.mono(
                     fontSize: 10.5,
-                    color: isDark ? const Color(0xFFB0B0B0) : const Color(0xFF555555),
+                    color: isDark
+                        ? const Color(0xFFB0B0B0)
+                        : const Color(0xFF555555),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -263,7 +267,9 @@ class DashboardView extends GetView<DashboardController> {
 
   void _showEditUserNameDialog(BuildContext context, bool isDark) {
     HapticFeedback.lightImpact();
-    final textController = TextEditingController(text: controller.userName.value);
+    final textController = TextEditingController(
+      text: controller.userName.value,
+    );
 
     showDialog(
       context: context,
@@ -289,12 +295,16 @@ class DashboardView extends GetView<DashboardController> {
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                    color: isDark
+                        ? AppColors.darkTextPrimary
+                        : AppColors.textPrimary,
                   ),
                   decoration: InputDecoration(
                     hintText: 'user_default'.tr,
                     filled: true,
-                    fillColor: isDark ? AppColors.darkSurfaceSecondary : AppColors.surfaceSecondary,
+                    fillColor: isDark
+                        ? AppColors.darkSurfaceSecondary
+                        : AppColors.surfaceSecondary,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
                       borderSide: BorderSide(
@@ -309,7 +319,10 @@ class DashboardView extends GetView<DashboardController> {
                         width: 1.5,
                       ),
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
                   ),
                   onSubmitted: (val) {
                     controller.setUserName(val);
@@ -325,7 +338,9 @@ class DashboardView extends GetView<DashboardController> {
                       child: Text(
                         'cancel'.tr,
                         style: TextStyle(
-                          color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                          color: isDark
+                              ? AppColors.darkTextSecondary
+                              : AppColors.textSecondary,
                         ),
                       ),
                     ),
@@ -337,7 +352,10 @@ class DashboardView extends GetView<DashboardController> {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 10,
+                        ),
                       ),
                       onPressed: () {
                         controller.setUserName(textController.text);

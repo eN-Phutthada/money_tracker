@@ -37,13 +37,21 @@ R#0000079278P3 :7608289   05/09/69 00:49
       '1 บัตเตอร์เค้กLP',
     ]);
     expect(result.receiptSummaryText, 'ยอดสุทธิ 3 ชิ้น 52.00 บาท');
-    expect(result.defaultTitle, '7-Eleven: Hอิชิตันต้นตำรับ 420 และอื่นๆ (3 รายการ)');
+    expect(
+      result.defaultTitle,
+      '7-Eleven: Hอิชิตันต้นตำรับ 420 และอื่นๆ (3 รายการ)',
+    );
     expect(result.receiverName, '7-Eleven สาขา ศูนย์อาหาร มมส (08116)');
-    expect(result.memo, '1 Hอิชิตันต้นตำรับ 420 (20.-), 1 บราวนี่LP_RNE (18.-), 1 บัตเตอร์เค้กLP (14.-)');
+    expect(
+      result.memo,
+      '1 Hอิชิตันต้นตำรับ 420 (20.-), 1 บราวนี่LP_RNE (18.-), 1 บัตเตอร์เค้กLP (14.-)',
+    );
   });
 
-  test('Test 7-Eleven receipt parsing with 3 ชั้น (OCR error on receipt image)', () {
-    const rawText = '''
+  test(
+    'Test 7-Eleven receipt parsing with 3 ชั้น (OCR error on receipt image)',
+    () {
+      const rawText = '''
 สาขา 7-Eleven ศูนย์อาหาร มมส.
 รหัสร้าน : 08116
 ---------------------------------
@@ -59,17 +67,18 @@ R#0000079278P3 :7608289   05/09/69 00:49
 * ศูนย์บริการสมาชิก All Member 0-2826-7777 *
 ''';
 
-    final result = BankSlipParser.parse(rawText);
+      final result = BankSlipParser.parse(rawText);
 
-    expect(result.amount, 52.00);
-    expect(result.receiptItemCount, 3);
-    expect(result.receiptItems, [
-      '1 Hอิชิตันต้นตำรับ 420',
-      '1 บราวนี่LP_RNE',
-      '1 บัตเตอร์เค้กLP',
-    ]);
-    expect(result.receiptSummaryText, 'ยอดสุทธิ 3 ชิ้น 52.00 บาท');
-  });
+      expect(result.amount, 52.00);
+      expect(result.receiptItemCount, 3);
+      expect(result.receiptItems, [
+        '1 Hอิชิตันต้นตำรับ 420',
+        '1 บราวนี่LP_RNE',
+        '1 บัตเตอร์เค้กLP',
+      ]);
+      expect(result.receiptSummaryText, 'ยอดสุทธิ 3 ชิ้น 52.00 บาท');
+    },
+  );
 
   test('Test 7-Eleven receipt with actual Android Tesseract OCR output', () {
     const rawText = '''
@@ -101,9 +110,15 @@ R#QQ00079278P3 :7608289    05/09/69 00:49
       '1 บัตเตอร์เค้กLP',
     ]);
     expect(result.receiptSummaryText, 'ยอดสุทธิ 3 ชิ้น 52.00 บาท');
-    expect(result.defaultTitle, '7-Eleven: Hอิชิตันต้นตำรับ 420 และอื่นๆ (3 รายการ)');
+    expect(
+      result.defaultTitle,
+      '7-Eleven: Hอิชิตันต้นตำรับ 420 และอื่นๆ (3 รายการ)',
+    );
     expect(result.receiverName, '7-Eleven สาขา ศูนย์อาหาร มมส (08116)');
-    expect(result.memo, '1 Hอิชิตันต้นตำรับ 420 (20.-), 1 บราวนี่LP_RNE (18.-), 1 บัตเตอร์เค้กLP (14.-)');
+    expect(
+      result.memo,
+      '1 Hอิชิตันต้นตำรับ 420 (20.-), 1 บราวนี่LP_RNE (18.-), 1 บัตเตอร์เค้กLP (14.-)',
+    );
   });
 
   test('Test 7-Eleven receipt with user screenshot OCR variation', () {
@@ -129,4 +144,3 @@ TID#2026090500000005200279973
     expect(result.receiptSummaryText, 'ยอดสุทธิ 3 ชิ้น 52.00 บาท');
   });
 }
-

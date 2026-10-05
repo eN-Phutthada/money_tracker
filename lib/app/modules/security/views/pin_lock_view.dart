@@ -31,7 +31,8 @@ class PinLockView extends StatefulWidget {
   State<PinLockView> createState() => _PinLockViewState();
 }
 
-class _PinLockViewState extends State<PinLockView> with TickerProviderStateMixin {
+class _PinLockViewState extends State<PinLockView>
+    with TickerProviderStateMixin {
   final SecurityController controller = Get.find<SecurityController>();
 
   String _enteredPin = '';
@@ -62,7 +63,8 @@ class _PinLockViewState extends State<PinLockView> with TickerProviderStateMixin
       duration: const Duration(milliseconds: 400),
     );
 
-    final isTest = WidgetsBinding.instance.runtimeType.toString().contains('Test') ||
+    final isTest =
+        WidgetsBinding.instance.runtimeType.toString().contains('Test') ||
         Platform.environment.containsKey('FLUTTER_TEST');
 
     // Auto-prompt real biometrics on launch after window gains focus
@@ -90,27 +92,38 @@ class _PinLockViewState extends State<PinLockView> with TickerProviderStateMixin
     if (_isSuccess || _isExiting) return;
     if (event is KeyDownEvent) {
       final key = event.logicalKey;
-      if (key == LogicalKeyboardKey.backspace || key == LogicalKeyboardKey.delete) {
+      if (key == LogicalKeyboardKey.backspace ||
+          key == LogicalKeyboardKey.delete) {
         _onKeyPress('⌫');
-      } else if (key == LogicalKeyboardKey.digit0 || key == LogicalKeyboardKey.numpad0) {
+      } else if (key == LogicalKeyboardKey.digit0 ||
+          key == LogicalKeyboardKey.numpad0) {
         _onKeyPress('0');
-      } else if (key == LogicalKeyboardKey.digit1 || key == LogicalKeyboardKey.numpad1) {
+      } else if (key == LogicalKeyboardKey.digit1 ||
+          key == LogicalKeyboardKey.numpad1) {
         _onKeyPress('1');
-      } else if (key == LogicalKeyboardKey.digit2 || key == LogicalKeyboardKey.numpad2) {
+      } else if (key == LogicalKeyboardKey.digit2 ||
+          key == LogicalKeyboardKey.numpad2) {
         _onKeyPress('2');
-      } else if (key == LogicalKeyboardKey.digit3 || key == LogicalKeyboardKey.numpad3) {
+      } else if (key == LogicalKeyboardKey.digit3 ||
+          key == LogicalKeyboardKey.numpad3) {
         _onKeyPress('3');
-      } else if (key == LogicalKeyboardKey.digit4 || key == LogicalKeyboardKey.numpad4) {
+      } else if (key == LogicalKeyboardKey.digit4 ||
+          key == LogicalKeyboardKey.numpad4) {
         _onKeyPress('4');
-      } else if (key == LogicalKeyboardKey.digit5 || key == LogicalKeyboardKey.numpad5) {
+      } else if (key == LogicalKeyboardKey.digit5 ||
+          key == LogicalKeyboardKey.numpad5) {
         _onKeyPress('5');
-      } else if (key == LogicalKeyboardKey.digit6 || key == LogicalKeyboardKey.numpad6) {
+      } else if (key == LogicalKeyboardKey.digit6 ||
+          key == LogicalKeyboardKey.numpad6) {
         _onKeyPress('6');
-      } else if (key == LogicalKeyboardKey.digit7 || key == LogicalKeyboardKey.numpad7) {
+      } else if (key == LogicalKeyboardKey.digit7 ||
+          key == LogicalKeyboardKey.numpad7) {
         _onKeyPress('7');
-      } else if (key == LogicalKeyboardKey.digit8 || key == LogicalKeyboardKey.numpad8) {
+      } else if (key == LogicalKeyboardKey.digit8 ||
+          key == LogicalKeyboardKey.numpad8) {
         _onKeyPress('8');
-      } else if (key == LogicalKeyboardKey.digit9 || key == LogicalKeyboardKey.numpad9) {
+      } else if (key == LogicalKeyboardKey.digit9 ||
+          key == LogicalKeyboardKey.numpad9) {
         _onKeyPress('9');
       }
     }
@@ -278,7 +291,10 @@ class _PinLockViewState extends State<PinLockView> with TickerProviderStateMixin
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return PopScope(
-      canPop: widget.canCancel && _recoveryMode == _RecoveryMode.none && !_isBiometricScanning,
+      canPop:
+          widget.canCancel &&
+          _recoveryMode == _RecoveryMode.none &&
+          !_isBiometricScanning,
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop && _recoveryMode != _RecoveryMode.none) {
           _closeRecovery();
@@ -289,7 +305,9 @@ class _PinLockViewState extends State<PinLockView> with TickerProviderStateMixin
         autofocus: true,
         onKeyEvent: _handleHardwareKeyEvent,
         child: Scaffold(
-          backgroundColor: isDark ? const Color(0xFF000000) : const Color(0xFFF7F7F7),
+          backgroundColor: isDark
+              ? const Color(0xFF000000)
+              : const Color(0xFFF7F7F7),
           body: Stack(
             children: [
               SafeArea(
@@ -312,7 +330,9 @@ class _PinLockViewState extends State<PinLockView> with TickerProviderStateMixin
                             return SingleChildScrollView(
                               physics: const BouncingScrollPhysics(),
                               child: ConstrainedBox(
-                                constraints: BoxConstraints(minHeight: availableHeight),
+                                constraints: BoxConstraints(
+                                  minHeight: availableHeight,
+                                ),
                                 child: IntrinsicHeight(
                                   child: Padding(
                                     padding: EdgeInsets.symmetric(
@@ -320,7 +340,8 @@ class _PinLockViewState extends State<PinLockView> with TickerProviderStateMixin
                                       vertical: isCompact ? 12 : 20,
                                     ),
                                     child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
                                         if (widget.canCancel)
                                           Align(
@@ -328,7 +349,9 @@ class _PinLockViewState extends State<PinLockView> with TickerProviderStateMixin
                                             child: IconButton(
                                               icon: Icon(
                                                 Icons.close_rounded,
-                                                color: isDark ? Colors.white : Colors.black,
+                                                color: isDark
+                                                    ? Colors.white
+                                                    : Colors.black,
                                               ),
                                               onPressed: () => Get.back(),
                                             ),
@@ -384,7 +407,10 @@ class _PinLockViewState extends State<PinLockView> with TickerProviderStateMixin
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
           side: hasFailed
-              ? BorderSide(color: AppColors.nothingRed.withValues(alpha: 0.35), width: 0.8)
+              ? BorderSide(
+                  color: AppColors.nothingRed.withValues(alpha: 0.35),
+                  width: 0.8,
+                )
               : BorderSide.none,
         ),
         backgroundColor: hasFailed
@@ -421,12 +447,11 @@ class _PinLockViewState extends State<PinLockView> with TickerProviderStateMixin
           animation: _unlockAnimationController,
           builder: (context, child) {
             final double scale = _isSuccess
-                ? 1.0 + 0.16 * math.sin(_unlockAnimationController.value * math.pi)
+                ? 1.0 +
+                      0.16 *
+                          math.sin(_unlockAnimationController.value * math.pi)
                 : 1.0;
-            return Transform.scale(
-              scale: scale,
-              child: child,
-            );
+            return Transform.scale(scale: scale, child: child);
           },
           child: Container(
             width: 56,
@@ -438,8 +463,10 @@ class _PinLockViewState extends State<PinLockView> with TickerProviderStateMixin
                 color: _isSuccess
                     ? const Color(0xFF10B981)
                     : (_isError
-                        ? AppColors.nothingRed
-                        : (isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.10))),
+                          ? AppColors.nothingRed
+                          : (isDark
+                                ? AppColors.nothingBorder
+                                : Colors.black.withValues(alpha: 0.10))),
                 width: 0.8,
               ),
               boxShadow: _isSuccess
@@ -464,7 +491,9 @@ class _PinLockViewState extends State<PinLockView> with TickerProviderStateMixin
                   child: Icon(
                     _isSuccess
                         ? Icons.lock_open_rounded
-                        : (_isError ? Icons.lock_rounded : Icons.shield_outlined),
+                        : (_isError
+                              ? Icons.lock_rounded
+                              : Icons.shield_outlined),
                     key: ValueKey<String>(
                       _isSuccess ? 'success' : (_isError ? 'error' : 'shield'),
                     ),
@@ -472,8 +501,8 @@ class _PinLockViewState extends State<PinLockView> with TickerProviderStateMixin
                     color: _isSuccess
                         ? const Color(0xFF10B981)
                         : (_isError
-                            ? AppColors.nothingRed
-                            : (isDark ? Colors.white : Colors.black)),
+                              ? AppColors.nothingRed
+                              : (isDark ? Colors.white : Colors.black)),
                   ),
                 ),
                 Positioned(
@@ -481,7 +510,9 @@ class _PinLockViewState extends State<PinLockView> with TickerProviderStateMixin
                   right: 8,
                   child: NothingLedIndicator(
                     size: 5,
-                    color: _isSuccess ? const Color(0xFF10B981) : AppColors.nothingRed,
+                    color: _isSuccess
+                        ? const Color(0xFF10B981)
+                        : AppColors.nothingRed,
                     isPulsing: _isSuccess || _isError,
                   ),
                 ),
@@ -510,7 +541,9 @@ class _PinLockViewState extends State<PinLockView> with TickerProviderStateMixin
               letterSpacing: 2.0,
               color: _isSuccess
                   ? const Color(0xFF10B981)
-                  : (_isError ? AppColors.nothingRed : (isDark ? Colors.white : Colors.black)),
+                  : (_isError
+                        ? AppColors.nothingRed
+                        : (isDark ? Colors.white : Colors.black)),
             ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
             textAlign: TextAlign.center,
           ),
@@ -532,13 +565,16 @@ class _PinLockViewState extends State<PinLockView> with TickerProviderStateMixin
   /// 2. 4 Nothing OS LED Pip Indicators
   Widget _buildLedPips(bool isDark) {
     return AnimatedBuilder(
-      animation: Listenable.merge([_shakeController, _unlockAnimationController]),
+      animation: Listenable.merge([
+        _shakeController,
+        _unlockAnimationController,
+      ]),
       builder: (context, child) {
         final dx = _shakeController.value == 0
             ? 0.0
             : (1.0 - _shakeController.value) *
-                12.0 *
-                (1.0 - (2.0 * ((_shakeController.value * 6) % 1)));
+                  12.0 *
+                  (1.0 - (2.0 * ((_shakeController.value * 6) % 1)));
 
         return Transform.translate(
           offset: Offset(dx, 0),
@@ -551,8 +587,10 @@ class _PinLockViewState extends State<PinLockView> with TickerProviderStateMixin
                 color: _isSuccess
                     ? const Color(0xFF10B981)
                     : (_isError
-                        ? AppColors.nothingRed
-                        : (isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08))),
+                          ? AppColors.nothingRed
+                          : (isDark
+                                ? AppColors.nothingBorder
+                                : Colors.black.withValues(alpha: 0.08))),
                 width: 0.8,
               ),
               boxShadow: _isSuccess
@@ -572,13 +610,15 @@ class _PinLockViewState extends State<PinLockView> with TickerProviderStateMixin
                 final Color pipColor = _isSuccess
                     ? const Color(0xFF10B981)
                     : (_isError
-                        ? AppColors.nothingRed
-                        : (isDark ? Colors.white : Colors.black));
+                          ? AppColors.nothingRed
+                          : (isDark ? Colors.white : Colors.black));
 
                 // Staggered wave scale on success
                 double scale = 1.0;
                 if (_isSuccess && _unlockAnimationController.isAnimating) {
-                  final double progress = (_unlockAnimationController.value * 1.5 - index * 0.18).clamp(0.0, 1.0);
+                  final double progress =
+                      (_unlockAnimationController.value * 1.5 - index * 0.18)
+                          .clamp(0.0, 1.0);
                   scale = 1.0 + 0.35 * math.sin(progress * math.pi);
                 }
 
@@ -595,14 +635,16 @@ class _PinLockViewState extends State<PinLockView> with TickerProviderStateMixin
                         color: isFilled
                             ? pipColor
                             : (isDark
-                                ? Colors.white.withValues(alpha: 0.25)
-                                : Colors.black.withValues(alpha: 0.25)),
+                                  ? Colors.white.withValues(alpha: 0.25)
+                                  : Colors.black.withValues(alpha: 0.25)),
                         width: 1.2,
                       ),
                       boxShadow: isFilled
                           ? [
                               BoxShadow(
-                                color: pipColor.withValues(alpha: _isSuccess ? 0.65 : 0.45),
+                                color: pipColor.withValues(
+                                  alpha: _isSuccess ? 0.65 : 0.45,
+                                ),
                                 blurRadius: _isSuccess ? 8 : 6,
                                 spreadRadius: _isSuccess ? 1.5 : 1,
                               ),
@@ -668,9 +710,13 @@ class _PinLockViewState extends State<PinLockView> with TickerProviderStateMixin
               height: size,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: isDark ? const Color(0xFF141414) : const Color(0xFFEEEEEE),
+                color: isDark
+                    ? const Color(0xFF141414)
+                    : const Color(0xFFEEEEEE),
                 border: Border.all(
-                  color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                  color: isDark
+                      ? AppColors.nothingBorder
+                      : Colors.black.withValues(alpha: 0.08),
                   width: 0.8,
                 ),
               ),
@@ -699,7 +745,9 @@ class _PinLockViewState extends State<PinLockView> with TickerProviderStateMixin
             shape: BoxShape.circle,
             color: isDark ? const Color(0xFF141414) : const Color(0xFFEEEEEE),
             border: Border.all(
-              color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+              color: isDark
+                  ? AppColors.nothingBorder
+                  : Colors.black.withValues(alpha: 0.08),
               width: 0.8,
             ),
           ),
@@ -747,7 +795,10 @@ class _PinLockViewState extends State<PinLockView> with TickerProviderStateMixin
                     transitionBuilder: (child, animation) => FadeTransition(
                       opacity: animation,
                       child: ScaleTransition(
-                        scale: Tween<double>(begin: 0.96, end: 1.0).animate(animation),
+                        scale: Tween<double>(
+                          begin: 0.96,
+                          end: 1.0,
+                        ).animate(animation),
                         child: child,
                       ),
                     ),
@@ -816,10 +867,15 @@ class _PinLockViewState extends State<PinLockView> with TickerProviderStateMixin
               style: OutlinedButton.styleFrom(
                 foregroundColor: isDark ? Colors.white : Colors.black,
                 side: BorderSide(
-                  color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.15),
+                  color: isDark
+                      ? AppColors.nothingBorder
+                      : Colors.black.withValues(alpha: 0.15),
                   width: 0.8,
                 ),
-                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 14,
+                  horizontal: 16,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
                 ),
@@ -857,7 +913,11 @@ class _PinLockViewState extends State<PinLockView> with TickerProviderStateMixin
                 borderRadius: BorderRadius.circular(14),
               ),
             ),
-            icon: const Icon(Icons.restart_alt_rounded, size: 20, color: AppColors.nothingRed),
+            icon: const Icon(
+              Icons.restart_alt_rounded,
+              size: 20,
+              color: AppColors.nothingRed,
+            ),
             label: Align(
               alignment: Alignment.centerLeft,
               child: Text(
@@ -915,7 +975,9 @@ class _PinLockViewState extends State<PinLockView> with TickerProviderStateMixin
                     'recovery_confirm_reset_subtitle'.tr,
                     style: GoogleFonts.spaceGrotesk(
                       fontSize: 11,
-                      color: isDark ? AppColors.nothingSubtext : const Color(0xFF777777),
+                      color: isDark
+                          ? AppColors.nothingSubtext
+                          : const Color(0xFF777777),
                     ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
                   ),
                 ],
@@ -930,7 +992,9 @@ class _PinLockViewState extends State<PinLockView> with TickerProviderStateMixin
             color: isDark ? const Color(0xFF161616) : const Color(0xFFF2F2F2),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+              color: isDark
+                  ? AppColors.nothingBorder
+                  : Colors.black.withValues(alpha: 0.08),
               width: 0.8,
             ),
           ),
@@ -954,7 +1018,9 @@ class _PinLockViewState extends State<PinLockView> with TickerProviderStateMixin
                 style: GoogleFonts.spaceGrotesk(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: isDark ? AppColors.nothingSubtext : const Color(0xFF777777),
+                  color: isDark
+                      ? AppColors.nothingSubtext
+                      : const Color(0xFF777777),
                 ).copyWith(fontFamilyFallback: ['Prompt', 'sans-serif']),
               ),
             ),
@@ -962,11 +1028,16 @@ class _PinLockViewState extends State<PinLockView> with TickerProviderStateMixin
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: _resetCountdown > 0
-                    ? (isDark ? const Color(0xFF262626) : const Color(0xFFDDDDDD))
+                    ? (isDark
+                          ? const Color(0xFF262626)
+                          : const Color(0xFFDDDDDD))
                     : AppColors.nothingRed,
                 foregroundColor: Colors.white,
                 elevation: 0,
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 12,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -987,7 +1058,9 @@ class _PinLockViewState extends State<PinLockView> with TickerProviderStateMixin
                     },
               child: Text(
                 _resetCountdown > 0
-                    ? 'recovery_countdown_wait'.trParams({'seconds': '$_resetCountdown'})
+                    ? 'recovery_countdown_wait'.trParams({
+                        'seconds': '$_resetCountdown',
+                      })
                     : 'confirm'.tr,
                 style: GoogleFonts.spaceGrotesk(
                   fontSize: 12,

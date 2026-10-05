@@ -61,7 +61,8 @@ class BankSlipData {
   });
 
   /// จำนวนชิ้นรวมของสินค้าจากใบเสร็จ
-  int get totalItemCount => receiptItemCount ?? (receiptItems.isNotEmpty ? receiptItems.length : 1);
+  int get totalItemCount =>
+      receiptItemCount ?? (receiptItems.isNotEmpty ? receiptItems.length : 1);
 
   /// ข้อความสรุปยอดสุทธิ เช่น "ยอดสุทธิ 3 ชิ้น 52.00 บาท" (คำนวณผ่าน GetX Translation)
   String get receiptSummaryText {
@@ -166,7 +167,12 @@ class BankSlipData {
       if (loc == 'en' || loc == 'th') return loc!;
     } catch (_) {}
     try {
-      final sysLang = WidgetsBinding.instance.platformDispatcher.locale.languageCode.toLowerCase();
+      final sysLang = WidgetsBinding
+          .instance
+          .platformDispatcher
+          .locale
+          .languageCode
+          .toLowerCase();
       if (sysLang == 'en' || sysLang == 'th') return sysLang;
     } catch (_) {}
     return 'th';
@@ -186,7 +192,10 @@ class BankSlipData {
     // ── 0. กรณีใบเสร็จรับเงิน 7-Eleven หรือร้านค้าปลีก (Retail / 7-Eleven Receipts) ──
     // กำหนดชื่อรายการอย่างเป็นระบบ ให้เข้าใจง่าย เช่น "7-Eleven: ข้าวกะเพราไก่" หรือ "7-Eleven: ข้าวกะเพราไก่ และอื่นๆ (3 รายการ)"
     if (is7Eleven) {
-      final cleanItems = receiptItems.map(_cleanReceiptItemName).where((s) => s.isNotEmpty).toList();
+      final cleanItems = receiptItems
+          .map(_cleanReceiptItemName)
+          .where((s) => s.isNotEmpty)
+          .toList();
 
       if (cleanItems.isNotEmpty) {
         if (cleanItems.length == 1) {
@@ -204,13 +213,28 @@ class BankSlipData {
       String? cleanBranch;
       if (receiverName != null && receiverName!.isNotEmpty) {
         final rName = receiverName!;
-        final bMatch = RegExp(r'(?:สาขา|Branch|Store\s*#?)\s*([0-9A-Za-zก-๙\s\.\-_]+)', caseSensitive: false).firstMatch(rName);
+        final bMatch = RegExp(
+          r'(?:สาขา|Branch|Store\s*#?)\s*([0-9A-Za-zก-๙\s\.\-_]+)',
+          caseSensitive: false,
+        ).firstMatch(rName);
         if (bMatch != null) {
           var bText = bMatch.group(1)?.trim() ?? '';
-          bText = bText.replaceAll(RegExp(r'\b(?:cp all|ซีพี ออลล์|ซีพีออลล์)\b', caseSensitive: false), '').trim();
-          final hasNamedLocation = RegExp(r'[ก-๙a-zA-Z]{3,}').hasMatch(bText.replaceAll(RegExp(r'^\d+\s*'), ''));
+          bText = bText
+              .replaceAll(
+                RegExp(
+                  r'\b(?:cp all|ซีพี ออลล์|ซีพีออลล์)\b',
+                  caseSensitive: false,
+                ),
+                '',
+              )
+              .trim();
+          final hasNamedLocation = RegExp(
+            r'[ก-๙a-zA-Z]{3,}',
+          ).hasMatch(bText.replaceAll(RegExp(r'^\d+\s*'), ''));
           if (hasNamedLocation) {
-            final locOnly = bText.replaceFirst(RegExp(r'^\d{3,6}\s*'), '').trim();
+            final locOnly = bText
+                .replaceFirst(RegExp(r'^\d{3,6}\s*'), '')
+                .trim();
             if (locOnly.isNotEmpty) {
               cleanBranch = locOnly;
             }
@@ -219,7 +243,9 @@ class BankSlipData {
       }
 
       if (cleanBranch != null && cleanBranch.isNotEmpty) {
-        return isEnglish ? '7-Eleven ($cleanBranch)' : 'ซื้อของ 7-Eleven ($cleanBranch)';
+        return isEnglish
+            ? '7-Eleven ($cleanBranch)'
+            : 'ซื้อของ 7-Eleven ($cleanBranch)';
       }
 
       return isEnglish ? '7-Eleven' : 'ซื้อของ 7-Eleven';
@@ -227,8 +253,14 @@ class BankSlipData {
 
     // กรณีใบเสร็จร้านค้าอื่นที่มีรายการสินค้า
     if (isReceipt && receiptItems.isNotEmpty) {
-      final cleanItems = receiptItems.map(_cleanReceiptItemName).where((s) => s.isNotEmpty).toList();
-      var storeName = (receiverName != null && receiverName!.trim().isNotEmpty && !receiverName!.contains('ซีพี'))
+      final cleanItems = receiptItems
+          .map(_cleanReceiptItemName)
+          .where((s) => s.isNotEmpty)
+          .toList();
+      var storeName =
+          (receiverName != null &&
+              receiverName!.trim().isNotEmpty &&
+              !receiverName!.contains('ซีพี'))
           ? receiverName!.trim()
           : (bankName.contains('7-Eleven') ? '7-Eleven' : bankName);
       storeName = storeName.replaceAll(RegExp(r'\s*\([^\)]*\)'), '').trim();
@@ -446,10 +478,15 @@ class BankSlipData {
     // ตัดเลขลำดับ/จำนวนนำหน้า เช่น "1 ", "1. ", "01 ", "1x "
     s = s.replaceFirst(RegExp(r'^(?:\d{1,2}[\.\s\:\-xX]+)+'), '').trim();
     // ตัดราคาต่อท้าย เช่น " (47.-)", " 47.00", " 47 บาท" (ระวังไม่ตัดตัวเลขที่เป็นส่วนหนึ่งของชื่อสินค้า เช่น อิชิตัน 420, M-150)
-    s = s.replaceAll(
-      RegExp(r'\s*(?:\(\s*\d+(?:\.\d{1,2})?\s*(?:บาท|บ\.|THB|\.-|-)?\s*\)|\d{1,5}\.\d{2}\s*(?:บาท|บ\.|THB|\.-)?|\d{1,5}\s*(?:บาท|บ\.|THB|\.-))\s*$', caseSensitive: false),
-      '',
-    ).trim();
+    s = s
+        .replaceAll(
+          RegExp(
+            r'\s*(?:\(\s*\d+(?:\.\d{1,2})?\s*(?:บาท|บ\.|THB|\.-|-)?\s*\)|\d{1,5}\.\d{2}\s*(?:บาท|บ\.|THB|\.-)?|\d{1,5}\s*(?:บาท|บ\.|THB|\.-))\s*$',
+            caseSensitive: false,
+          ),
+          '',
+        )
+        .trim();
     // ตัดเครื่องหมายขยะที่หัวท้าย
     s = s.replaceAll(RegExp(r'^[\.\-\:\s,]+|[\.\-\:\s,]+$'), '').trim();
     return s;
@@ -458,14 +495,49 @@ class BankSlipData {
   static bool _isBusinessOrMerchant(String name) {
     final lower = name.toLowerCase();
     final businessPrefixes = [
-      'ร้าน', 'บจก.', 'บริษัท', 'หจก.', 'บมจ.', 'โรงพยาบาล', 'รพ.', 'คลินิก',
-      'การไฟฟ้า', 'การประปา', 'เทศบาล', 'มหาวิทยาลัย', 'โรงเรียน', 'สำนักงาน',
+      'ร้าน',
+      'บจก.',
+      'บริษัท',
+      'หจก.',
+      'บมจ.',
+      'โรงพยาบาล',
+      'รพ.',
+      'คลินิก',
+      'การไฟฟ้า',
+      'การประปา',
+      'เทศบาล',
+      'มหาวิทยาลัย',
+      'โรงเรียน',
+      'สำนักงาน',
     ];
     final businessKeywords = [
-      'co.,', 'ltd', 'limited', 'inc', 'corp', 'store', 'shop', 'market',
-      'cafe', 'coffee', 'restaurant', 'express', 'shopee', 'lazada', 'grab',
-      'lineman', 'foodpanda', 'netflix', 'spotify', 'apple', 'google',
-      '7-eleven', 'เซเว่น', 'โลตัส', 'บิ๊กซี', 'ท็อปส์', 'amazon',
+      'co.,',
+      'ltd',
+      'limited',
+      'inc',
+      'corp',
+      'store',
+      'shop',
+      'market',
+      'cafe',
+      'coffee',
+      'restaurant',
+      'express',
+      'shopee',
+      'lazada',
+      'grab',
+      'lineman',
+      'foodpanda',
+      'netflix',
+      'spotify',
+      'apple',
+      'google',
+      '7-eleven',
+      'เซเว่น',
+      'โลตัส',
+      'บิ๊กซี',
+      'ท็อปส์',
+      'amazon',
     ];
     for (final prefix in businessPrefixes) {
       if (name.startsWith(prefix)) return true;
@@ -584,7 +656,8 @@ class BankSlipData {
     return BankSlipData(
       amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
       transactionDate: json['transactionDate'] != null
-          ? DateTime.tryParse(json['transactionDate'] as String) ?? DateTime.now()
+          ? DateTime.tryParse(json['transactionDate'] as String) ??
+                DateTime.now()
           : DateTime.now(),
       senderName: json['senderName'] as String?,
       senderAccount: json['senderAccount'] as String?,
@@ -606,9 +679,11 @@ class BankSlipData {
       rawText: json['rawText'] as String? ?? '',
       hasParsedDateTime: json['hasParsedDateTime'] as bool? ?? false,
       hasParsedTime: json['hasParsedTime'] as bool? ?? false,
-      predictionConfidence: (json['predictionConfidence'] as num?)?.toDouble() ?? 0.5,
+      predictionConfidence:
+          (json['predictionConfidence'] as num?)?.toDouble() ?? 0.5,
       predictionReason: json['predictionReason'] as String? ?? '',
-      receiptItems: (json['receiptItems'] as List<dynamic>?)
+      receiptItems:
+          (json['receiptItems'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           const [],

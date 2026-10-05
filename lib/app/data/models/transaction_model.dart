@@ -1,21 +1,21 @@
 /// ประเภทหลักของกระแสเงินสด
 enum TransactionType {
-  income,            // รายรับ
-  expense,           // รายจ่าย
+  income, // รายรับ
+  expense, // รายจ่าย
   savingsInvestment, // เงินออมและการลงทุน
 }
 
 /// ลักษณะของค่าใช้จ่าย (เฉพาะ Expense)
 enum CostNature {
-  fixed,          // ค่าใช้จ่ายคงที่ (Fixed Costs) เช่น ค่าหอ, ค่าเน็ต, ประกัน
-  variable,       // ค่าใช้จ่ายผันแปร / จิปาถะ (Variable Costs) เช่น ค่ากิน, ช้อปปิ้ง
-  notApplicable,  // ไม่ระบุ (ใช้สำหรับ รายรับ หรือ เงินออม)
+  fixed, // ค่าใช้จ่ายคงที่ (Fixed Costs) เช่น ค่าหอ, ค่าเน็ต, ประกัน
+  variable, // ค่าใช้จ่ายผันแปร / จิปาถะ (Variable Costs) เช่น ค่ากิน, ช้อปปิ้ง
+  notApplicable, // ไม่ระบุ (ใช้สำหรับ รายรับ หรือ เงินออม)
 }
 
 /// ตัวกรองช่วงเวลา
 enum TimeFilterPeriod {
   monthly, // รายเดือน
-  yearly,  // รายปี
+  yearly, // รายปี
   allTime, // ยอดสะสมทั้งหมด
 }
 
@@ -29,6 +29,8 @@ class TransactionItem {
   final String categoryName;
   final DateTime date;
   final String? note;
+  final String? scheduledPaymentId;
+  final DateTime? originalScheduledDueDate;
 
   const TransactionItem({
     required this.id,
@@ -39,6 +41,8 @@ class TransactionItem {
     required this.categoryName,
     required this.date,
     this.note,
+    this.scheduledPaymentId,
+    this.originalScheduledDueDate,
   });
 
   bool get isIncome => type == TransactionType.income;
@@ -74,6 +78,8 @@ class TransactionItem {
     String? categoryName,
     DateTime? date,
     String? note,
+    String? scheduledPaymentId,
+    DateTime? originalScheduledDueDate,
   }) {
     return TransactionItem(
       id: id ?? this.id,
@@ -84,6 +90,9 @@ class TransactionItem {
       categoryName: categoryName ?? this.categoryName,
       date: date ?? this.date,
       note: note ?? this.note,
+      scheduledPaymentId: scheduledPaymentId ?? this.scheduledPaymentId,
+      originalScheduledDueDate:
+          originalScheduledDueDate ?? this.originalScheduledDueDate,
     );
   }
 
@@ -97,12 +106,17 @@ class TransactionItem {
       'categoryName': categoryName,
       'date': date.toIso8601String(),
       'note': note,
+      'scheduledPaymentId': scheduledPaymentId,
+      'originalScheduledDueDate':
+          originalScheduledDueDate?.toIso8601String(),
     };
   }
 
   factory TransactionItem.fromJson(Map<String, dynamic> json) {
     return TransactionItem(
-      id: json['id'] as String? ?? DateTime.now().millisecondsSinceEpoch.toString(),
+      id:
+          json['id'] as String? ??
+          DateTime.now().millisecondsSinceEpoch.toString(),
       title: json['title'] as String? ?? 'ไม่มีชื่อรายการ',
       amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
       type: TransactionType.values.firstWhere(
@@ -118,6 +132,10 @@ class TransactionItem {
           ? DateTime.tryParse(json['date'] as String) ?? DateTime.now()
           : DateTime.now(),
       note: json['note'] as String?,
+      scheduledPaymentId: json['scheduledPaymentId'] as String?,
+      originalScheduledDueDate: json['originalScheduledDueDate'] != null
+          ? DateTime.tryParse(json['originalScheduledDueDate'] as String)
+          : null,
     );
   }
 }

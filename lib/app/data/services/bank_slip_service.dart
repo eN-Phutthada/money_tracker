@@ -36,8 +36,7 @@ class BankBatchResult {
 /// - โหมด B: บันทึกทันทีอัตโนมัติ (Instant Auto-Save) พร้อม In-App Notification และปุ่มแก้ไข
 /// - ระบบสแกนแบบกลุ่ม (Batch Processing)
 class BankSlipService {
-  static final BankSlipService _instance =
-      BankSlipService._internal();
+  static final BankSlipService _instance = BankSlipService._internal();
   factory BankSlipService() => _instance;
   BankSlipService._internal();
 
@@ -108,8 +107,6 @@ class BankSlipService {
     );
   }
 
-
-
   /// เลือกรูปสลิปจากอัลบั้ม (Gallery)
   Future<XFile?> pickSlipImageFromGallery() async {
     try {
@@ -160,7 +157,10 @@ class BankSlipService {
 
       BankSlipData? qrSlip;
       if (qrString != null) {
-        qrSlip = BankQrDecoder.parsePromptPaySlipQr(qrString, userProfileName: userProfileName);
+        qrSlip = BankQrDecoder.parsePromptPaySlipQr(
+          qrString,
+          userProfileName: userProfileName,
+        );
       }
 
       // Fast-path: หาก QR Code มีข้อมูลครบถ้วน (มียอดเงิน > 0, รหัสอ้างอิง, วันที่, และมีชื่อผู้รับ/ร้านค้า)
@@ -177,7 +177,10 @@ class BankSlipService {
         final completedSlip = qrSlip.copyWith(
           transactionDate: finalDate,
           hasParsedDateTime: true,
-          hasParsedTime: qrSlip.hasParsedTime || finalDate.hour != 0 || finalDate.minute != 0,
+          hasParsedTime:
+              qrSlip.hasParsedTime ||
+              finalDate.hour != 0 ||
+              finalDate.minute != 0,
         );
         return enrichWithHistory(completedSlip);
       }
@@ -192,7 +195,10 @@ class BankSlipService {
       if (ocrText != null && ocrText.trim().isNotEmpty) {
         // หากไม่มี QR Code ต้องตรวจสอบก่อนว่าเป็นสลิปธนาคารหรือใบเสร็จจริงเพื่อข้ามรูปภาพทั่วไปได้อย่างรวดเร็ว
         if (qrSlip != null || BankSlipParser.isValidBankSlip(ocrText)) {
-          ocrSlip = BankSlipParser.parse(ocrText, userProfileName: userProfileName);
+          ocrSlip = BankSlipParser.parse(
+            ocrText,
+            userProfileName: userProfileName,
+          );
         }
       }
 
@@ -212,7 +218,8 @@ class BankSlipService {
           ocrSlip: ocr,
           fileModTime: fileModTime,
         );
-        final hasDateTime = ocr.hasParsedDateTime ||
+        final hasDateTime =
+            ocr.hasParsedDateTime ||
             qr.hasParsedDateTime ||
             fileModTime != null;
 
@@ -240,7 +247,8 @@ class BankSlipService {
             }
             return ocr.bankName;
           })(),
-          isKrungthai: (qr.isKrungthai || ocr.isKrungthai) &&
+          isKrungthai:
+              (qr.isKrungthai || ocr.isKrungthai) &&
               !ocr.bankName.contains('กสิกร') &&
               !ocr.bankName.contains('ไทยพาณิชย์') &&
               !ocr.bankName.contains('กรุงเทพ') &&
@@ -260,10 +268,10 @@ class BankSlipService {
           suggestedCategory: ocr.suggestedCategory,
           suggestedType: ocr.suggestedType,
           suggestedCostNature: ocr.suggestedCostNature,
-          rawText:
-              '${qr.rawText}\n\n-- OCR Extracted Text --\n${ocr.rawText}',
+          rawText: '${qr.rawText}\n\n-- OCR Extracted Text --\n${ocr.rawText}',
           hasParsedDateTime: hasDateTime,
-          hasParsedTime: ocr.hasParsedTime ||
+          hasParsedTime:
+              ocr.hasParsedTime ||
               qr.hasParsedTime ||
               finalDate.hour != 0 ||
               finalDate.minute != 0,
@@ -281,7 +289,8 @@ class BankSlipService {
         result = qrSlip.copyWith(
           transactionDate: finalDate,
           hasParsedDateTime: qrSlip.hasParsedDateTime || fileModTime != null,
-          hasParsedTime: qrSlip.hasParsedTime ||
+          hasParsedTime:
+              qrSlip.hasParsedTime ||
               finalDate.hour != 0 ||
               finalDate.minute != 0,
         );
@@ -295,7 +304,8 @@ class BankSlipService {
         result = ocrSlip.copyWith(
           transactionDate: finalDate,
           hasParsedDateTime: ocrSlip.hasParsedDateTime || fileModTime != null,
-          hasParsedTime: ocrSlip.hasParsedTime ||
+          hasParsedTime:
+              ocrSlip.hasParsedTime ||
               finalDate.hour != 0 ||
               finalDate.minute != 0,
         );
@@ -319,14 +329,16 @@ class BankSlipService {
     DateTime? fileModTime,
   }) {
     // 1. ตรวจสอบว่าแต่ละแหล่งข้อมูลมีเวลาที่เจาะจง (ผ่าน hasParsedTime หรือไม่ใช่ 00:00:00) หรือไม่
-    final ocrHasTime = ocrSlip != null &&
+    final ocrHasTime =
+        ocrSlip != null &&
         ocrSlip.hasParsedDateTime &&
         (ocrSlip.hasParsedTime ||
             ocrSlip.transactionDate.hour != 0 ||
             ocrSlip.transactionDate.minute != 0 ||
             ocrSlip.transactionDate.second != 0);
 
-    final qrHasTime = qrSlip != null &&
+    final qrHasTime =
+        qrSlip != null &&
         qrSlip.hasParsedDateTime &&
         (qrSlip.hasParsedTime ||
             qrSlip.transactionDate.hour != 0 ||
@@ -336,8 +348,8 @@ class BankSlipService {
     // ตรวจสอบว่า fileModTime เป็นเวลาแคชเพิ่งสร้างขึ้นชั่วคราวจากการอัปโหลดหรือไม่ (เช่น image_picker แคชรูปภาพ ณ เวลาปัจจุบัน)
     // หากห่างจากเวลาปัจจุบันไม่เกิน 15 นาที และเรามีวันเวลาจาก OCR หรือ QR อยู่แล้ว ห้ามนำเวลาไฟล์มาทับ
     final now = DateTime.now();
-    final isTempCacheTime = fileModTime != null &&
-        now.difference(fileModTime).abs().inMinutes < 15;
+    final isTempCacheTime =
+        fileModTime != null && now.difference(fileModTime).abs().inMinutes < 15;
 
     // 2. เลือกวันที่ (ปี, เดือน, วัน) โดยให้ความสำคัญกับสลิปจริงก่อนเสมอ
     int year;
@@ -396,7 +408,13 @@ class BankSlipService {
     }
 
     // 5. หากสลิปและรหัสอ้างอิงไม่มีเวลาจริง ให้ใช้เวลาของไฟล์ภาพ (ป้องกันการตกเป็น 00:00:00 เที่ยงคืน)
-    if (!ocrHasTime && !qrHasTime && hour == 0 && minute == 0 && second == 0 && fileModTime != null && !isTempCacheTime) {
+    if (!ocrHasTime &&
+        !qrHasTime &&
+        hour == 0 &&
+        minute == 0 &&
+        second == 0 &&
+        fileModTime != null &&
+        !isTempCacheTime) {
       hour = fileModTime.hour;
       minute = fileModTime.minute;
       second = fileModTime.second;
@@ -411,7 +429,9 @@ class BankSlipService {
       if (Get.isRegistered<DashboardController>()) {
         final controller = Get.find<DashboardController>();
         final history = controller.transactions;
-        final userProfileName = controller.userName.value.isNotEmpty ? controller.userName.value : null;
+        final userProfileName = controller.userName.value.isNotEmpty
+            ? controller.userName.value
+            : null;
         if (history.isNotEmpty) {
           final prediction = SlipCategoryPredictor.predict(
             memo: slip.memo,
@@ -509,7 +529,8 @@ class BankSlipService {
 
       AppFeedback.showSuccess(
         title: 'slip_saved_success'.tr,
-        message: '${transactionItem.title} (${transactionItem.categoryName.tr})',
+        message:
+            '${transactionItem.title} (${transactionItem.categoryName.tr})',
         amount: transactionItem.amount,
         transactionType: transactionItem.type,
       );
@@ -637,7 +658,6 @@ V=VAT 7% รวมในยอดสุทธิ 6.48
     ];
   }
 }
-
 
 /// Typedef สำหรับความเข้ากันได้ย้อนหลัง 100%
 typedef KrungthaiSlipService = BankSlipService;

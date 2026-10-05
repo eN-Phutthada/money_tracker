@@ -31,14 +31,20 @@ class BankOcrService {
         return text;
       }
     } catch (e) {
-      debugPrint('[BankOcrService] Tesseract OCR error, fallback to ML Kit: $e');
+      debugPrint(
+        '[BankOcrService] Tesseract OCR error, fallback to ML Kit: $e',
+      );
     }
 
     // 3. Fallback ไปยัง Google ML Kit กรณี Tesseract ขัดข้อง
     try {
       final inputImage = InputImage.fromFilePath(filePath);
-      final textRecognizer = TextRecognizer(script: TextRecognitionScript.latin);
-      final RecognizedText recognizedText = await textRecognizer.processImage(inputImage);
+      final textRecognizer = TextRecognizer(
+        script: TextRecognitionScript.latin,
+      );
+      final RecognizedText recognizedText = await textRecognizer.processImage(
+        inputImage,
+      );
       await textRecognizer.close();
 
       return recognizedText.text;
@@ -52,7 +58,8 @@ class BankOcrService {
   static Future<String?> _recognizeTextOnWindows(String filePath) async {
     try {
       final escapedPath = filePath.replaceAll("'", "''");
-      final script = '''
+      final script =
+          '''
 Add-Type -AssemblyName System.Runtime.WindowsRuntime;
 \$asTask = [System.WindowsRuntimeSystemExtensions].GetMethods() | ? { \$_.Name -eq 'AsTask' -and \$_.GetParameters().Count -eq 1 -and \$_.ContainsGenericParameters } | Select -First 1;
 function Aw(\$op, \$t) { \$m = \$asTask.MakeGenericMethod(\$t); \$task = \$m.Invoke(\$null, @(\$op)); \$task.Wait(-1) | Out-Null; return \$task.Result; };
@@ -69,7 +76,12 @@ function Aw(\$op, \$t) { \$m = \$asTask.MakeGenericMethod(\$t); \$task = \$m.Inv
 \$lines = (\$r.Lines | ForEach-Object { \$_.Text }) -join [Environment]::NewLine;
 Write-Output \$lines;
 ''';
-      final res = await Process.run('powershell', ['-NoProfile', '-NonInteractive', '-Command', script]);
+      final res = await Process.run('powershell', [
+        '-NoProfile',
+        '-NonInteractive',
+        '-Command',
+        script,
+      ]);
       if (res.exitCode == 0) {
         final out = res.stdout.toString().trim();
         if (out.isNotEmpty) return out;

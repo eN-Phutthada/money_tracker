@@ -37,7 +37,10 @@ class ModernNothingTransition extends CustomTransition {
         scale: Tween<double>(begin: 0.99, end: 1.0).animate(curvedAnimation),
         // Outgoing page (secondary): subtle fade down only — no lateral slide
         child: FadeTransition(
-          opacity: Tween<double>(begin: 1.0, end: 0.92).animate(secondaryCurved),
+          opacity: Tween<double>(
+            begin: 1.0,
+            end: 0.92,
+          ).animate(secondaryCurved),
           child: child,
         ),
       ),

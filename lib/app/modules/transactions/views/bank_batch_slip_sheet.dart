@@ -26,7 +26,9 @@ class BankBatchSlipSheet extends StatefulWidget {
     required List<BankSlipData> slips,
     List<Map<String, dynamic>> duplicates = const [],
   }) {
-    final activeContext = (context != null && context.mounted ? context : Get.context);
+    final activeContext = (context != null && context.mounted
+        ? context
+        : Get.context);
     if (activeContext == null) return;
     final isDesktop = MediaQuery.sizeOf(activeContext).width >= 800;
 
@@ -43,10 +45,7 @@ class BankBatchSlipSheet extends StatefulWidget {
       );
     } else {
       Get.bottomSheet(
-        BankBatchSlipSheet(
-          initialSlips: slips,
-          duplicateSlips: duplicates,
-        ),
+        BankBatchSlipSheet(initialSlips: slips, duplicateSlips: duplicates),
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
       );
@@ -80,12 +79,12 @@ class _BatchItemState {
     CostNature? costNature,
     DateTime? date,
     String? memo,
-  })  : title = title ?? slip.defaultTitle,
-        amount = amount ?? slip.amount,
-        type = type ?? slip.suggestedType,
-        costNature = costNature ?? slip.suggestedCostNature,
-        date = date ?? slip.transactionDate,
-        memo = memo ?? slip.memo;
+  }) : title = title ?? slip.defaultTitle,
+       amount = amount ?? slip.amount,
+       type = type ?? slip.suggestedType,
+       costNature = costNature ?? slip.suggestedCostNature,
+       date = date ?? slip.transactionDate,
+       memo = memo ?? slip.memo;
 }
 
 class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
@@ -154,9 +153,8 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
 
   int get _selectedCount => _items.where((i) => i.isSelected).length;
 
-  double get _selectedTotalAmount => _items
-      .where((i) => i.isSelected)
-      .fold(0.0, (sum, i) => sum + i.amount);
+  double get _selectedTotalAmount =>
+      _items.where((i) => i.isSelected).fold(0.0, (sum, i) => sum + i.amount);
 
   Future<void> _pickDateTimeForItem(_BatchItemState item) async {
     HapticFeedback.selectionClick();
@@ -218,26 +216,28 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
       Get.bottomSheet(
         Container(
           constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.85,
-            ),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF101010) : Colors.white,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-              border: Border.all(
-                color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.1),
-                width: 0.8,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.50 : 0.10),
-                  blurRadius: 24,
-                  offset: const Offset(0, -4),
-                ),
-              ],
-            ),
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-            child: editorWidget,
+            maxHeight: MediaQuery.of(context).size.height * 0.85,
           ),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF101010) : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            border: Border.all(
+              color: isDark
+                  ? AppColors.nothingBorder
+                  : Colors.black.withValues(alpha: 0.1),
+              width: 0.8,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.50 : 0.10),
+                blurRadius: 24,
+                offset: const Offset(0, -4),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+          child: editorWidget,
+        ),
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
       );
@@ -301,7 +301,9 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
         color: isDark ? const Color(0xFF101010) : Colors.white,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         border: Border.all(
-          color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.1),
+          color: isDark
+              ? AppColors.nothingBorder
+              : Colors.black.withValues(alpha: 0.1),
           width: 0.8,
         ),
         boxShadow: [
@@ -337,10 +339,14 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
                   width: 42,
                   height: 42,
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF1C1C1C) : const Color(0xFFF0F0F0),
+                    color: isDark
+                        ? const Color(0xFF1C1C1C)
+                        : const Color(0xFFF0F0F0),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                      color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                      color: isDark
+                          ? AppColors.nothingBorder
+                          : Colors.black.withValues(alpha: 0.08),
                       width: 0.8,
                     ),
                   ),
@@ -376,12 +382,19 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
                           ),
                           const SizedBox(width: 8),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 2.5,
+                            ),
                             decoration: BoxDecoration(
-                              color: isDark ? const Color(0xFF1C1C1C) : const Color(0xFFF0F0F0),
+                              color: isDark
+                                  ? const Color(0xFF1C1C1C)
+                                  : const Color(0xFFF0F0F0),
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
-                                color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                                color: isDark
+                                    ? AppColors.nothingBorder
+                                    : Colors.black.withValues(alpha: 0.08),
                                 width: 0.8,
                               ),
                             ),
@@ -394,7 +407,9 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
                                 ),
                                 const SizedBox(width: 5),
                                 Text(
-                                  'item_count_label'.trParams({'count': '${_items.length}'}),
+                                  'item_count_label'.trParams({
+                                    'count': '${_items.length}',
+                                  }),
                                   style: NothingTypography.mono(
                                     fontSize: 10.5,
                                     fontWeight: FontWeight.w700,
@@ -412,7 +427,9 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
                         style: NothingTypography.grotesk(
                           fontSize: 11.5,
                           fontWeight: FontWeight.w500,
-                          color: isDark ? const Color(0xFFB0B0B0) : const Color(0xFF666666),
+                          color: isDark
+                              ? const Color(0xFFB0B0B0)
+                              : const Color(0xFF666666),
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -424,17 +441,24 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
                   icon: const Icon(Icons.close_rounded, size: 20),
                   onPressed: () => Get.back(),
                   style: IconButton.styleFrom(
-                    backgroundColor: isDark ? const Color(0xFF1C1C1C) : const Color(0xFFF0F0F0),
+                    backgroundColor: isDark
+                        ? const Color(0xFF1C1C1C)
+                        : const Color(0xFFF0F0F0),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                       side: BorderSide(
-                        color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                        color: isDark
+                            ? AppColors.nothingBorder
+                            : Colors.black.withValues(alpha: 0.08),
                         width: 0.8,
                       ),
                     ),
                   ),
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                  ),
                 ),
               ],
             ),
@@ -443,7 +467,9 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
           Divider(
             height: 1,
             thickness: 0.8,
-            color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+            color: isDark
+                ? AppColors.nothingBorder
+                : Colors.black.withValues(alpha: 0.08),
           ),
 
           // Slip List
@@ -461,12 +487,19 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
 
           // Bottom Action Section
           Container(
-            padding: EdgeInsets.fromLTRB(16, 12, 16, MediaQuery.of(context).viewInsets.bottom + 16),
+            padding: EdgeInsets.fromLTRB(
+              16,
+              12,
+              16,
+              MediaQuery.of(context).viewInsets.bottom + 16,
+            ),
             decoration: BoxDecoration(
               color: isDark ? const Color(0xFF101010) : Colors.white,
               border: Border(
                 top: BorderSide(
-                  color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                  color: isDark
+                      ? AppColors.nothingBorder
+                      : Colors.black.withValues(alpha: 0.08),
                   width: 0.8,
                 ),
               ),
@@ -487,7 +520,9 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
                           fontSize: 10.5,
                           fontWeight: FontWeight.w600,
                           letterSpacing: 0.5,
-                          color: isDark ? const Color(0xFF888888) : const Color(0xFF777777),
+                          color: isDark
+                              ? const Color(0xFF888888)
+                              : const Color(0xFF777777),
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -511,19 +546,31 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.nothingRed,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 22,
+                      vertical: 14,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     elevation: 0,
                   ),
-                  onPressed: _selectedCount > 0 && !_isSaving ? _saveSelectedSlips : null,
+                  onPressed: _selectedCount > 0 && !_isSaving
+                      ? _saveSelectedSlips
+                      : null,
                   child: _isSaving
                       ? const SizedBox(
                           width: 20,
                           height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
                         )
                       : Text(
-                          'save_selected_count'.trParams({'count': '$_selectedCount'}).toUpperCase(),
+                          'save_selected_count'.trParams({
+                            'count': '$_selectedCount',
+                          }).toUpperCase(),
                           style: NothingTypography.grotesk(
                             fontWeight: FontWeight.w700,
                             fontSize: 13,
@@ -540,7 +587,11 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
     );
   }
 
-  Widget _buildSlipCard(BuildContext context, _BatchItemState item, bool isDark) {
+  Widget _buildSlipCard(
+    BuildContext context,
+    _BatchItemState item,
+    bool isDark,
+  ) {
     final isIncome = item.type == TransactionType.income;
 
     return Container(
@@ -552,8 +603,12 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
           color: item.isDuplicate
               ? AppColors.nothingRed.withValues(alpha: 0.6)
               : item.isSelected
-                  ? (isDark ? Colors.white.withValues(alpha: 0.35) : Colors.black.withValues(alpha: 0.25))
-                  : (isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08)),
+              ? (isDark
+                    ? Colors.white.withValues(alpha: 0.35)
+                    : Colors.black.withValues(alpha: 0.25))
+              : (isDark
+                    ? AppColors.nothingBorder
+                    : Colors.black.withValues(alpha: 0.08)),
           width: item.isDuplicate ? 1.0 : 0.8,
         ),
       ),
@@ -573,7 +628,9 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
                     color: isDark ? Colors.white38 : Colors.black38,
                     width: 1.2,
                   ),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(5),
+                  ),
                   onChanged: (val) {
                     setState(() {
                       item.isSelected = val ?? false;
@@ -611,7 +668,9 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
                             Icon(
                               Icons.edit_outlined,
                               size: 13,
-                              color: isDark ? const Color(0xFF888888) : const Color(0xFF777777),
+                              color: isDark
+                                  ? const Color(0xFF888888)
+                                  : const Color(0xFF777777),
                             ),
                           ],
                         ),
@@ -627,7 +686,9 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
                                   '${item.slip.bankName} • ${DateFormat('d MMM yyyy, HH:mm น.').format(item.date)}',
                                   style: NothingTypography.mono(
                                     fontSize: 10.5,
-                                    color: isDark ? const Color(0xFF888888) : const Color(0xFF777777),
+                                    color: isDark
+                                        ? const Color(0xFF888888)
+                                        : const Color(0xFF777777),
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -636,19 +697,24 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
                               Icon(
                                 Icons.access_time_rounded,
                                 size: 11,
-                                color: isDark ? const Color(0xFF888888) : const Color(0xFF777777),
+                                color: isDark
+                                    ? const Color(0xFF888888)
+                                    : const Color(0xFF777777),
                               ),
                             ],
                           ),
                         ),
-                        if (item.memo != null && item.memo!.trim().isNotEmpty) ...[
+                        if (item.memo != null &&
+                            item.memo!.trim().isNotEmpty) ...[
                           const SizedBox(height: 3),
                           Row(
                             children: [
                               Icon(
                                 Icons.notes_rounded,
                                 size: 11,
-                                color: isDark ? const Color(0xFF888888) : const Color(0xFF777777),
+                                color: isDark
+                                    ? const Color(0xFF888888)
+                                    : const Color(0xFF777777),
                               ),
                               const SizedBox(width: 3),
                               Expanded(
@@ -659,7 +725,9 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
                                   style: NothingTypography.grotesk(
                                     fontSize: 10.5,
                                     fontStyle: FontStyle.italic,
-                                    color: isDark ? const Color(0xFF888888) : const Color(0xFF777777),
+                                    color: isDark
+                                        ? const Color(0xFF888888)
+                                        : const Color(0xFF777777),
                                   ),
                                 ),
                               ),
@@ -677,14 +745,19 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
                 onTap: () => _openItemEditor(item),
                 borderRadius: BorderRadius.circular(6),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 2,
+                  ),
                   child: Text(
                     '${isIncome ? '+' : '-'}฿${currencyFormat.format(item.amount)}',
                     style: NothingTypography.mono(
                       fontSize: 14.5,
                       fontWeight: FontWeight.w700,
                       letterSpacing: -0.3,
-                      color: isIncome ? AppColors.surplusText : (isDark ? Colors.white : Colors.black),
+                      color: isIncome
+                          ? AppColors.surplusText
+                          : (isDark ? Colors.white : Colors.black),
                     ),
                   ),
                 ),
@@ -699,9 +772,14 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
               children: [
                 if (item.isDuplicate) ...[
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 7,
+                      vertical: 2.5,
+                    ),
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF280E10) : const Color(0xFFFDE8E8),
+                      color: isDark
+                          ? const Color(0xFF280E10)
+                          : const Color(0xFFFDE8E8),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                         color: isDark
@@ -725,7 +803,9 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
                             fontSize: 9.5,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 0.3,
-                            color: isDark ? AppColors.nothingRedLight : AppColors.nothingRed,
+                            color: isDark
+                                ? AppColors.nothingRedLight
+                                : AppColors.nothingRed,
                           ),
                         ),
                       ],
@@ -740,12 +820,19 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
                     onTap: () => _showCategoryPicker(context, item),
                     borderRadius: BorderRadius.circular(8),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3.5,
+                      ),
                       decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF202020) : const Color(0xFFEFEFEF),
+                        color: isDark
+                            ? const Color(0xFF202020)
+                            : const Color(0xFFEFEFEF),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                          color: isDark
+                              ? AppColors.nothingBorder
+                              : Colors.black.withValues(alpha: 0.08),
                           width: 0.8,
                         ),
                       ),
@@ -768,7 +855,9 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
                           Icon(
                             Icons.arrow_drop_down_rounded,
                             size: 15,
-                            color: isDark ? const Color(0xFF888888) : const Color(0xFF777777),
+                            color: isDark
+                                ? const Color(0xFF888888)
+                                : const Color(0xFF777777),
                           ),
                         ],
                       ),
@@ -783,12 +872,19 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
                   onTap: () => _openItemEditor(item),
                   borderRadius: BorderRadius.circular(8),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3.5,
+                    ),
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF202020) : const Color(0xFFEFEFEF),
+                      color: isDark
+                          ? const Color(0xFF202020)
+                          : const Color(0xFFEFEFEF),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                        color: isDark
+                            ? AppColors.nothingBorder
+                            : Colors.black.withValues(alpha: 0.08),
                         width: 0.8,
                       ),
                     ),
@@ -821,11 +917,16 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
                   icon: Icon(
                     Icons.delete_outline_rounded,
                     size: 17,
-                    color: isDark ? const Color(0xFF888888) : const Color(0xFF777777),
+                    color: isDark
+                        ? const Color(0xFF888888)
+                        : const Color(0xFF777777),
                   ),
                   visualDensity: VisualDensity.compact,
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                  constraints: const BoxConstraints(
+                    minWidth: 28,
+                    minHeight: 28,
+                  ),
                   onPressed: () {
                     HapticFeedback.selectionClick();
                     setState(() {
@@ -873,13 +974,20 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
                   icon: const Icon(Icons.close_rounded, size: 18),
                   onPressed: () => Get.back(),
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                  constraints: const BoxConstraints(
+                    minWidth: 28,
+                    minHeight: 28,
+                  ),
                   style: IconButton.styleFrom(
-                    backgroundColor: isDark ? const Color(0xFF1C1C1C) : const Color(0xFFF0F0F0),
+                    backgroundColor: isDark
+                        ? const Color(0xFF1C1C1C)
+                        : const Color(0xFFF0F0F0),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                       side: BorderSide(
-                        color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                        color: isDark
+                            ? AppColors.nothingBorder
+                            : Colors.black.withValues(alpha: 0.08),
                         width: 0.8,
                       ),
                     ),
@@ -904,16 +1012,23 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
                   borderRadius: BorderRadius.circular(12),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 7,
+                    ),
                     decoration: BoxDecoration(
                       color: isSelected
                           ? (isDark ? Colors.white : Colors.black)
-                          : (isDark ? const Color(0xFF1E1E1E) : const Color(0xFFEEEEEE)),
+                          : (isDark
+                                ? const Color(0xFF1E1E1E)
+                                : const Color(0xFFEEEEEE)),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: isSelected
                             ? (isDark ? Colors.white : Colors.black)
-                            : (isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08)),
+                            : (isDark
+                                  ? AppColors.nothingBorder
+                                  : Colors.black.withValues(alpha: 0.08)),
                         width: 0.8,
                       ),
                     ),
@@ -921,10 +1036,14 @@ class _BankBatchSlipSheetState extends State<BankBatchSlipSheet> {
                       cat.tr,
                       style: NothingTypography.grotesk(
                         fontSize: 12,
-                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                        fontWeight: isSelected
+                            ? FontWeight.w700
+                            : FontWeight.w500,
                         color: isSelected
                             ? (isDark ? Colors.black : Colors.white)
-                            : (isDark ? const Color(0xFFD0D0D0) : const Color(0xFF444444)),
+                            : (isDark
+                                  ? const Color(0xFFD0D0D0)
+                                  : const Color(0xFF444444)),
                       ),
                     ),
                   ),
@@ -950,7 +1069,8 @@ class _BatchItemEditDialog extends StatefulWidget {
     TransactionType newType,
     DateTime newDate,
     String? newMemo,
-  ) onSave;
+  )
+  onSave;
 
   const _BatchItemEditDialog({
     required this.item,
@@ -975,7 +1095,9 @@ class _BatchItemEditDialogState extends State<_BatchItemEditDialog> {
   void initState() {
     super.initState();
     _titleController = TextEditingController(text: widget.item.title);
-    _amountController = TextEditingController(text: widget.item.amount.toStringAsFixed(2));
+    _amountController = TextEditingController(
+      text: widget.item.amount.toStringAsFixed(2),
+    );
     _memoController = TextEditingController(text: widget.item.memo ?? '');
     _selectedCategory = widget.item.category;
     _selectedType = widget.item.type;
@@ -1002,7 +1124,10 @@ class _BatchItemEditDialogState extends State<_BatchItemEditDialog> {
 
     final pickedTime = await showTimePicker(
       context: context,
-      initialTime: TimeOfDay(hour: _selectedDate.hour, minute: _selectedDate.minute),
+      initialTime: TimeOfDay(
+        hour: _selectedDate.hour,
+        minute: _selectedDate.minute,
+      ),
     );
     if (!mounted) return;
 
@@ -1019,7 +1144,9 @@ class _BatchItemEditDialogState extends State<_BatchItemEditDialog> {
 
   void _submit() {
     final title = _titleController.text.trim();
-    final amount = double.tryParse(_amountController.text.replaceAll(',', '').trim());
+    final amount = double.tryParse(
+      _amountController.text.replaceAll(',', '').trim(),
+    );
 
     if (title.isEmpty) {
       AppFeedback.showError(message: 'enter_title_error'.tr);
@@ -1036,7 +1163,9 @@ class _BatchItemEditDialogState extends State<_BatchItemEditDialog> {
       _selectedCategory,
       _selectedType,
       _selectedDate,
-      _memoController.text.trim().isNotEmpty ? _memoController.text.trim() : null,
+      _memoController.text.trim().isNotEmpty
+          ? _memoController.text.trim()
+          : null,
     );
 
     Get.back();
@@ -1058,10 +1187,14 @@ class _BatchItemEditDialogState extends State<_BatchItemEditDialog> {
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1C1C1C) : const Color(0xFFF0F0F0),
+                  color: isDark
+                      ? const Color(0xFF1C1C1C)
+                      : const Color(0xFFF0F0F0),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                    color: isDark
+                        ? AppColors.nothingBorder
+                        : Colors.black.withValues(alpha: 0.08),
                     width: 0.8,
                   ),
                 ),
@@ -1090,11 +1223,15 @@ class _BatchItemEditDialogState extends State<_BatchItemEditDialog> {
                 onPressed: () => Get.back(),
                 visualDensity: VisualDensity.compact,
                 style: IconButton.styleFrom(
-                  backgroundColor: isDark ? const Color(0xFF1C1C1C) : const Color(0xFFF0F0F0),
+                  backgroundColor: isDark
+                      ? const Color(0xFF1C1C1C)
+                      : const Color(0xFFF0F0F0),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                     side: BorderSide(
-                      color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                      color: isDark
+                          ? AppColors.nothingBorder
+                          : Colors.black.withValues(alpha: 0.08),
                       width: 0.8,
                     ),
                   ),
@@ -1119,13 +1256,19 @@ class _BatchItemEditDialogState extends State<_BatchItemEditDialog> {
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     decoration: BoxDecoration(
                       color: _selectedType == TransactionType.expense
-                          ? (isDark ? const Color(0xFF280E10) : const Color(0xFFFDE8E8))
-                          : (isDark ? const Color(0xFF181818) : const Color(0xFFF2F2F2)),
+                          ? (isDark
+                                ? const Color(0xFF280E10)
+                                : const Color(0xFFFDE8E8))
+                          : (isDark
+                                ? const Color(0xFF181818)
+                                : const Color(0xFFF2F2F2)),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: _selectedType == TransactionType.expense
                             ? AppColors.nothingRed
-                            : (isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08)),
+                            : (isDark
+                                  ? AppColors.nothingBorder
+                                  : Colors.black.withValues(alpha: 0.08)),
                         width: 0.8,
                       ),
                     ),
@@ -1133,7 +1276,10 @@ class _BatchItemEditDialogState extends State<_BatchItemEditDialog> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         if (_selectedType == TransactionType.expense) ...[
-                          const NothingLedIndicator(color: AppColors.nothingRed, size: 5),
+                          const NothingLedIndicator(
+                            color: AppColors.nothingRed,
+                            size: 5,
+                          ),
                           const SizedBox(width: 6),
                         ],
                         Text(
@@ -1143,8 +1289,12 @@ class _BatchItemEditDialogState extends State<_BatchItemEditDialog> {
                             fontWeight: FontWeight.w700,
                             letterSpacing: 0.4,
                             color: _selectedType == TransactionType.expense
-                                ? (isDark ? AppColors.nothingRedLight : AppColors.nothingRed)
-                                : (isDark ? const Color(0xFF888888) : const Color(0xFF666666)),
+                                ? (isDark
+                                      ? AppColors.nothingRedLight
+                                      : AppColors.nothingRed)
+                                : (isDark
+                                      ? const Color(0xFF888888)
+                                      : const Color(0xFF666666)),
                           ),
                         ),
                       ],
@@ -1165,13 +1315,19 @@ class _BatchItemEditDialogState extends State<_BatchItemEditDialog> {
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     decoration: BoxDecoration(
                       color: _selectedType == TransactionType.income
-                          ? (isDark ? const Color(0xFF0E2818) : const Color(0xFFE8FDF0))
-                          : (isDark ? const Color(0xFF181818) : const Color(0xFFF2F2F2)),
+                          ? (isDark
+                                ? const Color(0xFF0E2818)
+                                : const Color(0xFFE8FDF0))
+                          : (isDark
+                                ? const Color(0xFF181818)
+                                : const Color(0xFFF2F2F2)),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: _selectedType == TransactionType.income
                             ? AppColors.surplusText
-                            : (isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08)),
+                            : (isDark
+                                  ? AppColors.nothingBorder
+                                  : Colors.black.withValues(alpha: 0.08)),
                         width: 0.8,
                       ),
                     ),
@@ -1179,7 +1335,10 @@ class _BatchItemEditDialogState extends State<_BatchItemEditDialog> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         if (_selectedType == TransactionType.income) ...[
-                          const NothingLedIndicator(color: AppColors.surplusText, size: 5),
+                          const NothingLedIndicator(
+                            color: AppColors.surplusText,
+                            size: 5,
+                          ),
                           const SizedBox(width: 6),
                         ],
                         Text(
@@ -1190,7 +1349,9 @@ class _BatchItemEditDialogState extends State<_BatchItemEditDialog> {
                             letterSpacing: 0.4,
                             color: _selectedType == TransactionType.income
                                 ? AppColors.surplusText
-                                : (isDark ? const Color(0xFF888888) : const Color(0xFF666666)),
+                                : (isDark
+                                      ? const Color(0xFF888888)
+                                      : const Color(0xFF666666)),
                           ),
                         ),
                       ],
@@ -1215,21 +1376,29 @@ class _BatchItemEditDialogState extends State<_BatchItemEditDialog> {
               labelStyle: NothingTypography.grotesk(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
-                color: isDark ? const Color(0xFF888888) : const Color(0xFF777777),
+                color: isDark
+                    ? const Color(0xFF888888)
+                    : const Color(0xFF777777),
               ),
               filled: true,
-              fillColor: isDark ? const Color(0xFF181818) : const Color(0xFFF5F5F5),
+              fillColor: isDark
+                  ? const Color(0xFF181818)
+                  : const Color(0xFFF5F5F5),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
                 borderSide: BorderSide(
-                  color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                  color: isDark
+                      ? AppColors.nothingBorder
+                      : Colors.black.withValues(alpha: 0.08),
                   width: 0.8,
                 ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
                 borderSide: BorderSide(
-                  color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                  color: isDark
+                      ? AppColors.nothingBorder
+                      : Colors.black.withValues(alpha: 0.08),
                   width: 0.8,
                 ),
               ),
@@ -1240,7 +1409,10 @@ class _BatchItemEditDialogState extends State<_BatchItemEditDialog> {
                   width: 1.0,
                 ),
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 12,
+              ),
             ),
           ),
           const SizedBox(height: 12),
@@ -1259,7 +1431,9 @@ class _BatchItemEditDialogState extends State<_BatchItemEditDialog> {
               labelStyle: NothingTypography.grotesk(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
-                color: isDark ? const Color(0xFF888888) : const Color(0xFF777777),
+                color: isDark
+                    ? const Color(0xFF888888)
+                    : const Color(0xFF777777),
               ),
               prefixText: '฿ ',
               prefixStyle: NothingTypography.mono(
@@ -1268,18 +1442,24 @@ class _BatchItemEditDialogState extends State<_BatchItemEditDialog> {
                 color: isDark ? Colors.white70 : Colors.black87,
               ),
               filled: true,
-              fillColor: isDark ? const Color(0xFF181818) : const Color(0xFFF5F5F5),
+              fillColor: isDark
+                  ? const Color(0xFF181818)
+                  : const Color(0xFFF5F5F5),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
                 borderSide: BorderSide(
-                  color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                  color: isDark
+                      ? AppColors.nothingBorder
+                      : Colors.black.withValues(alpha: 0.08),
                   width: 0.8,
                 ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
                 borderSide: BorderSide(
-                  color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                  color: isDark
+                      ? AppColors.nothingBorder
+                      : Colors.black.withValues(alpha: 0.08),
                   width: 0.8,
                 ),
               ),
@@ -1290,7 +1470,10 @@ class _BatchItemEditDialogState extends State<_BatchItemEditDialog> {
                   width: 1.0,
                 ),
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 12,
+              ),
             ),
           ),
           const SizedBox(height: 12),
@@ -1302,10 +1485,14 @@ class _BatchItemEditDialogState extends State<_BatchItemEditDialog> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF181818) : const Color(0xFFF5F5F5),
+                color: isDark
+                    ? const Color(0xFF181818)
+                    : const Color(0xFFF5F5F5),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                  color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                  color: isDark
+                      ? AppColors.nothingBorder
+                      : Colors.black.withValues(alpha: 0.08),
                   width: 0.8,
                 ),
               ),
@@ -1329,7 +1516,9 @@ class _BatchItemEditDialogState extends State<_BatchItemEditDialog> {
                   Icon(
                     Icons.edit_calendar_outlined,
                     size: 16,
-                    color: isDark ? const Color(0xFF888888) : const Color(0xFF777777),
+                    color: isDark
+                        ? const Color(0xFF888888)
+                        : const Color(0xFF777777),
                   ),
                 ],
               ),
@@ -1361,16 +1550,23 @@ class _BatchItemEditDialogState extends State<_BatchItemEditDialog> {
                 borderRadius: BorderRadius.circular(12),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 180),
-                  padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 11,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: isSelected
                         ? (isDark ? Colors.white : Colors.black)
-                        : (isDark ? const Color(0xFF1C1C1C) : const Color(0xFFEEEEEE)),
+                        : (isDark
+                              ? const Color(0xFF1C1C1C)
+                              : const Color(0xFFEEEEEE)),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: isSelected
                           ? (isDark ? Colors.white : Colors.black)
-                          : (isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08)),
+                          : (isDark
+                                ? AppColors.nothingBorder
+                                : Colors.black.withValues(alpha: 0.08)),
                       width: 0.8,
                     ),
                   ),
@@ -1378,10 +1574,14 @@ class _BatchItemEditDialogState extends State<_BatchItemEditDialog> {
                     cat.tr,
                     style: NothingTypography.grotesk(
                       fontSize: 11.5,
-                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                      fontWeight: isSelected
+                          ? FontWeight.w700
+                          : FontWeight.w500,
                       color: isSelected
                           ? (isDark ? Colors.black : Colors.white)
-                          : (isDark ? const Color(0xFFD0D0D0) : const Color(0xFF444444)),
+                          : (isDark
+                                ? const Color(0xFFD0D0D0)
+                                : const Color(0xFF444444)),
                     ),
                   ),
                 ),
@@ -1404,21 +1604,29 @@ class _BatchItemEditDialogState extends State<_BatchItemEditDialog> {
               labelStyle: NothingTypography.grotesk(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
-                color: isDark ? const Color(0xFF888888) : const Color(0xFF777777),
+                color: isDark
+                    ? const Color(0xFF888888)
+                    : const Color(0xFF777777),
               ),
               filled: true,
-              fillColor: isDark ? const Color(0xFF181818) : const Color(0xFFF5F5F5),
+              fillColor: isDark
+                  ? const Color(0xFF181818)
+                  : const Color(0xFFF5F5F5),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
                 borderSide: BorderSide(
-                  color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                  color: isDark
+                      ? AppColors.nothingBorder
+                      : Colors.black.withValues(alpha: 0.08),
                   width: 0.8,
                 ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
                 borderSide: BorderSide(
-                  color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                  color: isDark
+                      ? AppColors.nothingBorder
+                      : Colors.black.withValues(alpha: 0.08),
                   width: 0.8,
                 ),
               ),
@@ -1429,7 +1637,10 @@ class _BatchItemEditDialogState extends State<_BatchItemEditDialog> {
                   width: 1.0,
                 ),
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 10,
+              ),
             ),
           ),
 
@@ -1439,10 +1650,14 @@ class _BatchItemEditDialogState extends State<_BatchItemEditDialog> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF141414) : const Color(0xFFF7F7F7),
+                color: isDark
+                    ? const Color(0xFF141414)
+                    : const Color(0xFFF7F7F7),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                  color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                  color: isDark
+                      ? AppColors.nothingBorder
+                      : Colors.black.withValues(alpha: 0.08),
                   width: 0.8,
                 ),
               ),
@@ -1510,9 +1725,13 @@ class _BatchItemEditDialogState extends State<_BatchItemEditDialog> {
                 child: OutlinedButton(
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 13),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                     side: BorderSide(
-                      color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.15),
+                      color: isDark
+                          ? AppColors.nothingBorder
+                          : Colors.black.withValues(alpha: 0.15),
                       width: 0.8,
                     ),
                   ),
@@ -1535,7 +1754,9 @@ class _BatchItemEditDialogState extends State<_BatchItemEditDialog> {
                     backgroundColor: AppColors.nothingRed,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 13),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                     elevation: 0,
                   ),
                   onPressed: _submit,

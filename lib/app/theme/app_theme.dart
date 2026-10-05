@@ -18,11 +18,7 @@ class AppTheme {
 
     List<String> getPromptFallback([FontWeight? weight]) {
       final p = GoogleFonts.prompt(fontWeight: weight ?? FontWeight.w400);
-      return [
-        if (p.fontFamily != null) p.fontFamily!,
-        'Prompt',
-        'sans-serif',
-      ];
+      return [if (p.fontFamily != null) p.fontFamily!, 'Prompt', 'sans-serif'];
     }
 
     // Ensure all styles in the typography hierarchy have weight-matched Prompt fallback
@@ -125,8 +121,8 @@ class AppTheme {
         iconTheme: IconThemeData(color: AppColors.textPrimary),
         systemOverlayStyle: SystemUiOverlayStyle(
           statusBarColor: Colors.transparent,
-          statusBarIconBrightness: Brightness.dark,   // dark icons on light bg
-          statusBarBrightness: Brightness.light,       // iOS
+          statusBarIconBrightness: Brightness.dark, // dark icons on light bg
+          statusBarBrightness: Brightness.light, // iOS
         ),
       ),
       cardTheme: CardThemeData(
@@ -219,8 +215,8 @@ class AppTheme {
         iconTheme: IconThemeData(color: AppColors.darkTextPrimary),
         systemOverlayStyle: SystemUiOverlayStyle(
           statusBarColor: Colors.transparent,
-          statusBarIconBrightness: Brightness.light,  // light icons on dark bg
-          statusBarBrightness: Brightness.dark,        // iOS
+          statusBarIconBrightness: Brightness.light, // light icons on dark bg
+          statusBarBrightness: Brightness.dark, // iOS
         ),
       ),
       cardTheme: CardThemeData(

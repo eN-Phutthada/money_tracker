@@ -60,9 +60,9 @@ class DailyAllowanceCard extends GetView<DashboardController> {
           : 0.0;
 
       return NothingCard(
-          borderRadius: 28,
-          padding: const EdgeInsets.all(20),
-          child: Column(
+        borderRadius: 28,
+        padding: const EdgeInsets.all(20),
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // --- HEADER ROW: Glyph Icon, Title, Status Pill & Tune Button ---
@@ -251,7 +251,9 @@ class DailyAllowanceCard extends GetView<DashboardController> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            isOverToday ? 'over_short'.tr.toUpperCase() : '$usedPct%',
+                            isOverToday
+                                ? 'over_short'.tr.toUpperCase()
+                                : '$usedPct%',
                             style: NothingTypography.mono(
                               fontSize: isOverToday ? 12 : 14,
                               fontWeight: FontWeight.w700,
@@ -438,9 +440,7 @@ class DailyAllowanceCard extends GetView<DashboardController> {
                         alignment: Alignment.centerRight,
                         child: Text(
                           remainingDays > 0
-                              ? 'days_left'.trParams({
-                                  'days': '$remainingDays',
-                                })
+                              ? 'days_left'.trParams({'days': '$remainingDays'})
                               : 'month_ended'.tr,
                           style: NothingTypography.grotesk(
                             fontSize: 10,

@@ -8,7 +8,8 @@ class SecurityController extends GetxController {
   final RxBool isPinEnabled = false.obs;
   final RxBool isBiometricsEnabled = false.obs;
   final RxBool isLocked = false.obs;
-  final Rx<BiometricAvailabilityResult?> biometricAvailability = Rx<BiometricAvailabilityResult?>(null);
+  final Rx<BiometricAvailabilityResult?> biometricAvailability =
+      Rx<BiometricAvailabilityResult?>(null);
 
   @override
   void onInit() {
@@ -70,7 +71,9 @@ class SecurityController extends GetxController {
     return res.isAvailable;
   }
 
-  Future<BiometricAuthResult> authenticateWithBiometricsDetailed({String? localizedReason}) async {
+  Future<BiometricAuthResult> authenticateWithBiometricsDetailed({
+    String? localizedReason,
+  }) async {
     final result = await _service.authenticateWithBiometricsDetailed(
       localizedReason: localizedReason,
     );

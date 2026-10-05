@@ -14,6 +14,7 @@ import '../../../routes/app_routes.dart';
 import '../../dashboard/controllers/dashboard_controller.dart';
 import 'quick_add_bottom_sheet.dart';
 import 'bank_slip_sheet.dart';
+import 'scheduled_payments_sheet.dart';
 
 /// หน้าจอประวัติรายการธุรกรรมทั้งหมด สไตล์ Nothing OS Design System
 /// - สุนทรียภาพ Minimalist Industrial Monochrome คมชัดระดับ Hi-Contrast
@@ -147,6 +148,12 @@ class _TransactionsListViewState extends State<TransactionsListView> {
           );
         }),
         actions: [
+          ModernAppBar.squircleIconButton(
+            onTap: () => ScheduledPaymentsSheet.show(context),
+            icon: Icons.event_repeat_rounded,
+            isDark: isDark,
+            tooltip: 'scheduled_payments'.tr,
+          ),
           ModernAppBar.primaryActionButton(
             onTap: () => QuickAddBottomSheet.show(context),
             label: 'add_transaction'.tr,
@@ -207,7 +214,8 @@ class _TransactionsListViewState extends State<TransactionsListView> {
                 final totalSavingsWithdrawals = list
                     .where((t) => t.isSavingsWithdrawal)
                     .fold(0.0, (sum, t) => sum + t.amount);
-                final totalSavings = totalSavingsDeposits - totalSavingsWithdrawals;
+                final totalSavings =
+                    totalSavingsDeposits - totalSavingsWithdrawals;
                 final netFlow = totalIncome - totalExpense;
 
                 // Extract all unique categories
@@ -564,9 +572,7 @@ class _TransactionsListViewState extends State<TransactionsListView> {
                                       : FontWeight.w500,
                                   color: isCurrent
                                       ? AppColors.nothingRed
-                                      : (isDark
-                                            ? Colors.white
-                                            : Colors.black),
+                                      : (isDark ? Colors.white : Colors.black),
                                 ),
                               ),
                             );
@@ -630,8 +636,13 @@ class _TransactionsListViewState extends State<TransactionsListView> {
     required int resultsCount,
     required bool isFilterActive,
   }) {
-    final hasMetrics = totalIncome > 0 || totalExpense > 0 || totalSavings > 0 || totalSavingsDeposits > 0;
-    final double totalVolume = totalIncome + totalExpense + (totalSavings > 0 ? totalSavings : 0);
+    final hasMetrics =
+        totalIncome > 0 ||
+        totalExpense > 0 ||
+        totalSavings > 0 ||
+        totalSavingsDeposits > 0;
+    final double totalVolume =
+        totalIncome + totalExpense + (totalSavings > 0 ? totalSavings : 0);
     final double expenseRatio = totalVolume > 0
         ? (totalExpense / totalVolume)
         : 0.0;
@@ -660,7 +671,9 @@ class _TransactionsListViewState extends State<TransactionsListView> {
                       style: GoogleFonts.shareTechMono(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
-                        color: isDark ? AppColors.nothingSubtext : const Color(0xFF666666),
+                        color: isDark
+                            ? AppColors.nothingSubtext
+                            : const Color(0xFF666666),
                         letterSpacing: 1.2,
                       ),
                     ),
@@ -1110,9 +1123,7 @@ class _TransactionsListViewState extends State<TransactionsListView> {
                           ? itemWithdrawal
                           : (item.isExpense
                                 ? itemRed
-                                : (item.isSavings
-                                      ? itemSavings
-                                      : itemIncome)),
+                                : (item.isSavings ? itemSavings : itemIncome)),
                       size: 18,
                     ),
                   ),

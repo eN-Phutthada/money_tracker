@@ -315,15 +315,15 @@ class BalanceCard extends GetView<DashboardController> {
                       color: isSurplus
                           ? AppColors.incomeColor(isDark)
                           : (isDark
-                              ? AppColors.nothingRedLight
-                              : AppColors.nothingRed),
+                                ? AppColors.nothingRedLight
+                                : AppColors.nothingRed),
                     ),
                     const SizedBox(width: 6),
                     Text(
                       isMonthly
                           ? (isSurplus
-                              ? 'safe_zone_covered'.tr
-                              : 'tight_zone_warning'.tr)
+                                ? 'safe_zone_covered'.tr
+                                : 'tight_zone_warning'.tr)
                           : '${controller.surplusOrDeficit >= 0 ? '+' : ''}${currencyFmt.format(controller.surplusOrDeficit)} (${'vs_budget_plan'.tr})',
                       style: NothingTypography.grotesk(
                         fontSize: 10.5,
@@ -411,16 +411,16 @@ class BalanceCard extends GetView<DashboardController> {
                       iconColor: controller.actualBalance >= 0
                           ? (isDark ? Colors.white : Colors.black)
                           : (isDark
-                              ? AppColors.nothingRedLight
-                              : AppColors.nothingRed),
+                                ? AppColors.nothingRedLight
+                                : AppColors.nothingRed),
                       label: 'net_balance'.tr,
                       value:
                           '${controller.actualBalance >= 0 ? '+' : ''}${currencyFmt.format(controller.actualBalance)}',
                       valueColor: controller.actualBalance >= 0
                           ? (isDark ? Colors.white : Colors.black)
                           : (isDark
-                              ? AppColors.nothingRedLight
-                              : AppColors.nothingRed),
+                                ? AppColors.nothingRedLight
+                                : AppColors.nothingRed),
                       isDark: isDark,
                       isHidden: isHidden,
                     ),
@@ -468,16 +468,13 @@ class BalanceCard extends GetView<DashboardController> {
     final remainingDailyQuota = controller.remainingDailyAllowance;
 
     final totalSegments = 16;
-    final filledSegments =
-        (controller.monthElapsedRatio * totalSegments).round().clamp(0, totalSegments);
+    final filledSegments = (controller.monthElapsedRatio * totalSegments)
+        .round()
+        .clamp(0, totalSegments);
 
     final statusBgColor = isOnTrack
-        ? (isDark
-            ? const Color(0xFF0F291E)
-            : const Color(0xFFE8F5E9))
-        : (isDark
-            ? const Color(0xFF2E0C0E)
-            : const Color(0xFFFDE8E8));
+        ? (isDark ? const Color(0xFF0F291E) : const Color(0xFFE8F5E9))
+        : (isDark ? const Color(0xFF2E0C0E) : const Color(0xFFFDE8E8));
 
     final statusTextColor = isOnTrack
         ? const Color(0xFF10B981)
@@ -533,8 +530,7 @@ class BalanceCard extends GetView<DashboardController> {
               ),
               const SizedBox(width: 8),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: isDark
                       ? const Color(0xFF222222)
@@ -618,8 +614,10 @@ class BalanceCard extends GetView<DashboardController> {
 
               // Right: Variance Status Pill
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: statusBgColor,
                   borderRadius: BorderRadius.circular(10),
@@ -641,9 +639,7 @@ class BalanceCard extends GetView<DashboardController> {
                     ),
                     const SizedBox(height: 1),
                     Text(
-                      isOnTrack
-                          ? 'saved_below_plan'.tr
-                          : 'spent_over_plan'.tr,
+                      isOnTrack ? 'saved_below_plan'.tr : 'spent_over_plan'.tr,
                       style: NothingTypography.grotesk(
                         fontSize: 9.5,
                         fontWeight: FontWeight.w700,
@@ -662,8 +658,9 @@ class BalanceCard extends GetView<DashboardController> {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: (isDark ? Colors.white : Colors.black)
-                  .withValues(alpha: isDark ? 0.05 : 0.03),
+              color: (isDark ? Colors.white : Colors.black).withValues(
+                alpha: isDark ? 0.05 : 0.03,
+              ),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(

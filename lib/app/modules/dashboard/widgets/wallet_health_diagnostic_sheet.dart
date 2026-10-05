@@ -64,10 +64,14 @@ class WalletHealthDiagnosticSheet extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1C1C1C) : const Color(0xFFF0F0F0),
+                  color: isDark
+                      ? const Color(0xFF1C1C1C)
+                      : const Color(0xFFF0F0F0),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.1),
+                    color: isDark
+                        ? AppColors.nothingBorder
+                        : Colors.black.withValues(alpha: 0.1),
                     width: 0.8,
                   ),
                 ),
@@ -87,7 +91,10 @@ class WalletHealthDiagnosticSheet extends StatelessWidget {
                       style: NothingTypography.grotesk(
                         fontSize: 13.5,
                         fontWeight: FontWeight.w700,
-                        letterSpacing: NothingTypography.safeSpacing('wallet_health_diagnostics'.tr, 0.8),
+                        letterSpacing: NothingTypography.safeSpacing(
+                          'wallet_health_diagnostics'.tr,
+                          0.8,
+                        ),
                         color: isDark ? Colors.white : Colors.black,
                       ),
                       maxLines: 1,
@@ -98,7 +105,9 @@ class WalletHealthDiagnosticSheet extends StatelessWidget {
                       style: NothingTypography.grotesk(
                         fontSize: 10.5,
                         fontWeight: FontWeight.w600,
-                        color: isDark ? const Color(0xFFAAAAAA) : const Color(0xFF666666),
+                        color: isDark
+                            ? const Color(0xFFAAAAAA)
+                            : const Color(0xFF666666),
                       ),
                     ),
                   ],
@@ -109,7 +118,9 @@ class WalletHealthDiagnosticSheet extends StatelessWidget {
                 icon: Icon(
                   Icons.close_rounded,
                   size: 20,
-                  color: isDark ? const Color(0xFFAAAAAA) : const Color(0xFF666666),
+                  color: isDark
+                      ? const Color(0xFFAAAAAA)
+                      : const Color(0xFF666666),
                 ),
                 splashRadius: 20,
               ),
@@ -124,7 +135,9 @@ class WalletHealthDiagnosticSheet extends StatelessWidget {
               color: isDark ? const Color(0xFF161616) : const Color(0xFFF7F7F7),
               borderRadius: BorderRadius.circular(22),
               border: Border.all(
-                color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                color: isDark
+                    ? AppColors.nothingBorder
+                    : Colors.black.withValues(alpha: 0.08),
                 width: 0.8,
               ),
             ),
@@ -153,7 +166,9 @@ class WalletHealthDiagnosticSheet extends StatelessWidget {
                           style: GoogleFonts.shareTechMono(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
-                            color: isDark ? const Color(0xFF888888) : const Color(0xFF777777),
+                            color: isDark
+                                ? const Color(0xFF888888)
+                                : const Color(0xFF777777),
                           ),
                         ),
                       ],
@@ -162,12 +177,19 @@ class WalletHealthDiagnosticSheet extends StatelessWidget {
 
                     // Health Tier Pill
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
-                        color: tierColor.withValues(alpha: isDark ? 0.16 : 0.10),
+                        color: tierColor.withValues(
+                          alpha: isDark ? 0.16 : 0.10,
+                        ),
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
-                          color: tierColor.withValues(alpha: isDark ? 0.45 : 0.30),
+                          color: tierColor.withValues(
+                            alpha: isDark ? 0.45 : 0.30,
+                          ),
                           width: 0.8,
                         ),
                       ),
@@ -199,7 +221,9 @@ class WalletHealthDiagnosticSheet extends StatelessWidget {
                 // 20-Segment Score Meter
                 NothingSegmentedBar(
                   totalSegments: 20,
-                  filledSegments: ((health.totalScore / 100.0) * 20).round().clamp(0, 20),
+                  filledSegments: ((health.totalScore / 100.0) * 20)
+                      .round()
+                      .clamp(0, 20),
                   activeColor: tierColor,
                   height: 5.5,
                   spacing: 3.0,
@@ -209,9 +233,14 @@ class WalletHealthDiagnosticSheet extends StatelessWidget {
                 // Headline Advice
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF1F1F1F) : const Color(0xFFEEEEEE),
+                    color: isDark
+                        ? const Color(0xFF1F1F1F)
+                        : const Color(0xFFEEEEEE),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -237,10 +266,14 @@ class WalletHealthDiagnosticSheet extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF161616) : const Color(0xFFF7F7F7),
+                    color: isDark
+                        ? const Color(0xFF161616)
+                        : const Color(0xFFF7F7F7),
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(
-                      color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                      color: isDark
+                          ? AppColors.nothingBorder
+                          : Colors.black.withValues(alpha: 0.08),
                       width: 0.8,
                     ),
                   ),
@@ -252,7 +285,9 @@ class WalletHealthDiagnosticSheet extends StatelessWidget {
                           Icon(
                             Icons.timer_outlined,
                             size: 14,
-                            color: isDark ? const Color(0xFFAAAAAA) : const Color(0xFF666666),
+                            color: isDark
+                                ? const Color(0xFFAAAAAA)
+                                : const Color(0xFF666666),
                           ),
                           const SizedBox(width: 5),
                           Text(
@@ -261,7 +296,9 @@ class WalletHealthDiagnosticSheet extends StatelessWidget {
                               fontSize: 9.5,
                               fontWeight: FontWeight.w600,
                               letterSpacing: 0.3,
-                              color: isDark ? const Color(0xFFAAAAAA) : const Color(0xFF666666),
+                              color: isDark
+                                  ? const Color(0xFFAAAAAA)
+                                  : const Color(0xFF666666),
                             ),
                           ),
                         ],
@@ -285,7 +322,9 @@ class WalletHealthDiagnosticSheet extends StatelessWidget {
                             style: NothingTypography.grotesk(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
-                              color: isDark ? const Color(0xFF888888) : const Color(0xFF777777),
+                              color: isDark
+                                  ? const Color(0xFF888888)
+                                  : const Color(0xFF777777),
                             ),
                           ),
                         ],
@@ -298,7 +337,9 @@ class WalletHealthDiagnosticSheet extends StatelessWidget {
                         style: NothingTypography.grotesk(
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
-                          color: health.runwayDays >= controller.remainingDaysInMonth
+                          color:
+                              health.runwayDays >=
+                                  controller.remainingDaysInMonth
                               ? const Color(0xFF10B981)
                               : AppColors.nothingRed,
                         ),
@@ -315,10 +356,14 @@ class WalletHealthDiagnosticSheet extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF161616) : const Color(0xFFF7F7F7),
+                    color: isDark
+                        ? const Color(0xFF161616)
+                        : const Color(0xFFF7F7F7),
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(
-                      color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                      color: isDark
+                          ? AppColors.nothingBorder
+                          : Colors.black.withValues(alpha: 0.08),
                       width: 0.8,
                     ),
                   ),
@@ -330,7 +375,9 @@ class WalletHealthDiagnosticSheet extends StatelessWidget {
                           Icon(
                             Icons.speed_rounded,
                             size: 14,
-                            color: isDark ? const Color(0xFFAAAAAA) : const Color(0xFF666666),
+                            color: isDark
+                                ? const Color(0xFFAAAAAA)
+                                : const Color(0xFF666666),
                           ),
                           const SizedBox(width: 5),
                           Text(
@@ -339,7 +386,9 @@ class WalletHealthDiagnosticSheet extends StatelessWidget {
                               fontSize: 9.5,
                               fontWeight: FontWeight.w600,
                               letterSpacing: 0.3,
-                              color: isDark ? const Color(0xFFAAAAAA) : const Color(0xFF666666),
+                              color: isDark
+                                  ? const Color(0xFFAAAAAA)
+                                  : const Color(0xFF666666),
                             ),
                           ),
                         ],
@@ -365,7 +414,9 @@ class WalletHealthDiagnosticSheet extends StatelessWidget {
                             style: GoogleFonts.shareTechMono(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: isDark ? const Color(0xFF888888) : const Color(0xFF777777),
+                              color: isDark
+                                  ? const Color(0xFF888888)
+                                  : const Color(0xFF777777),
                             ),
                           ),
                         ],
@@ -380,7 +431,9 @@ class WalletHealthDiagnosticSheet extends StatelessWidget {
                           fontWeight: FontWeight.w600,
                           color: health.burnRateMultiplier <= 1.0
                               ? const Color(0xFF10B981)
-                              : (health.burnRateMultiplier <= 1.3 ? const Color(0xFFF59E0B) : AppColors.nothingRed),
+                              : (health.burnRateMultiplier <= 1.3
+                                    ? const Color(0xFFF59E0B)
+                                    : AppColors.nothingRed),
                         ),
                         maxLines: 2,
                       ),
@@ -395,10 +448,14 @@ class WalletHealthDiagnosticSheet extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF161616) : const Color(0xFFF7F7F7),
+                color: isDark
+                    ? const Color(0xFF161616)
+                    : const Color(0xFFF7F7F7),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+                  color: isDark
+                      ? AppColors.nothingBorder
+                      : Colors.black.withValues(alpha: 0.08),
                   width: 0.8,
                 ),
               ),
@@ -411,7 +468,9 @@ class WalletHealthDiagnosticSheet extends StatelessWidget {
                       color: tierColor.withValues(alpha: isDark ? 0.16 : 0.10),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: tierColor.withValues(alpha: isDark ? 0.35 : 0.20),
+                        color: tierColor.withValues(
+                          alpha: isDark ? 0.35 : 0.20,
+                        ),
                         width: 0.8,
                       ),
                     ),
@@ -432,18 +491,24 @@ class WalletHealthDiagnosticSheet extends StatelessWidget {
                             fontSize: 9.5,
                             fontWeight: FontWeight.w600,
                             letterSpacing: 0.3,
-                            color: isDark ? const Color(0xFFAAAAAA) : const Color(0xFF666666),
+                            color: isDark
+                                ? const Color(0xFFAAAAAA)
+                                : const Color(0xFF666666),
                           ),
                         ),
                         const SizedBox(height: 1),
                         Text(
                           'recommended_daily_pace_desc'.trParams({
-                            'amount': currencyFmt.format(health.suggestedDailyPace),
+                            'amount': currencyFmt.format(
+                              health.suggestedDailyPace,
+                            ),
                           }),
                           style: NothingTypography.grotesk(
                             fontSize: 10.5,
                             fontWeight: FontWeight.w600,
-                            color: isDark ? const Color(0xFFDDDDDD) : const Color(0xFF333333),
+                            color: isDark
+                                ? const Color(0xFFDDDDDD)
+                                : const Color(0xFF333333),
                           ),
                           maxLines: 2,
                         ),
@@ -488,11 +553,15 @@ class WalletHealthDiagnosticSheet extends StatelessWidget {
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0.5,
-                color: isDark ? const Color(0xFFAAAAAA) : const Color(0xFF666666),
+                color: isDark
+                    ? const Color(0xFFAAAAAA)
+                    : const Color(0xFF666666),
               ),
             ),
             const SizedBox(height: 8),
-            ...health.insights.map((insight) => _buildInsightTile(insight, isDark)),
+            ...health.insights.map(
+              (insight) => _buildInsightTile(insight, isDark),
+            ),
             const SizedBox(height: 16),
           ],
 
@@ -517,7 +586,9 @@ class WalletHealthDiagnosticSheet extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     foregroundColor: isDark ? Colors.white : Colors.black,
                     side: BorderSide(
-                      color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.15),
+                      color: isDark
+                          ? AppColors.nothingBorder
+                          : Colors.black.withValues(alpha: 0.15),
                       width: 0.8,
                     ),
                     shape: RoundedRectangleBorder(
@@ -567,7 +638,9 @@ class WalletHealthDiagnosticSheet extends StatelessWidget {
         color: isDark ? const Color(0xFF111111) : Colors.white,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         border: Border.all(
-          color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.08),
+          color: isDark
+              ? AppColors.nothingBorder
+              : Colors.black.withValues(alpha: 0.08),
           width: 0.8,
         ),
       ),
@@ -590,7 +663,9 @@ class WalletHealthDiagnosticSheet extends StatelessWidget {
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 14),
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF333333) : const Color(0xFFDDDDDD),
+                    color: isDark
+                        ? const Color(0xFF333333)
+                        : const Color(0xFFDDDDDD),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -606,7 +681,9 @@ class WalletHealthDiagnosticSheet extends StatelessWidget {
   Widget _buildDimensionTile(WalletHealthDimension dim, bool isDark) {
     final statusColor = dim.isHealthy
         ? const Color(0xFF10B981)
-        : (dim.score >= dim.maxScore * 0.5 ? const Color(0xFFF59E0B) : AppColors.nothingRed);
+        : (dim.score >= dim.maxScore * 0.5
+              ? const Color(0xFFF59E0B)
+              : AppColors.nothingRed);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -615,7 +692,9 @@ class WalletHealthDiagnosticSheet extends StatelessWidget {
         color: isDark ? const Color(0xFF161616) : const Color(0xFFF9F9F9),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? AppColors.nothingBorder : Colors.black.withValues(alpha: 0.06),
+          color: isDark
+              ? AppColors.nothingBorder
+              : Colors.black.withValues(alpha: 0.06),
           width: 0.8,
         ),
       ),
@@ -641,7 +720,10 @@ class WalletHealthDiagnosticSheet extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 7,
+                  vertical: 2.5,
+                ),
                 decoration: BoxDecoration(
                   color: statusColor.withValues(alpha: isDark ? 0.16 : 0.10),
                   borderRadius: BorderRadius.circular(8),
@@ -661,7 +743,9 @@ class WalletHealthDiagnosticSheet extends StatelessWidget {
                 style: GoogleFonts.shareTechMono(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: isDark ? const Color(0xFFAAAAAA) : const Color(0xFF666666),
+                  color: isDark
+                      ? const Color(0xFFAAAAAA)
+                      : const Color(0xFF666666),
                 ),
               ),
             ],
@@ -705,11 +789,7 @@ class WalletHealthDiagnosticSheet extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.only(top: 2),
-            child: Icon(
-              insight.icon,
-              size: 16,
-              color: insight.iconColor,
-            ),
+            child: Icon(insight.icon, size: 16, color: insight.iconColor),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -730,7 +810,9 @@ class WalletHealthDiagnosticSheet extends StatelessWidget {
                   style: NothingTypography.grotesk(
                     fontSize: 10.5,
                     fontWeight: FontWeight.w500,
-                    color: isDark ? const Color(0xFF999999) : const Color(0xFF666666),
+                    color: isDark
+                        ? const Color(0xFF999999)
+                        : const Color(0xFF666666),
                   ),
                 ),
               ],
